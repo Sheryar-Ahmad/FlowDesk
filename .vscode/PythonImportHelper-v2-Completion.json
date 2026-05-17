@@ -1,0 +1,646 @@
+[
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.auth.router",
+        "description": "app.api.v1.auth.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.snippets.router",
+        "description": "app.api.v1.snippets.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.snippets.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.notes.router",
+        "description": "app.api.v1.notes.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.notes.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.tasks.router",
+        "description": "app.api.v1.tasks.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.tasks.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.ai.router",
+        "description": "app.api.v1.ai.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.ai.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.payments.router",
+        "description": "app.api.v1.payments.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.payments.router",
+        "documentation": {}
+    },
+    {
+        "label": "BaseSettings",
+        "importPath": "pydantic_settings",
+        "description": "pydantic_settings",
+        "isExtraImport": true,
+        "detail": "pydantic_settings",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "sentry_sdk",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sentry_sdk",
+        "description": "sentry_sdk",
+        "detail": "sentry_sdk",
+        "documentation": {}
+    },
+    {
+        "label": "CORSMiddleware",
+        "importPath": "fastapi.middleware.cors",
+        "description": "fastapi.middleware.cors",
+        "isExtraImport": true,
+        "detail": "fastapi.middleware.cors",
+        "documentation": {}
+    },
+    {
+        "label": "asynccontextmanager",
+        "importPath": "contextlib",
+        "description": "contextlib",
+        "isExtraImport": true,
+        "detail": "contextlib",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "api_router",
+        "importPath": "app.api.router",
+        "description": "app.api.router",
+        "isExtraImport": true,
+        "detail": "app.api.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.ai.router",
+        "description": "backend.app.api.v1.ai.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def ai_health():\n    return {\"status\": \"ai service running\"}",
+        "detail": "backend.app.api.v1.ai.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.auth.router",
+        "description": "backend.app.api.v1.auth.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def auth_health():\n    \"\"\"Check auth service is running.\"\"\"\n    return {\"status\": \"auth service running\"}",
+        "detail": "backend.app.api.v1.auth.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.notes.router",
+        "description": "backend.app.api.v1.notes.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def notes_health():\n    return {\"status\": \"notes service running\"}",
+        "detail": "backend.app.api.v1.notes.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.payments.router",
+        "description": "backend.app.api.v1.payments.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def payments_health():\n    return {\"status\": \"payments service running\"}",
+        "detail": "backend.app.api.v1.payments.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.snippets.router",
+        "description": "backend.app.api.v1.snippets.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def snippets_health():\n    \"\"\"Check snippets service is running.\"\"\"\n    return {\"status\": \"snippets service running\"}",
+        "detail": "backend.app.api.v1.snippets.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.tasks.router",
+        "description": "backend.app.api.v1.tasks.router",
+        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def tasks_health():\n    return {\"status\": \"tasks service running\"}",
+        "detail": "backend.app.api.v1.tasks.router",
+        "documentation": {}
+    },
+    {
+        "label": "api_router",
+        "kind": 5,
+        "importPath": "backend.app.api.router",
+        "description": "backend.app.api.router",
+        "peekOfCode": "api_router = APIRouter()\napi_router.include_router(auth_router,     prefix=\"/v1/auth\",     tags=[\"Authentication\"])\napi_router.include_router(snippets_router, prefix=\"/v1/snippets\", tags=[\"Snippets\"])\napi_router.include_router(notes_router,    prefix=\"/v1/notes\",    tags=[\"Notes\"])\napi_router.include_router(tasks_router,    prefix=\"/v1/tasks\",    tags=[\"Tasks\"])\napi_router.include_router(ai_router,       prefix=\"/v1/ai\",       tags=[\"AI Assistant\"])\napi_router.include_router(payments_router, prefix=\"/v1/payments\", tags=[\"Payments\"])",
+        "detail": "backend.app.api.router",
+        "documentation": {}
+    },
+    {
+        "label": "Settings",
+        "kind": 6,
+        "importPath": "backend.app.config",
+        "description": "backend.app.config",
+        "peekOfCode": "class Settings(BaseSettings):\n    \"\"\"All FlowDesk application settings loaded from .env file.\"\"\"\n    # --- App Info ---\n    APP_NAME: str = \"FlowDesk\"\n    APP_VERSION: str = \"1.0.0\"\n    DEBUG: bool = True\n    # --- Security ---\n    SECRET_KEY: str = \"change-this-to-a-random-secret-key\"\n    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15\n    REFRESH_TOKEN_EXPIRE_DAYS: int = 30",
+        "detail": "backend.app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "kind": 2,
+        "importPath": "backend.app.config",
+        "description": "backend.app.config",
+        "peekOfCode": "def get_settings() -> Settings:\n    \"\"\"Returns cached settings - loaded only once, not on every request.\"\"\"\n    return Settings()",
+        "detail": "backend.app.config",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_SNIPPET_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "FREE_TIER_SNIPPET_LIMIT = 50        # Max snippets for free users\nFREE_TIER_NOTE_LIMIT = 10           # Max notes for free users\nFREE_TIER_PROJECT_LIMIT = 3         # Max projects for free users\nFREE_TIER_AI_MESSAGES_PER_DAY = 20  # Max AI messages per day for free users\nFREE_TIER_README_PER_MONTH = 3      # Max README generations per month\n# --- Pro Tier Price ---\nPRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_NOTE_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "FREE_TIER_NOTE_LIMIT = 10           # Max notes for free users\nFREE_TIER_PROJECT_LIMIT = 3         # Max projects for free users\nFREE_TIER_AI_MESSAGES_PER_DAY = 20  # Max AI messages per day for free users\nFREE_TIER_README_PER_MONTH = 3      # Max README generations per month\n# --- Pro Tier Price ---\nPRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_PROJECT_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "FREE_TIER_PROJECT_LIMIT = 3         # Max projects for free users\nFREE_TIER_AI_MESSAGES_PER_DAY = 20  # Max AI messages per day for free users\nFREE_TIER_README_PER_MONTH = 3      # Max README generations per month\n# --- Pro Tier Price ---\nPRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_AI_MESSAGES_PER_DAY",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "FREE_TIER_AI_MESSAGES_PER_DAY = 20  # Max AI messages per day for free users\nFREE_TIER_README_PER_MONTH = 3      # Max README generations per month\n# --- Pro Tier Price ---\nPRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_README_PER_MONTH",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "FREE_TIER_README_PER_MONTH = 3      # Max README generations per month\n# --- Pro Tier Price ---\nPRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "PRO_TIER_PRICE_USD",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "PRO_TIER_PRICE_USD = 6.00           # $6 per month\n# --- Security Constants ---\nMAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_FAILED_LOGIN_ATTEMPTS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "MAX_FAILED_LOGIN_ATTEMPTS = 5       # Lock account after this many failures\nACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "ACCOUNT_LOCK_DURATION_MINUTES",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "ACCOUNT_LOCK_DURATION_MINUTES = 15  # How long account stays locked\nPASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "PASSWORD_MIN_LENGTH",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "PASSWORD_MIN_LENGTH = 8             # Minimum password length\nLOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "LOGIN_RATE_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "LOGIN_RATE_LIMIT = \"10/minute\"      # Max login attempts per IP per minute\n# --- Token Expiry ---\nACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "ACCESS_TOKEN_EXPIRE_MINUTES = 15    # Access token lives 15 minutes\nREFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "REFRESH_TOKEN_EXPIRE_DAYS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "REFRESH_TOKEN_EXPIRE_DAYS = 30      # Refresh token lives 30 days\nEMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_VERIFY_TOKEN_EXPIRE_HOURS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "EMAIL_VERIFY_TOKEN_EXPIRE_HOURS = 24\nPASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "PASSWORD_RESET_TOKEN_EXPIRE_HOURS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "PASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1\n# --- Pagination ---\nDEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_PAGE_SIZE",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "DEFAULT_PAGE_SIZE = 20              # Items per page by default\nMAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_PAGE_SIZE",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "MAX_PAGE_SIZE = 100                 # Maximum items per page\n# --- Search ---\nMAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_SEARCH_RESULTS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "MAX_SEARCH_RESULTS = 50             # Maximum search results returned\nSEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "SEARCH_MIN_QUERY_LENGTH",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "SEARCH_MIN_QUERY_LENGTH = 2         # Minimum characters to trigger search\n# --- File Limits ---\nMAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_AVATAR_SIZE_MB",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "MAX_AVATAR_SIZE_MB = 2              # Maximum profile picture size\nMAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---\nRAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_SNIPPET_SIZE_KB",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "MAX_SNIPPET_SIZE_KB = 500           # Maximum code snippet size\n# --- AI Constants ---\nAI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---\nRAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "AI_MAX_CONTEXT_MESSAGES",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "AI_MAX_CONTEXT_MESSAGES = 10        # Last N messages sent to AI for context\nAI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---\nRAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "AI_MAX_TOKENS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "AI_MAX_TOKENS = 2000                # Maximum tokens per AI response\n# --- Soft Delete ---\nTRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---\nRAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "TRASH_RETENTION_DAYS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "TRASH_RETENTION_DAYS = 30           # Days before soft-deleted items purged\n# --- Audit Log ---\nRAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "RAW_LOG_RETENTION_DAYS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "RAW_LOG_RETENTION_DAYS = 30         # Raw logs deleted after 30 days\nAGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "AGGREGATED_LOG_RETENTION_DAYS",
+        "kind": 5,
+        "importPath": "backend.app.constants",
+        "description": "backend.app.constants",
+        "peekOfCode": "AGGREGATED_LOG_RETENTION_DAYS = 90  # Aggregated analytics kept 90 days",
+        "detail": "backend.app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "InvalidCredentialsError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class InvalidCredentialsError(HTTPException):\n    \"\"\"Raised when email or password is wrong during login.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"Invalid email or password. Please try again.\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )\nclass AccountLockedError(HTTPException):\n    \"\"\"Raised when account is locked due to too many failed login attempts.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "AccountLockedError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class AccountLockedError(HTTPException):\n    \"\"\"Raised when account is locked due to too many failed login attempts.\"\"\"\n    def __init__(self, minutes: int = 15):\n        super().__init__(\n            status_code=status.HTTP_423_LOCKED,\n            detail=f\"Account locked due to too many failed attempts. Try again in {minutes} minutes.\",\n        )\nclass TokenExpiredError(HTTPException):\n    \"\"\"Raised when JWT token has expired.\"\"\"\n    def __init__(self):",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "TokenExpiredError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class TokenExpiredError(HTTPException):\n    \"\"\"Raised when JWT token has expired.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"Your session has expired. Please login again.\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )\nclass InvalidTokenError(HTTPException):\n    \"\"\"Raised when JWT token is invalid or tampered with.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "InvalidTokenError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class InvalidTokenError(HTTPException):\n    \"\"\"Raised when JWT token is invalid or tampered with.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"Invalid authentication token.\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )\nclass EmailNotVerifiedError(HTTPException):\n    \"\"\"Raised when user tries to login without verifying email.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "EmailNotVerifiedError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class EmailNotVerifiedError(HTTPException):\n    \"\"\"Raised when user tries to login without verifying email.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_403_FORBIDDEN,\n            detail=\"Please verify your email address before logging in.\",\n        )\n# --- User Errors ---\nclass UserNotFoundError(HTTPException):\n    \"\"\"Raised when a user cannot be found in the database.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "UserNotFoundError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class UserNotFoundError(HTTPException):\n    \"\"\"Raised when a user cannot be found in the database.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"User not found.\",\n        )\nclass EmailAlreadyExistsError(HTTPException):\n    \"\"\"Raised when someone tries to register with an email already in use.\"\"\"\n    def __init__(self):",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "EmailAlreadyExistsError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class EmailAlreadyExistsError(HTTPException):\n    \"\"\"Raised when someone tries to register with an email already in use.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=\"An account with this email already exists.\",\n        )\n# --- Resource Errors ---\nclass SnippetNotFoundError(HTTPException):\n    \"\"\"Raised when a snippet cannot be found.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetNotFoundError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class SnippetNotFoundError(HTTPException):\n    \"\"\"Raised when a snippet cannot be found.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"Snippet not found.\",\n        )\nclass NoteNotFoundError(HTTPException):\n    \"\"\"Raised when a note cannot be found.\"\"\"\n    def __init__(self):",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "NoteNotFoundError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class NoteNotFoundError(HTTPException):\n    \"\"\"Raised when a note cannot be found.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"Note not found.\",\n        )\nclass TaskNotFoundError(HTTPException):\n    \"\"\"Raised when a task cannot be found.\"\"\"\n    def __init__(self):",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "TaskNotFoundError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class TaskNotFoundError(HTTPException):\n    \"\"\"Raised when a task cannot be found.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"Task not found.\",\n        )\n# --- Permission Errors ---\nclass ForbiddenError(HTTPException):\n    \"\"\"Raised when user tries to access something that belongs to another user.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ForbiddenError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class ForbiddenError(HTTPException):\n    \"\"\"Raised when user tries to access something that belongs to another user.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_403_FORBIDDEN,\n            detail=\"You do not have permission to access this resource.\",\n        )\n# --- Free Tier Limit Errors ---\nclass FreeTierLimitError(HTTPException):\n    \"\"\"Raised when free user hits their usage limit.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "FreeTierLimitError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class FreeTierLimitError(HTTPException):\n    \"\"\"Raised when free user hits their usage limit.\"\"\"\n    def __init__(self, resource: str, limit: int):\n        super().__init__(\n            status_code=status.HTTP_402_PAYMENT_REQUIRED,\n            detail=f\"Free tier limit reached: {limit} {resource} maximum. Upgrade to Pro for unlimited access.\",\n        )\n# --- Validation Errors ---\nclass InvalidInputError(HTTPException):\n    \"\"\"Raised when user sends invalid data.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "InvalidInputError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class InvalidInputError(HTTPException):\n    \"\"\"Raised when user sends invalid data.\"\"\"\n    def __init__(self, message: str):\n        super().__init__(\n            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,\n            detail=message,\n        )\n# --- Server Errors ---\nclass DatabaseError(HTTPException):\n    \"\"\"Raised when database operation fails.\"\"\"",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "DatabaseError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class DatabaseError(HTTPException):\n    \"\"\"Raised when database operation fails.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,\n            detail=\"A database error occurred. Please try again.\",\n        )\nclass AIServiceError(HTTPException):\n    \"\"\"Raised when all AI services are unavailable.\"\"\"\n    def __init__(self):",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "AIServiceError",
+        "kind": 6,
+        "importPath": "backend.app.exceptions",
+        "description": "backend.app.exceptions",
+        "peekOfCode": "class AIServiceError(HTTPException):\n    \"\"\"Raised when all AI services are unavailable.\"\"\"\n    def __init__(self):\n        super().__init__(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"AI service is temporarily unavailable. Please try again shortly.\",\n        )",
+        "detail": "backend.app.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "backend.app.main",
+        "description": "backend.app.main",
+        "peekOfCode": "settings = get_settings()\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Runs on startup and shutdown.\n    startup: connect to database, initialize cache\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---\n    print(f\"Starting {settings.APP_NAME} v{settings.APP_VERSION}\")",
+        "detail": "backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "backend.app.main",
+        "description": "backend.app.main",
+        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"The Unified Developer Workspace API\",\n    # Hide API docs in production for security\n    docs_url=\"/docs\" if settings.DEBUG else None,\n    redoc_url=\"/redoc\" if settings.DEBUG else None,\n    lifespan=lifespan,\n)\n# --- CORS Middleware ---",
+        "detail": "backend.app.main",
+        "documentation": {}
+    }
+]
