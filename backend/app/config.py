@@ -24,7 +24,8 @@ class Settings(BaseSettings):
     # --- Database ---
     DATABASE_URL: str = "postgresql://user:password@localhost/flowdesk"
     SUPABASE_URL: str = "https://your-project.supabase.co"
-    SUPABASE_KEY: str = "your-supabase-anon-key"
+    SUPABASE_KEY: str = ""
+    SUPABASE_SECRET: str = ""
 
     # --- AI Services ---
     GROQ_API_KEY: str = ""
@@ -49,9 +50,7 @@ class Settings(BaseSettings):
     # --- CORS ---
     ALLOWED_ORIGINS: list = ["http://localhost:5173", "https://flowdesk.vercel.app"]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
 
 @lru_cache()

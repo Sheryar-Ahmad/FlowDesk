@@ -128,6 +128,96 @@
         "documentation": {}
     },
     {
+        "label": "create_async_engine",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "async_sessionmaker",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "DeclarativeBase",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncAdaptedQueuePool",
+        "importPath": "sqlalchemy.pool",
+        "description": "sqlalchemy.pool",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.pool",
+        "documentation": {}
+    },
+    {
+        "label": "asyncio",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "asyncio",
+        "description": "asyncio",
+        "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "structlog",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "structlog",
+        "description": "structlog",
+        "detail": "structlog",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
         "label": "BaseSettings",
         "importPath": "pydantic_settings",
         "description": "pydantic_settings",
@@ -161,6 +251,14 @@
         "documentation": {}
     },
     {
+        "label": "TrustedHostMiddleware",
+        "importPath": "fastapi.middleware.trustedhost",
+        "description": "fastapi.middleware.trustedhost",
+        "isExtraImport": true,
+        "detail": "fastapi.middleware.trustedhost",
+        "documentation": {}
+    },
+    {
         "label": "asynccontextmanager",
         "importPath": "contextlib",
         "description": "contextlib",
@@ -169,19 +267,27 @@
         "documentation": {}
     },
     {
-        "label": "get_settings",
-        "importPath": "app.config",
-        "description": "app.config",
-        "isExtraImport": true,
-        "detail": "app.config",
-        "documentation": {}
-    },
-    {
         "label": "api_router",
         "importPath": "app.api.router",
         "description": "app.api.router",
         "isExtraImport": true,
         "detail": "app.api.router",
+        "documentation": {}
+    },
+    {
+        "label": "check_db_connection",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "close_db_connection",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
         "documentation": {}
     },
     {
@@ -254,6 +360,60 @@
         "description": "backend.app.api.router",
         "peekOfCode": "api_router = APIRouter()\napi_router.include_router(auth_router,     prefix=\"/v1/auth\",     tags=[\"Authentication\"])\napi_router.include_router(snippets_router, prefix=\"/v1/snippets\", tags=[\"Snippets\"])\napi_router.include_router(notes_router,    prefix=\"/v1/notes\",    tags=[\"Notes\"])\napi_router.include_router(tasks_router,    prefix=\"/v1/tasks\",    tags=[\"Tasks\"])\napi_router.include_router(ai_router,       prefix=\"/v1/ai\",       tags=[\"AI Assistant\"])\napi_router.include_router(payments_router, prefix=\"/v1/payments\", tags=[\"Payments\"])",
         "detail": "backend.app.api.router",
+        "documentation": {}
+    },
+    {
+        "label": "Base",
+        "kind": 6,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "class Base(DeclarativeBase):\n    \"\"\"\n    Base class for all database models.\n    Every table model inherits from this.\n    Provides common functionality to all models.\n    \"\"\"\n    pass\ndef build_database_url() -> str:\n    \"\"\"\n    Builds the correct database URL for async SQLAlchemy.",
+        "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "build_database_url",
+        "kind": 2,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "def build_database_url() -> str:\n    \"\"\"\n    Builds the correct database URL for async SQLAlchemy.\n    SQLAlchemy needs asyncpg driver for async operations.\n    Changes postgresql:// to postgresql+asyncpg://\n    \"\"\"\n    url = settings.DATABASE_URL\n    if url.startswith(\"postgresql://\"):\n        url = url.replace(\"postgresql://\", \"postgresql+asyncpg://\", 1)\n    elif url.startswith(\"postgres://\"):",
+        "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\nclass Base(DeclarativeBase):\n    \"\"\"\n    Base class for all database models.\n    Every table model inherits from this.\n    Provides common functionality to all models.\n    \"\"\"\n    pass\ndef build_database_url() -> str:",
+        "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "settings = get_settings()\nclass Base(DeclarativeBase):\n    \"\"\"\n    Base class for all database models.\n    Every table model inherits from this.\n    Provides common functionality to all models.\n    \"\"\"\n    pass\ndef build_database_url() -> str:\n    \"\"\"",
+        "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "engine = create_async_engine(\n    build_database_url(),\n    # Show SQL queries in debug mode only\n    echo=settings.DEBUG,\n    # Connection pool settings for high performance\n    poolclass=AsyncAdaptedQueuePool,\n    pool_size=10,\n    max_overflow=20,\n    pool_pre_ping=True,\n    pool_recycle=3600,",
+        "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSessionLocal",
+        "kind": 5,
+        "importPath": "backend.app.database.connection",
+        "description": "backend.app.database.connection",
+        "peekOfCode": "AsyncSessionLocal = async_sessionmaker(\n    bind=engine,\n    class_=AsyncSession,\n    expire_on_commit=False,\n    autocommit=False,\n    autoflush=False,\n)\nasync def get_db() -> AsyncSession:\n    \"\"\"\n    FastAPI dependency that provides a database session.",
+        "detail": "backend.app.database.connection",
         "documentation": {}
     },
     {
@@ -639,7 +799,16 @@
         "kind": 5,
         "importPath": "backend.app.main",
         "description": "backend.app.main",
-        "peekOfCode": "settings = get_settings()\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Runs on startup and shutdown.\n    startup: connect to database, initialize cache\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---\n    print(f\"Starting {settings.APP_NAME} v{settings.APP_VERSION}\")",
+        "peekOfCode": "settings = get_settings()\nlogger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Startup and shutdown events.\n    startup: verify database, initialize monitoring\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---",
+        "detail": "backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.main",
+        "description": "backend.app.main",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Startup and shutdown events.\n    startup: verify database, initialize monitoring\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---\n    logger.info(",
         "detail": "backend.app.main",
         "documentation": {}
     },
@@ -648,7 +817,7 @@
         "kind": 5,
         "importPath": "backend.app.main",
         "description": "backend.app.main",
-        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"The Unified Developer Workspace API\",\n    # Hide API docs in production for security\n    docs_url=\"/docs\" if settings.DEBUG else None,\n    redoc_url=\"/redoc\" if settings.DEBUG else None,\n    lifespan=lifespan,\n)\n# --- CORS Middleware ---",
+        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"The Unified Developer Workspace API\",\n    docs_url=\"/docs\" if settings.DEBUG else None,\n    redoc_url=\"/redoc\" if settings.DEBUG else None,\n    lifespan=lifespan,\n)\n# --- Security Middleware ---\n# Only allow requests from our own domains",
         "detail": "backend.app.main",
         "documentation": {}
     },
