@@ -1,108 +1,110 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import authService, { User, LoginData, RegisterData } from '../services/api/auth.service';
-import toast from 'react-hot-toast';
+/**
+ * authStore.ts - Authentication State Management
+ * ------------------------------------------------
+ * Zustand store that manages user authentication state.
+ * 
+ * Why Zustand over localStorage?
+ * - localStorage can be read by XSS attacks
+ * - Zustand keeps state in memory only
+ * - Much more secure
+ * - Automatically clears on page refresh (forces re-auth)
+ * 
+ * Token storage strategy:
+ * - Access token: memory only (Zustand state)
+ * - User data: memory only (Zustand state)
+ * - On refresh: check /auth/me endpoint to restore session
+ */
 
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  
-  login: (data: LoginData) => Promise<boolean>;
-  register: (data: RegisterData) => Promise<boolean>;
-  logout: () => Promise<void>;
-  checkAuth: () => void;
-  clearError: () => void;
+import { create } from "zustand"
+import { registerUser, loginUser, logoutUser, getCurrentUser } from "../services/api/auth.api"
+import type { RegisterData, LoginData } from "../services/api/auth.api"
+
+interface User {
+  id: string
+  email: string
+  display_name: string
+  plan: string
+  email_verified: boolean
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
+interface AuthState {
+  user: User | null
+  accessToken: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
 
-      login: async (data: LoginData) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await authService.login(data);
-          
-          if (response.success) {
-            set({
-              user: response.user,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            toast.success(`Welcome back, ${response.user.display_name}!`);
-            return true;
-          } else {
-            set({ isLoading: false, error: response.message || 'Login failed' });
-            toast.error(response.message || 'Login failed');
-            return false;
-          }
-        } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Login failed. Please try again.';
-          set({ isLoading: false, error: errorMessage });
-          toast.error(errorMessage);
-          return false;
-        }
-      },
+  // Actions
+  register: (data: RegisterData) => Promise<void>
+  login: (data: LoginData) => Promise<void>
+  logout: () => Promise<void>
+  clearError: () => void
+  setLoading: (loading: boolean) => void
+}
 
-      register: async (data: RegisterData) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await authService.register(data);
-          
-          if (response.success) {
-            set({ isLoading: false });
-            toast.success(response.message);
-            return true;
-          } else {
-            set({ isLoading: false, error: response.message || 'Registration failed' });
-            toast.error(response.message || 'Registration failed');
-            return false;
-          }
-        } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Registration failed. Please try again.';
-          set({ isLoading: false, error: errorMessage });
-          toast.error(errorMessage);
-          return false;
-        }
-      },
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
 
-      logout: async () => {
-        await authService.logout();
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-        toast.success('Logged out successfully');
-      },
-
-      checkAuth: () => {
-        const user = authService.getCurrentUser();
-        const isAuthenticated = authService.isAuthenticated();
-        
-        if (isAuthenticated && user) {
-          set({ user, isAuthenticated: true });
-        } else {
-          set({ user: null, isAuthenticated: false });
-        }
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+  register: async (data: RegisterData) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await registerUser(data)
+      set({
+        user: response.user,
+        accessToken: response.access_token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      })
+    } catch (err: any) {
+      const message = err.response?.data?.detail || "Registration failed. Please try again."
+      set({ error: message, isLoading: false })
+      throw new Error(message)
     }
-  )
-);
+  },
+
+  login: async (data: LoginData) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await loginUser(data)
+      set({
+        user: response.user,
+        accessToken: response.access_token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      })
+    } catch (err: any) {
+      const message = err.response?.data?.detail || "Login failed. Please try again."
+      set({ error: message, isLoading: false })
+      throw new Error(message)
+    }
+  },
+
+  logout: async () => {
+    const { accessToken } = get()
+    set({ isLoading: true })
+    try {
+      if (accessToken) {
+        await logoutUser(accessToken, "")
+      }
+    } catch (err) {
+      // Even if logout API fails, clear local state
+    } finally {
+      set({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      })
+    }
+  },
+
+  clearError: () => set({ error: null }),
+  setLoading: (loading: boolean) => set({ isLoading: loading }),
+}))

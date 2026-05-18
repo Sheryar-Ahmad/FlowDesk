@@ -1,0 +1,98 @@
+/**
+ * auth.api.ts - Authentication API Service
+ * ------------------------------------------
+ * All API calls related to authentication.
+ * Connects frontend to backend auth endpoints.
+ * 
+ * Uses axios for HTTP requests with:
+ * - Automatic JSON parsing
+ * - Error handling
+ * - Request/response interceptors
+ */
+
+import axios from "axios"
+
+// Base API URL - backend server
+const API_URL = "http://localhost:8000/api/v1"
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 10000, // 10 seconds timeout
+})
+
+// Types
+export interface RegisterData {
+  display_name: string
+  email: string
+  password: string
+}
+
+export interface LoginData {
+  email: string
+  password: string
+}
+
+export interface AuthResponse {
+  success: boolean
+  access_token: string
+  token_type: string
+  user: {
+    id: string
+    email: string
+    display_name: string
+    plan: string
+    email_verified: boolean
+  }
+  message?: string
+}
+
+
+/**
+ * Register a new user account.
+ * Sends name, email, password to backend.
+ * Returns JWT token and user data.
+ */
+export const registerUser = async (data: RegisterData): Promise<AuthResponse> => {
+  const response = await api.post("/auth/register", data)
+  return response.data
+}
+
+
+/**
+ * Login with email and password.
+ * Returns JWT token and user data.
+ */
+export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
+  const response = await api.post("/auth/login", data)
+  return response.data
+}
+
+
+/**
+ * Get current logged in user data.
+ * Requires valid JWT token in header.
+ */
+export const getCurrentUser = async (token: string) => {
+  const response = await api.get("/auth/me", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+
+/**
+ * Logout user.
+ * Revokes refresh token on backend.
+ */
+export const logoutUser = async (token: string, refreshToken: string) => {
+  const response = await api.post(
+    "/auth/logout",
+    { refresh_token: refreshToken },
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  return response.data
+}
