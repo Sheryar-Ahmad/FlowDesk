@@ -1,9 +1,9 @@
 """
 main.py - FlowDesk Backend Entry Point
 ----------------------------------------
-This is the heart of the entire backend.
-Starts the server, connects database,
-adds security middleware, and routes all requests.
+Heart of the entire backend.
+Starts server, connects database, adds all
+security layers, and routes all requests.
 """
 
 import sentry_sdk
@@ -11,11 +11,21 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 
 from app.config import get_settings
 from app.api.router import api_router
 from app.database.connection import check_db_connection, close_db_connection
+from app.core.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
+from app.core.middleware.error_handler import (
+    validation_exception_handler,
+    sqlalchemy_exception_handler,
+    general_exception_handler,
+)
 
 settings = get_settings()
 logger = structlog.get_logger(__name__)
@@ -23,11 +33,8 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Startup and shutdown events.
-    startup: verify database, initialize monitoring
-    shutdown: close connections cleanly
-    """
+    """Startup and shutdown events."""
+
     # --- STARTUP ---
     logger.info(
         "Starting FlowDesk",
@@ -35,7 +42,7 @@ async def lifespan(app: FastAPI):
         debug=settings.DEBUG,
     )
 
-    # Check database connection
+    # Verify database connection
     db_healthy = await check_db_connection()
     if not db_healthy:
         logger.error("Database connection failed on startup")
@@ -70,8 +77,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# --- Attach rate limiter to app ---
+app.state.limiter = limiter
+
+# --- Exception Handlers ---
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 # --- Security Middleware ---
-# Only allow requests from our own domains
 if not settings.DEBUG:
     app.add_middleware(
         TrustedHostMiddleware,
@@ -79,7 +94,6 @@ if not settings.DEBUG:
     )
 
 # --- CORS Middleware ---
-# Controls which websites can talk to our API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -98,8 +112,7 @@ app.include_router(api_router, prefix="/api")
 async def health_check():
     """
     Health check endpoint.
-    UptimeRobot calls this every 5 minutes.
-    Returns healthy status and version info.
+    UptimeRobot pings this every 5 minutes.
     """
     db_healthy = await check_db_connection()
     return {
