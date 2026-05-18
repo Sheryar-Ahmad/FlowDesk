@@ -24,6 +24,22 @@
         "documentation": {}
     },
     {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Response",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "HTTPException",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -33,14 +49,6 @@
     },
     {
         "label": "status",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -208,99 +216,11 @@
         "documentation": {}
     },
     {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
         "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "select",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "event",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
+        "detail": "sqlalchemy.ext.asyncio",
         "documentation": {}
     },
     {
@@ -310,15 +230,6 @@
         "importPath": "structlog",
         "description": "structlog",
         "detail": "structlog",
-        "documentation": {}
-    },
-    {
-        "label": "uuid",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "uuid",
-        "description": "uuid",
-        "detail": "uuid",
         "documentation": {}
     },
     {
@@ -354,83 +265,67 @@
         "documentation": {}
     },
     {
-        "label": "hash_password",
-        "importPath": "app.core.security.hashing",
-        "description": "app.core.security.hashing",
+        "label": "RegisterRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
         "isExtraImport": true,
-        "detail": "app.core.security.hashing",
+        "detail": "app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "verify_password",
-        "importPath": "app.core.security.hashing",
-        "description": "app.core.security.hashing",
+        "label": "LoginRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
         "isExtraImport": true,
-        "detail": "app.core.security.hashing",
+        "detail": "app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "create_access_token",
-        "importPath": "app.core.security.jwt",
-        "description": "app.core.security.jwt",
+        "label": "TokenResponse",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
         "isExtraImport": true,
-        "detail": "app.core.security.jwt",
+        "detail": "app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "create_refresh_token",
-        "importPath": "app.core.security.jwt",
-        "description": "app.core.security.jwt",
+        "label": "RefreshRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
         "isExtraImport": true,
-        "detail": "app.core.security.jwt",
+        "detail": "app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "hash_token",
-        "importPath": "app.core.security.jwt",
-        "description": "app.core.security.jwt",
+        "label": "register_user",
+        "importPath": "app.services.auth_service",
+        "description": "app.services.auth_service",
         "isExtraImport": true,
-        "detail": "app.core.security.jwt",
+        "detail": "app.services.auth_service",
         "documentation": {}
     },
     {
-        "label": "verify_access_token",
-        "importPath": "app.core.security.jwt",
-        "description": "app.core.security.jwt",
+        "label": "login_user",
+        "importPath": "app.services.auth_service",
+        "description": "app.services.auth_service",
         "isExtraImport": true,
-        "detail": "app.core.security.jwt",
+        "detail": "app.services.auth_service",
         "documentation": {}
     },
     {
-        "label": "validate_email",
-        "importPath": "app.core.security.sanitizer",
-        "description": "app.core.security.sanitizer",
+        "label": "logout_user",
+        "importPath": "app.services.auth_service",
+        "description": "app.services.auth_service",
         "isExtraImport": true,
-        "detail": "app.core.security.sanitizer",
+        "detail": "app.services.auth_service",
         "documentation": {}
     },
     {
-        "label": "validate_display_name",
-        "importPath": "app.core.security.sanitizer",
-        "description": "app.core.security.sanitizer",
+        "label": "get_current_user",
+        "importPath": "app.core.middleware.auth_guard",
+        "description": "app.core.middleware.auth_guard",
         "isExtraImport": true,
-        "detail": "app.core.security.sanitizer",
-        "documentation": {}
-    },
-    {
-        "label": "validate_password",
-        "importPath": "app.core.security.sanitizer",
-        "description": "app.core.security.sanitizer",
-        "isExtraImport": true,
-        "detail": "app.core.security.sanitizer",
-        "documentation": {}
-    },
-    {
-        "label": "is_safe_input",
-        "importPath": "app.core.security.sanitizer",
-        "description": "app.core.security.sanitizer",
-        "isExtraImport": true,
-        "detail": "app.core.security.sanitizer",
+        "detail": "app.core.middleware.auth_guard",
         "documentation": {}
     },
     {
@@ -466,54 +361,6 @@
         "documentation": {}
     },
     {
-        "label": "RegisterRequest",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "RegisterResponse",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "LoginRequest",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "LoginResponse",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "RefreshTokenRequest",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "RefreshTokenResponse",
-        "importPath": "app.api.v1.auth.schemas",
-        "description": "app.api.v1.auth.schemas",
-        "isExtraImport": true,
-        "detail": "app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
         "label": "BaseModel",
         "importPath": "pydantic",
         "description": "pydantic",
@@ -530,7 +377,7 @@
         "documentation": {}
     },
     {
-        "label": "Field",
+        "label": "field_validator",
         "importPath": "pydantic",
         "description": "pydantic",
         "isExtraImport": true,
@@ -538,11 +385,11 @@
         "documentation": {}
     },
     {
-        "label": "field_validator",
-        "importPath": "pydantic",
-        "description": "pydantic",
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "detail": "pydantic",
+        "detail": "typing",
         "documentation": {}
     },
     {
@@ -648,6 +495,86 @@
         "description": "fastapi.security",
         "isExtraImport": true,
         "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "select",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "verify_access_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "create_access_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "create_refresh_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "hash_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
         "documentation": {}
     },
     {
@@ -839,6 +766,54 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "html",
         "kind": 6,
         "isExtraImport": true,
@@ -870,6 +845,46 @@
         "importPath": "asyncio",
         "description": "asyncio",
         "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "hash_password",
+        "importPath": "app.core.security.hashing",
+        "description": "app.core.security.hashing",
+        "isExtraImport": true,
+        "detail": "app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "verify_password",
+        "importPath": "app.core.security.hashing",
+        "description": "app.core.security.hashing",
+        "isExtraImport": true,
+        "detail": "app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "needs_rehash",
+        "importPath": "app.core.security.hashing",
+        "description": "app.core.security.hashing",
+        "isExtraImport": true,
+        "detail": "app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_FAILED_LOGIN_ATTEMPTS",
+        "importPath": "app.constants",
+        "description": "app.constants",
+        "isExtraImport": true,
+        "detail": "app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "ACCOUNT_LOCK_DURATION_MINUTES",
+        "importPath": "app.constants",
+        "description": "app.constants",
+        "isExtraImport": true,
+        "detail": "app.constants",
         "documentation": {}
     },
     {
@@ -976,7 +991,7 @@
         "kind": 5,
         "importPath": "backend.app.api.v1.auth.router",
         "description": "backend.app.api.v1.auth.router",
-        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n@router.post(\"/register\", response_model=RegisterResponse)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    register_data: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n@router.post(\"/register\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    body: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"",
         "detail": "backend.app.api.v1.auth.router",
         "documentation": {}
     },
@@ -985,7 +1000,7 @@
         "kind": 5,
         "importPath": "backend.app.api.v1.auth.router",
         "description": "backend.app.api.v1.auth.router",
-        "peekOfCode": "router = APIRouter()\n@router.post(\"/register\", response_model=RegisterResponse)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    register_data: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"\n    Register a new user account.",
+        "peekOfCode": "router = APIRouter()\n@router.post(\"/register\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    body: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"\n    Creates a new FlowDesk account.",
         "detail": "backend.app.api.v1.auth.router",
         "documentation": {}
     },
@@ -994,16 +1009,7 @@
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class RegisterRequest(BaseModel):\n    \"\"\"What user sends when registering.\"\"\"\n    email: EmailStr = Field(..., description=\"User email address\")\n    password: str = Field(..., min_length=8, max_length=128, description=\"User password\")\n    display_name: str = Field(..., min_length=2, max_length=100, description=\"Display name\")\n    @field_validator(\"password\")\n    @classmethod\n    def validate_password_strength(cls, v: str) -> str:\n        \"\"\"Validate password strength before even reaching backend.\"\"\"\n        if not re.search(r\"[A-Z]\", v):",
-        "detail": "backend.app.api.v1.auth.schemas",
-        "documentation": {}
-    },
-    {
-        "label": "RegisterResponse",
-        "kind": 6,
-        "importPath": "backend.app.api.v1.auth.schemas",
-        "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class RegisterResponse(BaseModel):\n    \"\"\"What user receives after successful registration.\"\"\"\n    success: bool\n    message: str\n    user_id: str\n    email: str\n    display_name: str\n    plan: str\nclass LoginRequest(BaseModel):\n    \"\"\"What user sends when logging in.\"\"\"",
+        "peekOfCode": "class RegisterRequest(BaseModel):\n    \"\"\"Data required to create a new account.\"\"\"\n    display_name: str\n    email: EmailStr\n    password: str\n    @field_validator(\"display_name\")\n    @classmethod\n    def validate_name(cls, v):\n        v = v.strip()\n        if len(v) < 2:",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
@@ -1012,43 +1018,52 @@
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class LoginRequest(BaseModel):\n    \"\"\"What user sends when logging in.\"\"\"\n    email: EmailStr\n    password: str\nclass LoginResponse(BaseModel):\n    \"\"\"What user receives after successful login.\"\"\"\n    success: bool\n    access_token: str\n    refresh_token: str\n    token_type: str = \"bearer\"",
+        "peekOfCode": "class LoginRequest(BaseModel):\n    \"\"\"Data required to login.\"\"\"\n    email: EmailStr\n    password: str\nclass TokenResponse(BaseModel):\n    \"\"\"Response returned after successful login or register.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\n    user: dict\nclass RefreshRequest(BaseModel):",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "LoginResponse",
+        "label": "TokenResponse",
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class LoginResponse(BaseModel):\n    \"\"\"What user receives after successful login.\"\"\"\n    success: bool\n    access_token: str\n    refresh_token: str\n    token_type: str = \"bearer\"\n    user: dict\nclass RefreshTokenRequest(BaseModel):\n    \"\"\"What user sends to get new access token.\"\"\"\n    refresh_token: str",
+        "peekOfCode": "class TokenResponse(BaseModel):\n    \"\"\"Response returned after successful login or register.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\n    user: dict\nclass RefreshRequest(BaseModel):\n    \"\"\"Data required to refresh access token.\"\"\"\n    refresh_token: str\nclass ForgotPasswordRequest(BaseModel):\n    \"\"\"Data required to request password reset.\"\"\"",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "RefreshTokenRequest",
+        "label": "RefreshRequest",
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class RefreshTokenRequest(BaseModel):\n    \"\"\"What user sends to get new access token.\"\"\"\n    refresh_token: str\nclass RefreshTokenResponse(BaseModel):\n    \"\"\"What user receives after refreshing token.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\nclass UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str",
+        "peekOfCode": "class RefreshRequest(BaseModel):\n    \"\"\"Data required to refresh access token.\"\"\"\n    refresh_token: str\nclass ForgotPasswordRequest(BaseModel):\n    \"\"\"Data required to request password reset.\"\"\"\n    email: EmailStr\nclass ResetPasswordRequest(BaseModel):\n    \"\"\"Data required to reset password.\"\"\"\n    token: str\n    new_password: str",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "RefreshTokenResponse",
+        "label": "ForgotPasswordRequest",
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class RefreshTokenResponse(BaseModel):\n    \"\"\"What user receives after refreshing token.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\nclass UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str\n    email: str\n    display_name: str\n    plan: str",
+        "peekOfCode": "class ForgotPasswordRequest(BaseModel):\n    \"\"\"Data required to request password reset.\"\"\"\n    email: EmailStr\nclass ResetPasswordRequest(BaseModel):\n    \"\"\"Data required to reset password.\"\"\"\n    token: str\n    new_password: str\n    @field_validator(\"new_password\")\n    @classmethod\n    def validate_password(cls, v):",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
-        "label": "UserResponse",
+        "label": "ResetPasswordRequest",
         "kind": 6,
         "importPath": "backend.app.api.v1.auth.schemas",
         "description": "backend.app.api.v1.auth.schemas",
-        "peekOfCode": "class UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str\n    email: str\n    display_name: str\n    plan: str\n    email_verified: bool\n    created_at: datetime",
+        "peekOfCode": "class ResetPasswordRequest(BaseModel):\n    \"\"\"Data required to reset password.\"\"\"\n    token: str\n    new_password: str\n    @field_validator(\"new_password\")\n    @classmethod\n    def validate_password(cls, v):\n        if len(v) < 8:\n            raise ValueError(\"Password must be at least 8 characters\")\n        if not re.search(r\"[A-Z]\", v):",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "ChangePasswordRequest",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class ChangePasswordRequest(BaseModel):\n    \"\"\"Data required to change password.\"\"\"\n    current_password: str\n    new_password: str",
         "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
@@ -1536,6 +1551,24 @@
         "description": "backend.app.database.connection",
         "peekOfCode": "AsyncSessionLocal = async_sessionmaker(\n    bind=engine,\n    class_=AsyncSession,\n    expire_on_commit=False,\n    autocommit=False,\n    autoflush=False,\n)\nasync def get_db() -> AsyncSession:\n    \"\"\"\n    FastAPI dependency that provides a database session.",
         "detail": "backend.app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.services.auth_service",
+        "description": "backend.app.services.auth_service",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\nasync def register_user(\n    db: AsyncSession,\n    email: str,\n    password: str,\n    display_name: str,\n    ip_address: str = None,\n) -> dict:\n    \"\"\"",
+        "detail": "backend.app.services.auth_service",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "backend.app.services.auth_service",
+        "description": "backend.app.services.auth_service",
+        "peekOfCode": "settings = get_settings()\nasync def register_user(\n    db: AsyncSession,\n    email: str,\n    password: str,\n    display_name: str,\n    ip_address: str = None,\n) -> dict:\n    \"\"\"\n    Creates a new user account.",
+        "detail": "backend.app.services.auth_service",
         "documentation": {}
     },
     {
