@@ -1,31 +1,11 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
-
 @layer base {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
   body {
-    @apply bg-dark-300 text-white font-sans;
+    @apply bg-dark-300 text-white;
     min-height: 100vh;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-dark-200;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-primary-600 rounded-full;
   }
 }
 
@@ -33,16 +13,7 @@
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
   }
-
-  .btn-secondary {
-    @apply bg-dark-100 hover:bg-dark-200 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
-  }
-
-  .input-field {
-    @apply bg-dark-100 border border-gray-700 text-white rounded-lg px-4 py-2 w-full focus:outline-none focus:border-primary-500 transition-colors duration-200;
-  }
-
   .card {
-    @apply bg-dark-100 border border-gray-800 rounded-xl p-4;
+    @apply bg-dark-100 border border-gray-800 rounded-xl p-6;
   }
 }

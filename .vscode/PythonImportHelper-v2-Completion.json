@@ -16,7 +16,31 @@
         "documentation": {}
     },
     {
-        "label": "APIRouter",
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -49,6 +73,70 @@
     },
     {
         "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Response",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -77,6 +165,425 @@
         "description": "fastapi",
         "isExtraImport": true,
         "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "create_async_engine",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "async_sessionmaker",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "select",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "structlog",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "structlog",
+        "description": "structlog",
+        "detail": "structlog",
+        "documentation": {}
+    },
+    {
+        "label": "uuid",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "uuid",
+        "description": "uuid",
+        "detail": "uuid",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "check_db_connection",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "close_db_connection",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "hash_password",
+        "importPath": "app.core.security.hashing",
+        "description": "app.core.security.hashing",
+        "isExtraImport": true,
+        "detail": "app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "verify_password",
+        "importPath": "app.core.security.hashing",
+        "description": "app.core.security.hashing",
+        "isExtraImport": true,
+        "detail": "app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "create_access_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "create_refresh_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "hash_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "verify_access_token",
+        "importPath": "app.core.security.jwt",
+        "description": "app.core.security.jwt",
+        "isExtraImport": true,
+        "detail": "app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "validate_email",
+        "importPath": "app.core.security.sanitizer",
+        "description": "app.core.security.sanitizer",
+        "isExtraImport": true,
+        "detail": "app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_display_name",
+        "importPath": "app.core.security.sanitizer",
+        "description": "app.core.security.sanitizer",
+        "isExtraImport": true,
+        "detail": "app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_password",
+        "importPath": "app.core.security.sanitizer",
+        "description": "app.core.security.sanitizer",
+        "isExtraImport": true,
+        "detail": "app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "is_safe_input",
+        "importPath": "app.core.security.sanitizer",
+        "description": "app.core.security.sanitizer",
+        "isExtraImport": true,
+        "detail": "app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "AUTH_LIMIT",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "rate_limit_exceeded_handler",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "RegisterRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RegisterResponse",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "LoginRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "LoginResponse",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RefreshTokenRequest",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RefreshTokenResponse",
+        "importPath": "app.api.v1.auth.schemas",
+        "description": "app.api.v1.auth.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "EmailStr",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "field_validator",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
         "documentation": {}
     },
     {
@@ -128,27 +635,216 @@
         "documentation": {}
     },
     {
-        "label": "create_async_engine",
-        "importPath": "sqlalchemy.ext.asyncio",
-        "description": "sqlalchemy.ext.asyncio",
+        "label": "HTTPBearer",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
         "isExtraImport": true,
-        "detail": "sqlalchemy.ext.asyncio",
+        "detail": "fastapi.security",
         "documentation": {}
     },
     {
-        "label": "AsyncSession",
-        "importPath": "sqlalchemy.ext.asyncio",
-        "description": "sqlalchemy.ext.asyncio",
+        "label": "HTTPAuthorizationCredentials",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
         "isExtraImport": true,
-        "detail": "sqlalchemy.ext.asyncio",
+        "detail": "fastapi.security",
         "documentation": {}
     },
     {
-        "label": "async_sessionmaker",
-        "importPath": "sqlalchemy.ext.asyncio",
-        "description": "sqlalchemy.ext.asyncio",
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
         "isExtraImport": true,
-        "detail": "sqlalchemy.ext.asyncio",
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_settings",
+        "importPath": "app.config",
+        "description": "app.config",
+        "isExtraImport": true,
+        "detail": "app.config",
+        "documentation": {}
+    },
+    {
+        "label": "JSONResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "JSONResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "RequestValidationError",
+        "importPath": "fastapi.exceptions",
+        "description": "fastapi.exceptions",
+        "isExtraImport": true,
+        "detail": "fastapi.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "RequestValidationError",
+        "importPath": "fastapi.exceptions",
+        "description": "fastapi.exceptions",
+        "isExtraImport": true,
+        "detail": "fastapi.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "SQLAlchemyError",
+        "importPath": "sqlalchemy.exc",
+        "description": "sqlalchemy.exc",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.exc",
+        "documentation": {}
+    },
+    {
+        "label": "SQLAlchemyError",
+        "importPath": "sqlalchemy.exc",
+        "description": "sqlalchemy.exc",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.exc",
+        "documentation": {}
+    },
+    {
+        "label": "traceback",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "traceback",
+        "description": "traceback",
+        "detail": "traceback",
+        "documentation": {}
+    },
+    {
+        "label": "Limiter",
+        "importPath": "slowapi",
+        "description": "slowapi",
+        "isExtraImport": true,
+        "detail": "slowapi",
+        "documentation": {}
+    },
+    {
+        "label": "_rate_limit_exceeded_handler",
+        "importPath": "slowapi",
+        "description": "slowapi",
+        "isExtraImport": true,
+        "detail": "slowapi",
+        "documentation": {}
+    },
+    {
+        "label": "get_remote_address",
+        "importPath": "slowapi.util",
+        "description": "slowapi.util",
+        "isExtraImport": true,
+        "detail": "slowapi.util",
+        "documentation": {}
+    },
+    {
+        "label": "RateLimitExceeded",
+        "importPath": "slowapi.errors",
+        "description": "slowapi.errors",
+        "isExtraImport": true,
+        "detail": "slowapi.errors",
+        "documentation": {}
+    },
+    {
+        "label": "RateLimitExceeded",
+        "importPath": "slowapi.errors",
+        "description": "slowapi.errors",
+        "isExtraImport": true,
+        "detail": "slowapi.errors",
+        "documentation": {}
+    },
+    {
+        "label": "PasswordHasher",
+        "importPath": "argon2",
+        "description": "argon2",
+        "isExtraImport": true,
+        "detail": "argon2",
+        "documentation": {}
+    },
+    {
+        "label": "VerifyMismatchError",
+        "importPath": "argon2.exceptions",
+        "description": "argon2.exceptions",
+        "isExtraImport": true,
+        "detail": "argon2.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "VerificationError",
+        "importPath": "argon2.exceptions",
+        "description": "argon2.exceptions",
+        "isExtraImport": true,
+        "detail": "argon2.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "InvalidHashError",
+        "importPath": "argon2.exceptions",
+        "description": "argon2.exceptions",
+        "isExtraImport": true,
+        "detail": "argon2.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "jwt",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "jwt",
+        "description": "jwt",
+        "detail": "jwt",
+        "documentation": {}
+    },
+    {
+        "label": "secrets",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "secrets",
+        "description": "secrets",
+        "detail": "secrets",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "html",
+        "description": "html",
+        "detail": "html",
         "documentation": {}
     },
     {
@@ -157,22 +853,6 @@
         "description": "sqlalchemy.orm",
         "isExtraImport": true,
         "detail": "sqlalchemy.orm",
-        "documentation": {}
-    },
-    {
-        "label": "text",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
-        "documentation": {}
-    },
-    {
-        "label": "event",
-        "importPath": "sqlalchemy",
-        "description": "sqlalchemy",
-        "isExtraImport": true,
-        "detail": "sqlalchemy",
         "documentation": {}
     },
     {
@@ -190,31 +870,6 @@
         "importPath": "asyncio",
         "description": "asyncio",
         "detail": "asyncio",
-        "documentation": {}
-    },
-    {
-        "label": "structlog",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "structlog",
-        "description": "structlog",
-        "detail": "structlog",
-        "documentation": {}
-    },
-    {
-        "label": "get_settings",
-        "importPath": "app.config",
-        "description": "app.config",
-        "isExtraImport": true,
-        "detail": "app.config",
-        "documentation": {}
-    },
-    {
-        "label": "get_settings",
-        "importPath": "app.config",
-        "description": "app.config",
-        "isExtraImport": true,
-        "detail": "app.config",
         "documentation": {}
     },
     {
@@ -275,19 +930,27 @@
         "documentation": {}
     },
     {
-        "label": "check_db_connection",
-        "importPath": "app.database.connection",
-        "description": "app.database.connection",
+        "label": "validation_exception_handler",
+        "importPath": "app.core.middleware.error_handler",
+        "description": "app.core.middleware.error_handler",
         "isExtraImport": true,
-        "detail": "app.database.connection",
+        "detail": "app.core.middleware.error_handler",
         "documentation": {}
     },
     {
-        "label": "close_db_connection",
-        "importPath": "app.database.connection",
-        "description": "app.database.connection",
+        "label": "sqlalchemy_exception_handler",
+        "importPath": "app.core.middleware.error_handler",
+        "description": "app.core.middleware.error_handler",
         "isExtraImport": true,
-        "detail": "app.database.connection",
+        "detail": "app.core.middleware.error_handler",
+        "documentation": {}
+    },
+    {
+        "label": "general_exception_handler",
+        "importPath": "app.core.middleware.error_handler",
+        "description": "app.core.middleware.error_handler",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.error_handler",
         "documentation": {}
     },
     {
@@ -309,12 +972,84 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.auth.router",
+        "description": "backend.app.api.v1.auth.router",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n@router.post(\"/register\", response_model=RegisterResponse)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    register_data: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"",
+        "detail": "backend.app.api.v1.auth.router",
+        "documentation": {}
+    },
+    {
         "label": "router",
         "kind": 5,
         "importPath": "backend.app.api.v1.auth.router",
         "description": "backend.app.api.v1.auth.router",
-        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def auth_health():\n    \"\"\"Check auth service is running.\"\"\"\n    return {\"status\": \"auth service running\"}",
+        "peekOfCode": "router = APIRouter()\n@router.post(\"/register\", response_model=RegisterResponse)\n@limiter.limit(AUTH_LIMIT)\nasync def register(\n    request: Request,\n    register_data: RegisterRequest,\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"\n    Register a new user account.",
         "detail": "backend.app.api.v1.auth.router",
+        "documentation": {}
+    },
+    {
+        "label": "RegisterRequest",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class RegisterRequest(BaseModel):\n    \"\"\"What user sends when registering.\"\"\"\n    email: EmailStr = Field(..., description=\"User email address\")\n    password: str = Field(..., min_length=8, max_length=128, description=\"User password\")\n    display_name: str = Field(..., min_length=2, max_length=100, description=\"Display name\")\n    @field_validator(\"password\")\n    @classmethod\n    def validate_password_strength(cls, v: str) -> str:\n        \"\"\"Validate password strength before even reaching backend.\"\"\"\n        if not re.search(r\"[A-Z]\", v):",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RegisterResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class RegisterResponse(BaseModel):\n    \"\"\"What user receives after successful registration.\"\"\"\n    success: bool\n    message: str\n    user_id: str\n    email: str\n    display_name: str\n    plan: str\nclass LoginRequest(BaseModel):\n    \"\"\"What user sends when logging in.\"\"\"",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "LoginRequest",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class LoginRequest(BaseModel):\n    \"\"\"What user sends when logging in.\"\"\"\n    email: EmailStr\n    password: str\nclass LoginResponse(BaseModel):\n    \"\"\"What user receives after successful login.\"\"\"\n    success: bool\n    access_token: str\n    refresh_token: str\n    token_type: str = \"bearer\"",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "LoginResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class LoginResponse(BaseModel):\n    \"\"\"What user receives after successful login.\"\"\"\n    success: bool\n    access_token: str\n    refresh_token: str\n    token_type: str = \"bearer\"\n    user: dict\nclass RefreshTokenRequest(BaseModel):\n    \"\"\"What user sends to get new access token.\"\"\"\n    refresh_token: str",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RefreshTokenRequest",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class RefreshTokenRequest(BaseModel):\n    \"\"\"What user sends to get new access token.\"\"\"\n    refresh_token: str\nclass RefreshTokenResponse(BaseModel):\n    \"\"\"What user receives after refreshing token.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\nclass UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "RefreshTokenResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class RefreshTokenResponse(BaseModel):\n    \"\"\"What user receives after refreshing token.\"\"\"\n    access_token: str\n    token_type: str = \"bearer\"\nclass UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str\n    email: str\n    display_name: str\n    plan: str",
+        "detail": "backend.app.api.v1.auth.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "UserResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.auth.schemas",
+        "description": "backend.app.api.v1.auth.schemas",
+        "peekOfCode": "class UserResponse(BaseModel):\n    \"\"\"User data returned to frontend.\"\"\"\n    id: str\n    email: str\n    display_name: str\n    plan: str\n    email_verified: bool\n    created_at: datetime",
+        "detail": "backend.app.api.v1.auth.schemas",
         "documentation": {}
     },
     {
@@ -360,6 +1095,393 @@
         "description": "backend.app.api.router",
         "peekOfCode": "api_router = APIRouter()\napi_router.include_router(auth_router,     prefix=\"/v1/auth\",     tags=[\"Authentication\"])\napi_router.include_router(snippets_router, prefix=\"/v1/snippets\", tags=[\"Snippets\"])\napi_router.include_router(notes_router,    prefix=\"/v1/notes\",    tags=[\"Notes\"])\napi_router.include_router(tasks_router,    prefix=\"/v1/tasks\",    tags=[\"Tasks\"])\napi_router.include_router(ai_router,       prefix=\"/v1/ai\",       tags=[\"AI Assistant\"])\napi_router.include_router(payments_router, prefix=\"/v1/payments\", tags=[\"Payments\"])",
         "detail": "backend.app.api.router",
+        "documentation": {}
+    },
+    {
+        "label": "TokenData",
+        "kind": 6,
+        "importPath": "backend.app.core.middleware.auth_guard",
+        "description": "backend.app.core.middleware.auth_guard",
+        "peekOfCode": "class TokenData:\n    \"\"\"Holds the verified token data for the current request.\"\"\"\n    def __init__(self, user_id: str, email: str, plan: str):\n        self.user_id = user_id\n        self.email = email\n        self.plan = plan\nasync def get_current_user(\n    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),\n    db: AsyncSession = Depends(get_db),\n) -> dict:",
+        "detail": "backend.app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
+        "label": "check_resource_ownership",
+        "kind": 2,
+        "importPath": "backend.app.core.middleware.auth_guard",
+        "description": "backend.app.core.middleware.auth_guard",
+        "peekOfCode": "def check_resource_ownership(resource_user_id: str, current_user_id: str) -> None:\n    \"\"\"\n    Verifies that the current user owns the resource they are trying to access.\n    Example: User A cannot access User B snippets.\n    Call this in every endpoint that accesses user-specific data.\n    Raises HTTP 403 if ownership check fails.\n    \"\"\"\n    if str(resource_user_id) != str(current_user_id):\n        logger.warning(\n            \"Unauthorized resource access attempt\",",
+        "detail": "backend.app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.auth_guard",
+        "description": "backend.app.core.middleware.auth_guard",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\n# HTTPBearer extracts JWT token from Authorization header automatically\nsecurity = HTTPBearer(auto_error=False)\nclass TokenData:\n    \"\"\"Holds the verified token data for the current request.\"\"\"\n    def __init__(self, user_id: str, email: str, plan: str):\n        self.user_id = user_id\n        self.email = email\n        self.plan = plan",
+        "detail": "backend.app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.auth_guard",
+        "description": "backend.app.core.middleware.auth_guard",
+        "peekOfCode": "settings = get_settings()\n# HTTPBearer extracts JWT token from Authorization header automatically\nsecurity = HTTPBearer(auto_error=False)\nclass TokenData:\n    \"\"\"Holds the verified token data for the current request.\"\"\"\n    def __init__(self, user_id: str, email: str, plan: str):\n        self.user_id = user_id\n        self.email = email\n        self.plan = plan\nasync def get_current_user(",
+        "detail": "backend.app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
+        "label": "security",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.auth_guard",
+        "description": "backend.app.core.middleware.auth_guard",
+        "peekOfCode": "security = HTTPBearer(auto_error=False)\nclass TokenData:\n    \"\"\"Holds the verified token data for the current request.\"\"\"\n    def __init__(self, user_id: str, email: str, plan: str):\n        self.user_id = user_id\n        self.email = email\n        self.plan = plan\nasync def get_current_user(\n    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),\n    db: AsyncSession = Depends(get_db),",
+        "detail": "backend.app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.error_handler",
+        "description": "backend.app.core.middleware.error_handler",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nasync def validation_exception_handler(\n    request: Request,\n    exc: RequestValidationError,\n) -> JSONResponse:\n    \"\"\"\n    Handles validation errors from Pydantic.\n    When user sends wrong data format.\n    Example: sending text where number expected.\n    \"\"\"",
+        "detail": "backend.app.core.middleware.error_handler",
+        "documentation": {}
+    },
+    {
+        "label": "rate_limit_exceeded_handler",
+        "kind": 2,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:\n    \"\"\"\n    Custom response when rate limit is exceeded.\n    Returns clear error message with retry information.\n    \"\"\"\n    logger.warning(\n        \"Rate limit exceeded\",\n        ip=get_remote_address(request),\n        path=request.url.path,\n        limit=str(exc.limit),",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n# Create limiter using IP address as the key\n# This means limits are per IP address\nlimiter = Limiter(\n    key_func=get_remote_address,\n    default_limits=[\"200/minute\"],\n)\ndef rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:\n    \"\"\"\n    Custom response when rate limit is exceeded.",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "limiter = Limiter(\n    key_func=get_remote_address,\n    default_limits=[\"200/minute\"],\n)\ndef rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:\n    \"\"\"\n    Custom response when rate limit is exceeded.\n    Returns clear error message with retry information.\n    \"\"\"\n    logger.warning(",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "AUTH_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "AUTH_LIMIT = \"10/minute\"\n# Strict - for password reset\nRESET_LIMIT = \"5/hour\"\n# Standard - for regular API calls\nAPI_LIMIT = \"100/minute\"\n# AI limit - expensive operations\nAI_LIMIT = \"30/minute\"\n# Search limit\nSEARCH_LIMIT = \"60/minute\"",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "RESET_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "RESET_LIMIT = \"5/hour\"\n# Standard - for regular API calls\nAPI_LIMIT = \"100/minute\"\n# AI limit - expensive operations\nAI_LIMIT = \"30/minute\"\n# Search limit\nSEARCH_LIMIT = \"60/minute\"",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "API_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "API_LIMIT = \"100/minute\"\n# AI limit - expensive operations\nAI_LIMIT = \"30/minute\"\n# Search limit\nSEARCH_LIMIT = \"60/minute\"",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "AI_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "AI_LIMIT = \"30/minute\"\n# Search limit\nSEARCH_LIMIT = \"60/minute\"",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "SEARCH_LIMIT",
+        "kind": 5,
+        "importPath": "backend.app.core.middleware.rate_limiter",
+        "description": "backend.app.core.middleware.rate_limiter",
+        "peekOfCode": "SEARCH_LIMIT = \"60/minute\"",
+        "detail": "backend.app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "hash_password",
+        "kind": 2,
+        "importPath": "backend.app.core.security.hashing",
+        "description": "backend.app.core.security.hashing",
+        "peekOfCode": "def hash_password(password: str) -> str:\n    \"\"\"\n    Converts plain password to secure hash.\n    Example:\n        hash_password(\"hello123\")\n        Returns: \"$argon2id$v=19$m=65536,t=3,p=1$...\"\n    The hash is different every time even for same password.\n    This prevents rainbow table attacks.\n    \"\"\"\n    return ph.hash(password)",
+        "detail": "backend.app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "verify_password",
+        "kind": 2,
+        "importPath": "backend.app.core.security.hashing",
+        "description": "backend.app.core.security.hashing",
+        "peekOfCode": "def verify_password(plain_password: str, hashed_password: str) -> bool:\n    \"\"\"\n    Checks if plain password matches the stored hash.\n    Returns True if password is correct.\n    Returns False if password is wrong.\n    Never raises an exception to the caller.\n    \"\"\"\n    try:\n        return ph.verify(hashed_password, plain_password)\n    except VerifyMismatchError:",
+        "detail": "backend.app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "needs_rehash",
+        "kind": 2,
+        "importPath": "backend.app.core.security.hashing",
+        "description": "backend.app.core.security.hashing",
+        "peekOfCode": "def needs_rehash(hashed_password: str) -> bool:\n    \"\"\"\n    Checks if password hash needs to be upgraded.\n    If we increase security settings in future,\n    old hashes will be automatically upgraded on next login.\n    \"\"\"\n    return ph.check_needs_rehash(hashed_password)",
+        "detail": "backend.app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.security.hashing",
+        "description": "backend.app.core.security.hashing",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n# Configure Argon2id with strong settings\n# time_cost=3 means 3 iterations\n# memory_cost=65536 means 64MB of memory used\n# parallelism=1 means 1 thread\n# These settings make brute force attacks extremely slow\nph = PasswordHasher(\n    time_cost=3,\n    memory_cost=65536,\n    parallelism=1,",
+        "detail": "backend.app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "ph",
+        "kind": 5,
+        "importPath": "backend.app.core.security.hashing",
+        "description": "backend.app.core.security.hashing",
+        "peekOfCode": "ph = PasswordHasher(\n    time_cost=3,\n    memory_cost=65536,\n    parallelism=1,\n    hash_len=32,\n    salt_len=16,\n)\ndef hash_password(password: str) -> str:\n    \"\"\"\n    Converts plain password to secure hash.",
+        "detail": "backend.app.core.security.hashing",
+        "documentation": {}
+    },
+    {
+        "label": "create_access_token",
+        "kind": 2,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "def create_access_token(user_id: str, email: str, plan: str = \"free\") -> str:\n    \"\"\"\n    Creates a short-lived access token (15 minutes).\n    Contains:\n    - user_id: who this token belongs to\n    - email: user email\n    - plan: free or pro\n    - exp: when it expires\n    - iat: when it was created\n    - type: access (to distinguish from refresh)",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "create_refresh_token",
+        "kind": 2,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "def create_refresh_token() -> tuple[str, str]:\n    \"\"\"\n    Creates a long-lived refresh token (30 days).\n    Returns tuple of:\n    - raw_token: sent to user (stored in httpOnly cookie)\n    - token_hash: stored in database (never store raw token)\n    We hash the refresh token before storing in database.\n    If database is breached, attacker cannot use the hashes.\n    \"\"\"\n    raw_token = secrets.token_urlsafe(64)",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "verify_access_token",
+        "kind": 2,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "def verify_access_token(token: str) -> Optional[dict]:\n    \"\"\"\n    Verifies access token and returns payload if valid.\n    Returns None if:\n    - Token is expired\n    - Token is tampered with\n    - Token is invalid format\n    \"\"\"\n    try:\n        payload = jwt.decode(",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "hash_token",
+        "kind": 2,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "def hash_token(raw_token: str) -> str:\n    \"\"\"\n    Hashes a raw token using SHA256.\n    Used to verify refresh tokens stored in database.\n    \"\"\"\n    return hashlib.sha256(raw_token.encode()).hexdigest()\ndef extract_token_from_header(authorization: str) -> Optional[str]:\n    \"\"\"\n    Extracts JWT token from Authorization header.\n    Header format: \"Bearer eyJhbGciOiJ...\"",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "extract_token_from_header",
+        "kind": 2,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "def extract_token_from_header(authorization: str) -> Optional[str]:\n    \"\"\"\n    Extracts JWT token from Authorization header.\n    Header format: \"Bearer eyJhbGciOiJ...\"\n    Returns just the token part.\n    \"\"\"\n    if not authorization:\n        return None\n    parts = authorization.split(\" \")\n    if len(parts) != 2 or parts[0].lower() != \"bearer\":",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\ndef create_access_token(user_id: str, email: str, plan: str = \"free\") -> str:\n    \"\"\"\n    Creates a short-lived access token (15 minutes).\n    Contains:\n    - user_id: who this token belongs to\n    - email: user email\n    - plan: free or pro\n    - exp: when it expires",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "kind": 5,
+        "importPath": "backend.app.core.security.jwt",
+        "description": "backend.app.core.security.jwt",
+        "peekOfCode": "settings = get_settings()\ndef create_access_token(user_id: str, email: str, plan: str = \"free\") -> str:\n    \"\"\"\n    Creates a short-lived access token (15 minutes).\n    Contains:\n    - user_id: who this token belongs to\n    - email: user email\n    - plan: free or pro\n    - exp: when it expires\n    - iat: when it was created",
+        "detail": "backend.app.core.security.jwt",
+        "documentation": {}
+    },
+    {
+        "label": "sanitize_string",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def sanitize_string(value: str, max_length: int = 1000) -> str:\n    \"\"\"\n    Cleans a string by:\n    1. Stripping leading/trailing whitespace\n    2. HTML encoding dangerous characters\n    3. Limiting length\n    Use for: descriptions, notes, any free text\n    \"\"\"\n    if not value:\n        return \"\"",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_email",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def validate_email(email: str) -> Optional[str]:\n    \"\"\"\n    Validates email format.\n    Returns cleaned email or None if invalid.\n    \"\"\"\n    if not email:\n        return None\n    email = email.strip().lower()\n    if len(email) > 255:\n        return None",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_password",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def validate_password(password: str) -> tuple[bool, str]:\n    \"\"\"\n    Validates password strength.\n    Returns (is_valid, error_message).\n    Requirements:\n    - Minimum 8 characters\n    - At least 1 uppercase letter\n    - At least 1 lowercase letter\n    - At least 1 number\n    - At least 1 special character",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_display_name",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def validate_display_name(name: str) -> Optional[str]:\n    \"\"\"\n    Validates display name.\n    Returns cleaned name or None if invalid.\n    \"\"\"\n    if not name:\n        return None\n    name = name.strip()\n    if len(name) < 2:\n        return None",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_snippet_title",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def validate_snippet_title(title: str) -> Optional[str]:\n    \"\"\"\n    Validates snippet title.\n    Returns cleaned title or None if invalid.\n    \"\"\"\n    if not title:\n        return None\n    title = title.strip()\n    if len(title) < 1:\n        return None",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "validate_tag",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def validate_tag(tag: str) -> Optional[str]:\n    \"\"\"\n    Validates tag name.\n    Tags can only contain letters, numbers, and hyphens.\n    Returns cleaned tag or None if invalid.\n    \"\"\"\n    if not tag:\n        return None\n    tag = tag.strip().lower()\n    if len(tag) > 50:",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "check_sql_injection",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def check_sql_injection(value: str) -> bool:\n    \"\"\"\n    Checks if value contains SQL injection patterns.\n    Returns True if suspicious (block the request).\n    Returns False if safe.\n    Note: We use SQLAlchemy ORM which already prevents\n    SQL injection. This is an extra safety layer.\n    \"\"\"\n    value_upper = value.upper()\n    for pattern in SQL_INJECTION_PATTERNS:",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "check_xss",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def check_xss(value: str) -> bool:\n    \"\"\"\n    Checks if value contains XSS attack patterns.\n    Returns True if suspicious (block the request).\n    Returns False if safe.\n    \"\"\"\n    for pattern in XSS_PATTERNS:\n        if re.search(pattern, value, re.IGNORECASE):\n            logger.warning(\n                \"XSS attempt detected\",",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "is_safe_input",
+        "kind": 2,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "def is_safe_input(value: str) -> bool:\n    \"\"\"\n    Master safety check.\n    Returns True if input is safe to process.\n    Returns False if any attack pattern detected.\n    \"\"\"\n    if check_sql_injection(value):\n        return False\n    if check_xss(value):\n        return False",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n# --- Allowed characters for different field types ---\nSAFE_TEXT_PATTERN = re.compile(r\"^[\\w\\s\\-.,!?@#$%^&*()\\[\\]{}<>:;\\\"\\'`~+=|/\\\\]+$\")\nSAFE_NAME_PATTERN = re.compile(r\"^[\\w\\s\\-.,]+$\")\nSAFE_TAG_PATTERN = re.compile(r\"^[\\w\\-]+$\")\nEMAIL_PATTERN = re.compile(r\"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$\")\nURL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "SAFE_TEXT_PATTERN",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "SAFE_TEXT_PATTERN = re.compile(r\"^[\\w\\s\\-.,!?@#$%^&*()\\[\\]{}<>:;\\\"\\'`~+=|/\\\\]+$\")\nSAFE_NAME_PATTERN = re.compile(r\"^[\\w\\s\\-.,]+$\")\nSAFE_TAG_PATTERN = re.compile(r\"^[\\w\\-]+$\")\nEMAIL_PATTERN = re.compile(r\"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$\")\nURL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"\n    r\"\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n    r\"(?::\\d+)?\"",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "SAFE_NAME_PATTERN",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "SAFE_NAME_PATTERN = re.compile(r\"^[\\w\\s\\-.,]+$\")\nSAFE_TAG_PATTERN = re.compile(r\"^[\\w\\-]+$\")\nEMAIL_PATTERN = re.compile(r\"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$\")\nURL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"\n    r\"\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n    r\"(?::\\d+)?\"\n    r\"(?:/?|[/?]\\S+)$\",",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "SAFE_TAG_PATTERN",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "SAFE_TAG_PATTERN = re.compile(r\"^[\\w\\-]+$\")\nEMAIL_PATTERN = re.compile(r\"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$\")\nURL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"\n    r\"\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n    r\"(?::\\d+)?\"\n    r\"(?:/?|[/?]\\S+)$\",\n    re.IGNORECASE,",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_PATTERN",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "EMAIL_PATTERN = re.compile(r\"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$\")\nURL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"\n    r\"\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n    r\"(?::\\d+)?\"\n    r\"(?:/?|[/?]\\S+)$\",\n    re.IGNORECASE,\n)",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "URL_PATTERN",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "URL_PATTERN = re.compile(\n    r\"^https?://\"\n    r\"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+[A-Z]{2,6}\\.?|\"\n    r\"localhost|\"\n    r\"\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"\n    r\"(?::\\d+)?\"\n    r\"(?:/?|[/?]\\S+)$\",\n    re.IGNORECASE,\n)\n# --- Dangerous SQL patterns to block ---",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "SQL_INJECTION_PATTERNS",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "SQL_INJECTION_PATTERNS = [\n    r\"(\\bUNION\\b.*\\bSELECT\\b)\",\n    r\"(\\bDROP\\b.*\\bTABLE\\b)\",\n    r\"(\\bDELETE\\b.*\\bFROM\\b)\",\n    r\"(\\bINSERT\\b.*\\bINTO\\b)\",\n    r\"(\\bEXEC\\b|\\bEXECUTE\\b)\",\n    r\"(--|\\#|\\/\\*|\\*\\/)\",\n    r\"(\\bOR\\b\\s+\\d+\\s*=\\s*\\d+)\",\n    r\"(\\bAND\\b\\s+\\d+\\s*=\\s*\\d+)\",\n    r\"(xp_cmdshell|sp_executesql)\",",
+        "detail": "backend.app.core.security.sanitizer",
+        "documentation": {}
+    },
+    {
+        "label": "XSS_PATTERNS",
+        "kind": 5,
+        "importPath": "backend.app.core.security.sanitizer",
+        "description": "backend.app.core.security.sanitizer",
+        "peekOfCode": "XSS_PATTERNS = [\n    r\"<script[^>]*>.*?</script>\",\n    r\"javascript:\",\n    r\"on\\w+\\s*=\",\n    r\"<iframe[^>]*>\",\n    r\"<object[^>]*>\",\n    r\"<embed[^>]*>\",\n    r\"vbscript:\",\n    r\"data:text/html\",\n]",
+        "detail": "backend.app.core.security.sanitizer",
         "documentation": {}
     },
     {
@@ -799,7 +1921,7 @@
         "kind": 5,
         "importPath": "backend.app.main",
         "description": "backend.app.main",
-        "peekOfCode": "settings = get_settings()\nlogger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Startup and shutdown events.\n    startup: verify database, initialize monitoring\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---",
+        "peekOfCode": "settings = get_settings()\nlogger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"Startup and shutdown events.\"\"\"\n    # --- STARTUP ---\n    logger.info(\n        \"Starting FlowDesk\",\n        version=settings.APP_VERSION,\n        debug=settings.DEBUG,",
         "detail": "backend.app.main",
         "documentation": {}
     },
@@ -808,7 +1930,7 @@
         "kind": 5,
         "importPath": "backend.app.main",
         "description": "backend.app.main",
-        "peekOfCode": "logger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"\n    Startup and shutdown events.\n    startup: verify database, initialize monitoring\n    shutdown: close connections cleanly\n    \"\"\"\n    # --- STARTUP ---\n    logger.info(",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    \"\"\"Startup and shutdown events.\"\"\"\n    # --- STARTUP ---\n    logger.info(\n        \"Starting FlowDesk\",\n        version=settings.APP_VERSION,\n        debug=settings.DEBUG,\n    )",
         "detail": "backend.app.main",
         "documentation": {}
     },
@@ -817,7 +1939,16 @@
         "kind": 5,
         "importPath": "backend.app.main",
         "description": "backend.app.main",
-        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"The Unified Developer Workspace API\",\n    docs_url=\"/docs\" if settings.DEBUG else None,\n    redoc_url=\"/redoc\" if settings.DEBUG else None,\n    lifespan=lifespan,\n)\n# --- Security Middleware ---\n# Only allow requests from our own domains",
+        "peekOfCode": "app = FastAPI(\n    title=settings.APP_NAME,\n    version=settings.APP_VERSION,\n    description=\"The Unified Developer Workspace API\",\n    docs_url=\"/docs\" if settings.DEBUG else None,\n    redoc_url=\"/redoc\" if settings.DEBUG else None,\n    lifespan=lifespan,\n)\n# --- Attach rate limiter to app ---\napp.state.limiter = limiter",
+        "detail": "backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "app.state.limiter",
+        "kind": 5,
+        "importPath": "backend.app.main",
+        "description": "backend.app.main",
+        "peekOfCode": "app.state.limiter = limiter\n# --- Exception Handlers ---\napp.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)\napp.add_exception_handler(RequestValidationError, validation_exception_handler)\napp.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)\napp.add_exception_handler(Exception, general_exception_handler)\n# --- Security Middleware ---\nif not settings.DEBUG:\n    app.add_middleware(\n        TrustedHostMiddleware,",
         "detail": "backend.app.main",
         "documentation": {}
     },
