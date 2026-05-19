@@ -80,6 +80,46 @@
         "documentation": {}
     },
     {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Query",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "APIRouter",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -192,6 +232,14 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "create_async_engine",
         "importPath": "sqlalchemy.ext.asyncio",
         "description": "sqlalchemy.ext.asyncio",
@@ -224,12 +272,28 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "structlog",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "structlog",
         "description": "structlog",
         "detail": "structlog",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
         "documentation": {}
     },
     {
@@ -329,6 +393,14 @@
         "documentation": {}
     },
     {
+        "label": "get_current_user",
+        "importPath": "app.core.middleware.auth_guard",
+        "description": "app.core.middleware.auth_guard",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
         "label": "limiter",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
@@ -338,6 +410,22 @@
     },
     {
         "label": "AUTH_LIMIT",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "API_LIMIT",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
         "isExtraImport": true,
@@ -385,7 +473,47 @@
         "documentation": {}
     },
     {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "field_validator",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -418,6 +546,22 @@
     },
     {
         "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -431,6 +575,142 @@
         "importPath": "re",
         "description": "re",
         "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetCreate",
+        "importPath": "app.api.v1.snippets.schemas",
+        "description": "app.api.v1.snippets.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetUpdate",
+        "importPath": "app.api.v1.snippets.schemas",
+        "description": "app.api.v1.snippets.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "create_snippet",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_snippets",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_snippet_by_id",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "update_snippet",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "delete_snippet",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "increment_use_count",
+        "importPath": "app.services.snippet_service",
+        "description": "app.services.snippet_service",
+        "isExtraImport": true,
+        "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
         "documentation": {}
     },
     {
@@ -523,6 +803,14 @@
     },
     {
         "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -766,54 +1054,6 @@
         "documentation": {}
     },
     {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
         "label": "html",
         "kind": 6,
         "isExtraImport": true,
@@ -885,6 +1125,23 @@
         "description": "app.constants",
         "isExtraImport": true,
         "detail": "app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "FREE_TIER_SNIPPET_LIMIT",
+        "importPath": "app.constants",
+        "description": "app.constants",
+        "isExtraImport": true,
+        "detail": "app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
         "documentation": {}
     },
     {
@@ -1086,12 +1343,75 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.snippets.router",
+        "description": "backend.app.api.v1.snippets.router",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n@router.post(\"/\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(API_LIMIT)\nasync def create(\n    request: Request,\n    body: SnippetCreate,\n    current_user: dict = Depends(get_current_user),\n    db: AsyncSession = Depends(get_db),\n):",
+        "detail": "backend.app.api.v1.snippets.router",
+        "documentation": {}
+    },
+    {
         "label": "router",
         "kind": 5,
         "importPath": "backend.app.api.v1.snippets.router",
         "description": "backend.app.api.v1.snippets.router",
-        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def snippets_health():\n    \"\"\"Check snippets service is running.\"\"\"\n    return {\"status\": \"snippets service running\"}",
+        "peekOfCode": "router = APIRouter()\n@router.post(\"/\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(API_LIMIT)\nasync def create(\n    request: Request,\n    body: SnippetCreate,\n    current_user: dict = Depends(get_current_user),\n    db: AsyncSession = Depends(get_db),\n):\n    \"\"\"",
         "detail": "backend.app.api.v1.snippets.router",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "class SnippetCreate(BaseModel):\n    \"\"\"Schema for creating a new snippet.\"\"\"\n    title: str\n    code: str\n    language: str\n    description: Optional[str] = None\n    tags: Optional[List[str]] = []\n    is_public: bool = False\n    collection_id: Optional[str] = None\n    @field_validator(\"title\")",
+        "detail": "backend.app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetUpdate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "class SnippetUpdate(BaseModel):\n    \"\"\"Schema for updating an existing snippet. All fields optional.\"\"\"\n    title: Optional[str] = None\n    code: Optional[str] = None\n    language: Optional[str] = None\n    description: Optional[str] = None\n    is_public: Optional[bool] = None\n    is_pinned: Optional[bool] = None\n    tags: Optional[List[str]] = None\n    collection_id: Optional[str] = None",
+        "detail": "backend.app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "class SnippetResponse(BaseModel):\n    \"\"\"Schema for snippet data returned to frontend.\"\"\"\n    id: str\n    user_id: str\n    title: str\n    code: str\n    language: str\n    description: Optional[str]\n    is_public: bool\n    is_pinned: bool",
+        "detail": "backend.app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetListResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "class SnippetListResponse(BaseModel):\n    \"\"\"Schema for paginated list of snippets.\"\"\"\n    snippets: List[SnippetResponse]\n    total: int\n    page: int\n    page_size: int\n    has_more: bool\nclass SnippetSearchResponse(BaseModel):\n    \"\"\"Schema for search results.\"\"\"\n    snippets: List[SnippetResponse]",
+        "detail": "backend.app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SnippetSearchResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "class SnippetSearchResponse(BaseModel):\n    \"\"\"Schema for search results.\"\"\"\n    snippets: List[SnippetResponse]\n    total: int\n    query: str\n    search_time_ms: float",
+        "detail": "backend.app.api.v1.snippets.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "SUPPORTED_LANGUAGES",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.snippets.schemas",
+        "description": "backend.app.api.v1.snippets.schemas",
+        "peekOfCode": "SUPPORTED_LANGUAGES = [\n    \"python\", \"javascript\", \"typescript\", \"rust\", \"go\",\n    \"java\", \"cpp\", \"c\", \"csharp\", \"php\", \"ruby\", \"swift\",\n    \"kotlin\", \"sql\", \"html\", \"css\", \"bash\", \"shell\",\n    \"json\", \"yaml\", \"markdown\", \"xml\", \"docker\",\n    \"terraform\", \"graphql\", \"r\", \"scala\", \"haskell\", \"other\"\n]\nclass SnippetCreate(BaseModel):\n    \"\"\"Schema for creating a new snippet.\"\"\"\n    title: str",
+        "detail": "backend.app.api.v1.snippets.schemas",
         "documentation": {}
     },
     {
@@ -1569,6 +1889,15 @@
         "description": "backend.app.services.auth_service",
         "peekOfCode": "settings = get_settings()\nasync def register_user(\n    db: AsyncSession,\n    email: str,\n    password: str,\n    display_name: str,\n    ip_address: str = None,\n) -> dict:\n    \"\"\"\n    Creates a new user account.",
         "detail": "backend.app.services.auth_service",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.services.snippet_service",
+        "description": "backend.app.services.snippet_service",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nasync def get_user_snippet_count(db: AsyncSession, user_id: str) -> int:\n    \"\"\"Returns total active snippets for a user.\"\"\"\n    result = await db.execute(\n        text(\"SELECT COUNT(*) FROM snippets WHERE user_id = :user_id AND deleted_at IS NULL\"),\n        {\"user_id\": user_id}\n    )\n    return result.scalar() or 0\nasync def create_snippet(\n    db: AsyncSession,",
+        "detail": "backend.app.services.snippet_service",
         "documentation": {}
     },
     {
