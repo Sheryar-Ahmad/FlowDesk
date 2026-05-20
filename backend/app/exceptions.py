@@ -1,9 +1,5 @@
 """
 exceptions.py - Custom Error Messages for FlowDesk
-----------------------------------------------------
-Instead of showing users ugly Python errors like "KeyError: user_id",
-we create our own clear, helpful error messages.
-Example: "User not found" instead of a confusing crash.
 """
 
 from fastapi import HTTPException, status
