@@ -1,9 +1,6 @@
 """
 constants.py - Fixed Values Used Across FlowDesk
 --------------------------------------------------
-These are numbers and strings that never change.
-Instead of writing "50" everywhere in the code,
-we write FREE_TIER_SNIPPET_LIMIT and change it in one place if needed.
 """
 
 # --- Free Tier Limits ---
