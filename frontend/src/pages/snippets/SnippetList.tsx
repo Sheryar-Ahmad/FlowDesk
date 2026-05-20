@@ -1,25 +1,28 @@
 /**
- * SnippetList.tsx - The Beast Mode Snippet Manager
- * -------------------------------------------------
- * Features:
- * - Real-time search as you type
- * - Monaco Editor (VS Code in browser)
- * - Language filter with icons
- * - Create, Edit, Delete, Pin snippets
- * - One-click copy with animation
- * - Tag system
- * - Beautiful dark UI
- * - Keyboard shortcuts
- * - Smooth animations
+ * SnippetList.tsx - Beast Mode Snippet Manager
+ * ----------------------------------------------
+ * Most addictive snippet manager ever built.
+ * Features that keep users coming back every day:
+ * - Keyboard shortcuts (Ctrl+K, Ctrl+M, Escape)
+ * - Real-time search with instant results
+ * - Monaco Editor with full VS Code experience
+ * - One-click copy with satisfying animation
+ * - Pin favorites to top
+ * - Language filter with colors
+ * - Export snippet as file
+ * - Share public snippets
+ * - Usage statistics
+ * - Smooth animations everywhere
  */
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import Editor from "@monaco-editor/react"
 import {
   Search, Plus, Copy, Trash2, Pin, PinOff, Code2,
-  ChevronDown, X, Check, Loader2, Tag, Globe, Lock,
-  FileCode, Edit3, Save, ArrowLeft
+  X, Check, Loader2, Tag, Globe, Lock, FileCode,
+  Edit3, Save, ArrowLeft, Download, Share2,
+  BarChart2, Star, Zap, Filter
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import {
@@ -27,11 +30,11 @@ import {
   deleteSnippet, copySnippet
 } from "../../services/api/snippets.api"
 import type { Snippet, CreateSnippetData } from "../../services/api/snippets.api"
+import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
 
-// Language options with colors
 const LANGUAGES = [
-  { value: "all", label: "All Languages", color: "#6366f1" },
+  { value: "all", label: "All", color: "#6366f1" },
   { value: "python", label: "Python", color: "#3776ab" },
   { value: "javascript", label: "JavaScript", color: "#f7df1e" },
   { value: "typescript", label: "TypeScript", color: "#3178c6" },
@@ -46,53 +49,60 @@ const LANGUAGES = [
   { value: "other", label: "Other", color: "#6b7280" },
 ]
 
-const getLangColor = (lang: string) => {
-  return LANGUAGES.find(l => l.value === lang)?.color || "#6b7280"
-}
+const getLangColor = (lang: string) => LANGUAGES.find(l => l.value === lang)?.color || "#6b7280"
 
-// Empty snippet form
 const emptyForm: CreateSnippetData = {
-  title: "",
-  code: "",
-  language: "python",
-  description: "",
-  tags: [],
-  is_public: false,
+  title: "", code: "", language: "python",
+  description: "", tags: [], is_public: false,
 }
 
 export default function SnippetList() {
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const searchRef = useRef<HTMLInputElement>(null)
 
-  // State
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [selectedLang, setSelectedLang] = useState("all")
+  const [sortBy, setSortBy] = useState<"newest"|"most_used"|"pinned">("newest")
   const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const [form, setForm] = useState<CreateSnippetData>(emptyForm)
   const [tagInput, setTagInput] = useState("")
   const [saving, setSaving] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [searchTimeout, setSearchTimeout] = useState<any>(null)
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) navigate("/login")
   }, [isAuthenticated, navigate])
 
-  // Load snippets
-  const loadSnippets = useCallback(async (searchQuery?: string, lang?: string) => {
+  // Keyboard shortcuts - makes users addicted
+  useKeyboard({
+    "ctrl+k": () => searchRef.current?.focus(),
+    "ctrl+m": () => { setForm(emptyForm); setShowCreateModal(true) },
+    "escape": () => { setShowCreateModal(false); setShowEditModal(false); setShowStats(false) },
+  })
+
+  const loadSnippets = useCallback(async (searchQuery?: string, lang?: string, sort?: string) => {
     setLoading(true)
     try {
-      const params: any = { page: 1, page_size: 50 }
+      const params: any = { page: 1, page_size: 100 }
       if (searchQuery && searchQuery.length >= 2) params.search = searchQuery
       if (lang && lang !== "all") params.language = lang
       const data = await getSnippets(params)
-      setSnippets(data.snippets || [])
+      let sorted = data.snippets || []
+
+      // Client side sorting
+      if (sort === "most_used") sorted = [...sorted].sort((a, b) => b.use_count - a.use_count)
+      else if (sort === "pinned") sorted = [...sorted].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
+      else sorted = [...sorted].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+      setSnippets(sorted)
       setTotal(data.total || 0)
     } catch (err) {
       toast.error("Failed to load snippets")
@@ -101,65 +111,87 @@ export default function SnippetList() {
     }
   }, [])
 
-  useEffect(() => {
-    loadSnippets()
-  }, [loadSnippets])
+  useEffect(() => { loadSnippets() }, [loadSnippets])
 
-  // Real-time search with debounce
   const handleSearch = (value: string) => {
     setSearch(value)
     if (searchTimeout) clearTimeout(searchTimeout)
-    const timeout = setTimeout(() => {
-      loadSnippets(value, selectedLang)
-    }, 300)
+    const timeout = setTimeout(() => loadSnippets(value, selectedLang, sortBy), 300)
     setSearchTimeout(timeout)
   }
 
-  // Language filter
   const handleLangFilter = (lang: string) => {
     setSelectedLang(lang)
-    loadSnippets(search, lang)
+    loadSnippets(search, lang, sortBy)
   }
 
-  // Copy snippet
+  const handleSort = (sort: "newest"|"most_used"|"pinned") => {
+    setSortBy(sort)
+    loadSnippets(search, selectedLang, sort)
+  }
+
   const handleCopy = async (snippet: Snippet) => {
     await navigator.clipboard.writeText(snippet.code)
-    await copySnippet(snippet.id)
+    await copySnippet(snippet.id).catch(() => {})
     setCopiedId(snippet.id)
-    toast.success("Copied to clipboard!")
+    toast.success("Copied to clipboard!", { icon: "??" })
     setTimeout(() => setCopiedId(null), 2000)
+    // Update use count locally
+    setSnippets(prev => prev.map(s => s.id === snippet.id ? {...s, use_count: s.use_count + 1} : s))
   }
 
-  // Add tag
-  const handleAddTag = () => {
-    const tag = tagInput.trim().toLowerCase()
-    if (!tag) return
-    if (form.tags && form.tags.length >= 10) {
-      toast.error("Maximum 10 tags allowed")
+  const handleExport = (snippet: Snippet) => {
+    const extensions: Record<string, string> = {
+      python: "py", javascript: "js", typescript: "ts",
+      rust: "rs", go: "go", java: "java", cpp: "cpp",
+      sql: "sql", html: "html", css: "css", bash: "sh",
+    }
+    const ext = extensions[snippet.language] || "txt"
+    const blob = new Blob([snippet.code], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${snippet.title.replace(/\s+/g, "_")}.${ext}`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success("Snippet exported!", { icon: "??" })
+  }
+
+  const handleShare = async (snippet: Snippet) => {
+    if (!snippet.is_public) {
+      toast.error("Make snippet public first to share it")
       return
     }
+    const url = `${window.location.origin}/snippets/public/${snippet.id}`
+    await navigator.clipboard.writeText(url)
+    toast.success("Share link copied!", { icon: "??" })
+  }
+
+  const handleAddTag = () => {
+    const tag = tagInput.trim().toLowerCase().replace(/[^a-z0-9\-]/g, "")
+    if (!tag) return
+    if (form.tags && form.tags.length >= 10) { toast.error("Max 10 tags"); return }
     if (form.tags && !form.tags.includes(tag)) {
       setForm({ ...form, tags: [...(form.tags || []), tag] })
     }
     setTagInput("")
   }
 
-  // Remove tag
   const handleRemoveTag = (tag: string) => {
     setForm({ ...form, tags: form.tags?.filter(t => t !== tag) || [] })
   }
 
-  // Create snippet
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error("Title is required"); return }
     if (!form.code.trim()) { toast.error("Code is required"); return }
     setSaving(true)
     try {
-      await createSnippet(form)
-      toast.success("Snippet created!")
+      const result = await createSnippet(form)
+      toast.success("Snippet created! ??")
       setShowCreateModal(false)
       setForm(emptyForm)
-      loadSnippets(search, selectedLang)
+      loadSnippets(search, selectedLang, sortBy)
+      setSelectedSnippet(result.snippet)
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to create snippet")
     } finally {
@@ -167,15 +199,11 @@ export default function SnippetList() {
     }
   }
 
-  // Edit snippet
   const handleEditOpen = (snippet: Snippet) => {
     setForm({
-      title: snippet.title,
-      code: snippet.code,
-      language: snippet.language,
-      description: snippet.description || "",
-      tags: snippet.tags || [],
-      is_public: snippet.is_public,
+      title: snippet.title, code: snippet.code,
+      language: snippet.language, description: snippet.description || "",
+      tags: snippet.tags || [], is_public: snippet.is_public,
     })
     setSelectedSnippet(snippet)
     setShowEditModal(true)
@@ -185,99 +213,151 @@ export default function SnippetList() {
     if (!selectedSnippet) return
     setSaving(true)
     try {
-      await updateSnippet(selectedSnippet.id, form)
-      toast.success("Snippet updated!")
+      const result = await updateSnippet(selectedSnippet.id, form)
+      toast.success("Snippet updated! ?")
       setShowEditModal(false)
-      loadSnippets(search, selectedLang)
+      loadSnippets(search, selectedLang, sortBy)
+      setSelectedSnippet(result.snippet)
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to update snippet")
+      toast.error(err.response?.data?.detail || "Failed to update")
     } finally {
       setSaving(false)
     }
   }
 
-  // Delete snippet
   const handleDelete = async (snippet: Snippet) => {
-    if (!confirm(`Delete "${snippet.title}"? You can recover it within 30 days.`)) return
+    if (!confirm(`Delete "${snippet.title}"? Recoverable for 30 days.`)) return
     try {
       await deleteSnippet(snippet.id)
       toast.success("Snippet deleted")
       if (selectedSnippet?.id === snippet.id) setSelectedSnippet(null)
-      loadSnippets(search, selectedLang)
+      loadSnippets(search, selectedLang, sortBy)
     } catch (err) {
       toast.error("Failed to delete snippet")
     }
   }
 
-  // Pin snippet
   const handlePin = async (snippet: Snippet) => {
     try {
-      await updateSnippet(snippet.id, { is_pinned: !snippet.is_pinned } as any)
-      toast.success(snippet.is_pinned ? "Unpinned" : "Pinned!")
-      loadSnippets(search, selectedLang)
+      await updateSnippet(snippet.id, { is_pinned: !snippet.is_pinned })
+      toast.success(snippet.is_pinned ? "Unpinned" : "Pinned! ??")
+      loadSnippets(search, selectedLang, sortBy)
     } catch (err) {
-      toast.error("Failed to update snippet")
+      toast.error("Failed to update")
     }
   }
+
+  // Stats
+  const totalCopies = snippets.reduce((sum, s) => sum + s.use_count, 0)
+  const topLanguage = snippets.length > 0
+    ? Object.entries(snippets.reduce((acc: any, s) => { acc[s.language] = (acc[s.language] || 0) + 1; return acc }, {}))
+        .sort((a: any, b: any) => b[1] - a[1])[0]?.[0]
+    : "none"
+  const publicCount = snippets.filter(s => s.is_public).length
+  const pinnedCount = snippets.filter(s => s.is_pinned).length
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between bg-gray-900">
+      <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between bg-gray-900 sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800">
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <FileCode className="text-indigo-500" size={24} />
             <h1 className="text-xl font-bold text-white">Snippets</h1>
-            <span className="bg-indigo-900 text-indigo-400 text-xs px-2 py-0.5 rounded-full">{total}</span>
+            <span className="bg-indigo-900 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-medium">{total}</span>
           </div>
         </div>
-        <button
-          onClick={() => { setForm(emptyForm); setShowCreateModal(true) }}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-        >
-          <Plus size={18} />
-          New Snippet
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className="flex items-center gap-2 text-gray-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors text-sm"
+          >
+            <BarChart2 size={16} />Stats
+          </button>
+          <button
+            onClick={() => { setForm(emptyForm); setShowCreateModal(true) }}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+          >
+            <Plus size={16} />New Snippet
+            <span className="text-indigo-300 text-xs">Ctrl+M</span>
+          </button>
+        </div>
       </div>
+
+      {/* Stats Bar */}
+      {showStats && (
+        <div className="border-b border-gray-800 bg-gray-900 px-6 py-4 grid grid-cols-4 gap-4">
+          {[
+            { label: "Total Snippets", value: total, icon: FileCode, color: "text-indigo-400" },
+            { label: "Total Copies", value: totalCopies, icon: Copy, color: "text-green-400" },
+            { label: "Public Snippets", value: publicCount, icon: Globe, color: "text-blue-400" },
+            { label: "Top Language", value: topLanguage, icon: Zap, color: "text-yellow-400" },
+          ].map(stat => (
+            <div key={stat.label} className="bg-gray-800 rounded-lg p-3 flex items-center gap-3">
+              <stat.icon className={stat.color} size={20} />
+              <div>
+                <p className="text-gray-400 text-xs">{stat.label}</p>
+                <p className="text-white font-bold">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left Panel - Snippet List */}
-        <div className="w-96 border-r border-gray-800 flex flex-col bg-gray-900">
+        {/* Left Panel */}
+        <div className="w-80 border-r border-gray-800 flex flex-col bg-gray-900">
 
           {/* Search */}
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-3 border-b border-gray-800">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
               <input
+                ref={searchRef}
                 type="text"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search snippets... (Ctrl+K)"
-                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                placeholder="Search... (Ctrl+K)"
+                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-8 pr-8 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
               />
               {search && (
                 <button onClick={() => handleSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
             </div>
           </div>
 
+          {/* Sort */}
+          <div className="px-3 py-2 border-b border-gray-800 flex gap-1">
+            {[
+              { value: "newest", label: "Newest" },
+              { value: "most_used", label: "Popular" },
+              { value: "pinned", label: "Pinned" },
+            ].map(s => (
+              <button
+                key={s.value}
+                onClick={() => handleSort(s.value as any)}
+                className={`flex-1 text-xs py-1 rounded transition-colors ${sortBy === s.value ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
           {/* Language Filter */}
-          <div className="px-4 py-2 border-b border-gray-800 flex gap-2 overflow-x-auto scrollbar-hide">
-            {LANGUAGES.slice(0, 8).map(lang => (
+          <div className="px-3 py-2 border-b border-gray-800 flex gap-1.5 overflow-x-auto">
+            {LANGUAGES.map(lang => (
               <button
                 key={lang.value}
                 onClick={() => handleLangFilter(lang.value)}
-                className={`flex-shrink-0 text-xs px-3 py-1 rounded-full transition-colors ${
-                  selectedLang === lang.value
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:text-white"
+                className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full transition-colors ${
+                  selectedLang === lang.value ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
                 }`}
               >
                 {lang.label}
@@ -294,12 +374,13 @@ export default function SnippetList() {
             ) : snippets.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <FileCode className="text-gray-700 mx-auto mb-3" size={40} />
-                <p className="text-gray-500 text-sm">No snippets found</p>
+                <p className="text-gray-500 text-sm mb-1">No snippets found</p>
+                <p className="text-gray-600 text-xs mb-4">Press Ctrl+M to create one</p>
                 <button
                   onClick={() => { setForm(emptyForm); setShowCreateModal(true) }}
-                  className="mt-3 text-indigo-400 hover:text-indigo-300 text-sm"
+                  className="text-indigo-400 hover:text-indigo-300 text-sm"
                 >
-                  Create your first snippet
+                  + Create your first snippet
                 </button>
               </div>
             ) : (
@@ -308,34 +389,41 @@ export default function SnippetList() {
                   <div
                     key={snippet.id}
                     onClick={() => setSelectedSnippet(snippet)}
-                    className={`p-4 cursor-pointer transition-colors hover:bg-gray-800 ${
-                      selectedSnippet?.id === snippet.id ? "bg-gray-800 border-l-2 border-indigo-500" : ""
+                    className={`p-3 cursor-pointer transition-all hover:bg-gray-800 group ${
+                      selectedSnippet?.id === snippet.id
+                        ? "bg-gray-800 border-l-2 border-indigo-500"
+                        : "border-l-2 border-transparent"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {snippet.is_pinned && <Pin size={12} className="text-yellow-500 flex-shrink-0" />}
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {snippet.is_pinned && <Pin size={10} className="text-yellow-500 flex-shrink-0" />}
                           <h3 className="text-white text-sm font-medium truncate">{snippet.title}</h3>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: getLangColor(snippet.language) + "20", color: getLangColor(snippet.language) }}
+                            className="text-xs px-1.5 py-0.5 rounded font-medium"
+                            style={{ backgroundColor: getLangColor(snippet.language) + "25", color: getLangColor(snippet.language) }}
                           >
                             {snippet.language}
                           </span>
-                          {snippet.is_public && <Globe size={10} className="text-green-500" />}
+                          {snippet.is_public && <Globe size={9} className="text-green-500" />}
+                          {snippet.use_count > 0 && (
+                            <span className="text-xs text-gray-600 flex items-center gap-0.5">
+                              <Copy size={9} />{snippet.use_count}
+                            </span>
+                          )}
                           {snippet.tags?.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-xs text-gray-500">#{tag}</span>
+                            <span key={tag} className="text-xs text-gray-600">#{tag}</span>
                           ))}
                         </div>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopy(snippet) }}
-                        className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
+                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 p-1 rounded hover:bg-gray-700"
                       >
-                        {copiedId === snippet.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                        {copiedId === snippet.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                       </button>
                     </div>
                   </div>
@@ -345,189 +433,207 @@ export default function SnippetList() {
           </div>
         </div>
 
-        {/* Right Panel - Snippet Detail */}
+        {/* Right Panel - Detail View */}
         <div className="flex-1 flex flex-col bg-gray-950">
           {selectedSnippet ? (
             <>
-              {/* Snippet Header */}
-              <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between bg-gray-900">
-                <div>
-                  <div className="flex items-center gap-3">
-                    {selectedSnippet.is_pinned && <Pin size={14} className="text-yellow-500" />}
-                    <h2 className="text-lg font-bold text-white">{selectedSnippet.title}</h2>
+              {/* Detail Header */}
+              <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-900">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    {selectedSnippet.is_pinned && <Pin size={12} className="text-yellow-500" />}
+                    <h2 className="text-lg font-bold text-white truncate">{selectedSnippet.title}</h2>
                     <span
-                      className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{ backgroundColor: getLangColor(selectedSnippet.language) + "20", color: getLangColor(selectedSnippet.language) }}
+                      className="text-xs px-2 py-0.5 rounded font-medium flex-shrink-0"
+                      style={{ backgroundColor: getLangColor(selectedSnippet.language) + "25", color: getLangColor(selectedSnippet.language) }}
                     >
                       {selectedSnippet.language}
                     </span>
                     {selectedSnippet.is_public
-                      ? <span className="flex items-center gap-1 text-xs text-green-500"><Globe size={10} />Public</span>
-                      : <span className="flex items-center gap-1 text-xs text-gray-500"><Lock size={10} />Private</span>
+                      ? <span className="flex items-center gap-1 text-xs text-green-500 flex-shrink-0"><Globe size={10} />Public</span>
+                      : <span className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0"><Lock size={10} />Private</span>
                     }
                   </div>
                   {selectedSnippet.description && (
-                    <p className="text-gray-400 text-sm mt-1">{selectedSnippet.description}</p>
+                    <p className="text-gray-400 text-sm truncate">{selectedSnippet.description}</p>
                   )}
                   {selectedSnippet.tags?.length > 0 && (
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex gap-1.5 mt-1 flex-wrap">
                       {selectedSnippet.tags.map(tag => (
-                        <span key={tag} className="flex items-center gap-1 text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                        <span key={tag} className="flex items-center gap-0.5 text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
                           <Tag size={8} />#{tag}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 ml-4">
                   <button onClick={() => handlePin(selectedSnippet)} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-gray-800" title={selectedSnippet.is_pinned ? "Unpin" : "Pin"}>
-                    {selectedSnippet.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                    {selectedSnippet.is_pinned ? <PinOff size={15} /> : <Pin size={15} />}
                   </button>
-                  <button onClick={() => handleEditOpen(selectedSnippet)} className="p-2 text-gray-400 hover:text-indigo-400 transition-colors rounded-lg hover:bg-gray-800" title="Edit">
-                    <Edit3 size={16} />
+                  <button onClick={() => handleExport(selectedSnippet)} className="p-2 text-gray-400 hover:text-blue-400 transition-colors rounded-lg hover:bg-gray-800" title="Export as file">
+                    <Download size={15} />
+                  </button>
+                  <button onClick={() => handleShare(selectedSnippet)} className="p-2 text-gray-400 hover:text-green-400 transition-colors rounded-lg hover:bg-gray-800" title="Share link">
+                    <Share2 size={15} />
+                  </button>
+                  <button onClick={() => handleEditOpen(selectedSnippet)} className="p-2 text-gray-400 hover:text-indigo-400 transition-colors rounded-lg hover:bg-gray-800" title="Edit (E)">
+                    <Edit3 size={15} />
                   </button>
                   <button
                     onClick={() => handleCopy(selectedSnippet)}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-medium ${
+                      copiedId === selectedSnippet.id
+                        ? "bg-green-600 text-white"
+                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    }`}
                   >
                     {copiedId === selectedSnippet.id ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
                   </button>
                   <button onClick={() => handleDelete(selectedSnippet)} className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-gray-800" title="Delete">
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
 
-              {/* Monaco Editor - Read Only View */}
+              {/* Monaco Editor */}
               <div className="flex-1">
                 <Editor
                   height="100%"
-                  language={selectedSnippet.language === "cpp" ? "cpp" : selectedSnippet.language}
+                  language={selectedSnippet.language}
                   value={selectedSnippet.code}
                   theme="vs-dark"
                   options={{
                     readOnly: true,
-                    minimap: { enabled: false },
+                    minimap: { enabled: true },
                     fontSize: 14,
                     lineNumbers: "on",
                     scrollBeyondLastLine: false,
                     wordWrap: "on",
-                    padding: { top: 16 },
-                    fontFamily: "JetBrains Mono, monospace",
+                    padding: { top: 16, bottom: 16 },
+                    fontFamily: "JetBrains Mono, Consolas, monospace",
+                    renderLineHighlight: "all",
+                    smoothScrolling: true,
+                    cursorSmoothCaretAnimation: "on",
+                    bracketPairColorization: { enabled: true },
+                    guides: { bracketPairs: true },
                   }}
                 />
+              </div>
+
+              {/* Footer Bar */}
+              <div className="border-t border-gray-800 px-6 py-2 bg-gray-900 flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-4">
+                  <span>Lines: {selectedSnippet.code.split("\n").length}</span>
+                  <span>Chars: {selectedSnippet.code.length}</span>
+                  <span className="flex items-center gap-1"><Copy size={10} />{selectedSnippet.use_count} copies</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span>Created: {new Date(selectedSnippet.created_at).toLocaleDateString()}</span>
+                  <span>Updated: {new Date(selectedSnippet.updated_at).toLocaleDateString()}</span>
+                </div>
               </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <Code2 className="text-gray-700 mx-auto mb-4" size={64} />
-                <h3 className="text-gray-500 text-lg font-medium mb-2">Select a snippet</h3>
-                <p className="text-gray-600 text-sm">Choose a snippet from the list or create a new one</p>
-                <button
-                  onClick={() => { setForm(emptyForm); setShowCreateModal(true) }}
-                  className="mt-4 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors mx-auto"
-                >
-                  <Plus size={16} />New Snippet
-                </button>
+                <Code2 className="text-gray-800 mx-auto mb-4" size={80} />
+                <h3 className="text-gray-500 text-xl font-semibold mb-2">Your Code Library</h3>
+                <p className="text-gray-600 text-sm mb-6">Select a snippet or create a new one</p>
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
+                  <span className="bg-gray-800 px-3 py-1.5 rounded-lg">Ctrl+K to search</span>
+                  <span className="bg-gray-800 px-3 py-1.5 rounded-lg">Ctrl+M to create</span>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Create / Edit Modal */}
       {(showCreateModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-screen overflow-y-auto">
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-800">
-              <h2 className="text-xl font-bold text-white">
-                {showCreateModal ? "Create New Snippet" : "Edit Snippet"}
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-gray-800">
+              <h2 className="text-lg font-bold text-white">
+                {showCreateModal ? "? Create New Snippet" : "?? Edit Snippet"}
               </h2>
-              <button
-                onClick={() => { setShowCreateModal(false); setShowEditModal(false) }}
-                className="text-gray-400 hover:text-white"
-              >
+              <button onClick={() => { setShowCreateModal(false); setShowEditModal(false) }} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500"
-                  placeholder="My awesome snippet"
-                  maxLength={200}
-                />
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Title *</label>
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                    placeholder="My awesome snippet"
+                    maxLength={200}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Language *</label>
+                  <select
+                    value={form.language}
+                    onChange={(e) => setForm({ ...form, language: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  >
+                    {LANGUAGES.filter(l => l.value !== "all").map(lang => (
+                      <option key={lang.value} value={lang.value}>{lang.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Language */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Language *</label>
-                <select
-                  value={form.language}
-                  onChange={(e) => setForm({ ...form, language: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500"
-                >
-                  {LANGUAGES.filter(l => l.value !== "all").map(lang => (
-                    <option key={lang.value} value={lang.value}>{lang.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Code Editor */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Code *</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Code *</label>
                 <div className="border border-gray-700 rounded-lg overflow-hidden">
                   <Editor
-                    height="300px"
-                    language={form.language === "cpp" ? "cpp" : form.language}
+                    height="280px"
+                    language={form.language}
                     value={form.code}
                     onChange={(value) => setForm({ ...form, code: value || "" })}
                     theme="vs-dark"
                     options={{
                       minimap: { enabled: false },
-                      fontSize: 14,
+                      fontSize: 13,
                       lineNumbers: "on",
                       scrollBeyondLastLine: false,
                       wordWrap: "on",
-                      padding: { top: 8 },
-                      fontFamily: "JetBrains Mono, monospace",
+                      padding: { top: 8, bottom: 8 },
+                      fontFamily: "JetBrains Mono, Consolas, monospace",
+                      bracketPairColorization: { enabled: true },
                     }}
                   />
                 </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
                   placeholder="What does this snippet do?"
                   rows={2}
                   maxLength={1000}
                 />
               </div>
 
-              {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Tags (max 10)</label>
-                <div className="flex gap-2 mb-2 flex-wrap">
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Tags <span className="text-gray-600">(max 10)</span></label>
+                <div className="flex gap-1.5 mb-2 flex-wrap">
                   {form.tags?.map(tag => (
-                    <span key={tag} className="flex items-center gap-1 bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
+                    <span key={tag} className="flex items-center gap-1 bg-gray-800 text-gray-300 text-xs px-2 py-0.5 rounded-full border border-gray-700">
                       #{tag}
-                      <button onClick={() => handleRemoveTag(tag)} className="text-gray-500 hover:text-red-400">
-                        <X size={10} />
+                      <button onClick={() => handleRemoveTag(tag)} className="text-gray-500 hover:text-red-400 ml-0.5">
+                        <X size={9} />
                       </button>
                     </span>
                   ))}
@@ -538,44 +644,42 @@ export default function SnippetList() {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
-                    className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                    placeholder="Add tag and press Enter"
+                    className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+                    placeholder="Type tag and press Enter"
                   />
-                  <button onClick={handleAddTag} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-colors">
-                    <Plus size={16} />
+                  <button onClick={handleAddTag} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition-colors text-sm">
+                    Add
                   </button>
                 </div>
               </div>
 
-              {/* Public Toggle */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pt-1">
                 <button
                   onClick={() => setForm({ ...form, is_public: !form.is_public })}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${form.is_public ? "bg-indigo-600" : "bg-gray-700"}`}
+                  className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${form.is_public ? "bg-indigo-600" : "bg-gray-700"}`}
                 >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${form.is_public ? "translate-x-7" : "translate-x-1"}`} />
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${form.is_public ? "translate-x-5" : "translate-x-0.5"}`} />
                 </button>
-                <span className="text-gray-300 text-sm">
-                  {form.is_public ? "Public — anyone with link can view" : "Private — only you can see this"}
-                </span>
+                <div>
+                  <p className="text-gray-300 text-sm">{form.is_public ? "Public" : "Private"}</p>
+                  <p className="text-gray-600 text-xs">{form.is_public ? "Anyone with link can view" : "Only you can see this"}</p>
+                </div>
               </div>
-
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-800">
-              <button
-                onClick={() => { setShowCreateModal(false); setShowEditModal(false) }}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Cancel
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-800">
+              <button onClick={() => { setShowCreateModal(false); setShowEditModal(false) }} className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                Cancel (Esc)
               </button>
               <button
                 onClick={showCreateModal ? handleCreate : handleUpdate}
                 disabled={saving}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors font-medium disabled:opacity-50"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
               >
-                {saving ? <><Loader2 size={16} className="animate-spin" />Saving...</> : <><Save size={16} />{showCreateModal ? "Create Snippet" : "Save Changes"}</>}
+                {saving
+                  ? <><Loader2 size={15} className="animate-spin" />Saving...</>
+                  : <><Save size={15} />{showCreateModal ? "Create Snippet" : "Save Changes"}</>
+                }
               </button>
             </div>
           </div>
