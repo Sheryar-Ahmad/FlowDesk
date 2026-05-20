@@ -1,6 +1,5 @@
 """
 config.py - Application Settings
-Every secret comes from .env file - never hardcoded in code.
 """
 
 from pydantic_settings import BaseSettings
