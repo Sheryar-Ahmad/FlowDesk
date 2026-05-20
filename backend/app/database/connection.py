@@ -1,5 +1,5 @@
 """
-connection.py - Enterprise Database Connection
+connection.py -  Database Connection
 ------------------------------------------------
 Handles all database connections for FlowDesk.
 Features:
