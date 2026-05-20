@@ -37,9 +37,9 @@ FlowDesk is a unified developer workspace that combines everything a developer n
 Currently in active development following the Spiral SDLC model.
 
 - [x] Spiral 1 - Project foundation and structure
-- [ ] Spiral 2 - Backend authentication
-- [ ] Spiral 3 - Frontend UI
-- [ ] Spiral 4 - Snippet Manager
+- [x] Spiral 2 - Backend authentication
+- [x] Spiral 3 - Frontend UI
+- [x] Spiral 4 - Snippet Manager
 - [ ] Spiral 5 - Notes System
 - [ ] Spiral 6 - Task Board
 - [ ] Spiral 7 - AI Assistant
