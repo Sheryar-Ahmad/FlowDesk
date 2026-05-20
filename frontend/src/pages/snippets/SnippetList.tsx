@@ -1,8 +1,7 @@
 /**
- * SnippetList.tsx - Beast Mode Snippet Manager
+ * SnippetList.tsx - Snippet Manager
  * ----------------------------------------------
- * Most addictive snippet manager ever built.
- * Features that keep users coming back every day:
+ *   Features:
  * - Keyboard shortcuts (Ctrl+K, Ctrl+M, Escape)
  * - Real-time search with instant results
  * - Monaco Editor with full VS Code experience
