@@ -1,6 +1,5 @@
 /**
  * useKeyboard.ts - Keyboard Shortcuts
- * Uses shortcuts that do not conflict with browser.
  * 
  * Shortcuts:
  * Ctrl+K     - Focus search
