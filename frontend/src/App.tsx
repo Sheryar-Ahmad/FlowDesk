@@ -4,6 +4,7 @@ import Login from "./pages/auth/Login"
 import Register from "./pages/auth/Register"
 import Dashboard from "./pages/dashboard/Dashboard"
 import SnippetList from "./pages/snippets/SnippetList"
+import NoteEditor from "./pages/notes/NoteEditor"
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/snippets" element={<SnippetList />} />
+        <Route path="/notes" element={<NoteEditor />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

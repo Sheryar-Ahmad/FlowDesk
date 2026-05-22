@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 
 const features = [
   { icon: FileCode, title: "Snippets", desc: "Save and search code in 50+ languages", path: "/snippets", ready: true },
-  { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks", path: "/notes", ready: false },
+  { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks and tasks", path: "/notes", ready: true },
   { icon: Kanban, title: "Tasks", desc: "Kanban project management", path: "/tasks", ready: false },
   { icon: Bot, title: "AI Assistant", desc: "Powered by Groq, Gemini, Ollama", path: "/ai", ready: false },
   { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: false },
@@ -17,9 +17,7 @@ export default function Dashboard() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!isAuthenticated) navigate("/login")
-  }, [isAuthenticated, navigate])
+  useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
 
   const handleLogout = async () => {
     await logout()
@@ -44,7 +42,7 @@ export default function Dashboard() {
       </nav>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">Your Workspace</h1>
-        <p className="text-gray-400 mb-8">Welcome back, {user?.display_name}. Everything you need in one place.</p>
+        <p className="text-gray-400 mb-8">Welcome back, {user?.display_name}. Everything in one place.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature) => (
             <div
@@ -52,8 +50,8 @@ export default function Dashboard() {
               onClick={() => feature.ready && navigate(feature.path)}
               className={`bg-gray-900 border rounded-xl p-6 transition-all duration-200 ${
                 feature.ready
-                  ? "border-gray-700 hover:border-indigo-500 cursor-pointer hover:bg-gray-800"
-                  : "border-gray-800 opacity-60 cursor-not-allowed"
+                  ? "border-gray-700 hover:border-indigo-500 cursor-pointer hover:bg-gray-800 hover:shadow-lg hover:shadow-indigo-500/10"
+                  : "border-gray-800 opacity-50 cursor-not-allowed"
               }`}
             >
               <feature.icon className={`mb-4 ${feature.ready ? "text-indigo-500" : "text-gray-600"}`} size={32} />
@@ -61,7 +59,7 @@ export default function Dashboard() {
                 <h3 className="text-white font-semibold">{feature.title}</h3>
                 {feature.ready
                   ? <span className="text-xs bg-green-900 text-green-400 px-2 py-0.5 rounded-full">Ready</span>
-                  : <span className="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">Coming soon</span>
+                  : <span className="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">Soon</span>
                 }
               </div>
               <p className="text-gray-400 text-sm">{feature.desc}</p>
