@@ -64,6 +64,46 @@
         "documentation": {}
     },
     {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Query",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "APIRouter",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -240,6 +280,14 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "create_async_engine",
         "importPath": "sqlalchemy.ext.asyncio",
         "description": "sqlalchemy.ext.asyncio",
@@ -280,12 +328,28 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "structlog",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "structlog",
         "description": "structlog",
         "detail": "structlog",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
         "documentation": {}
     },
     {
@@ -401,6 +465,14 @@
         "documentation": {}
     },
     {
+        "label": "get_current_user",
+        "importPath": "app.core.middleware.auth_guard",
+        "description": "app.core.middleware.auth_guard",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
         "label": "limiter",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
@@ -410,6 +482,22 @@
     },
     {
         "label": "AUTH_LIMIT",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "API_LIMIT",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
         "isExtraImport": true,
@@ -489,6 +577,38 @@
         "documentation": {}
     },
     {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "field_validator",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -514,6 +634,14 @@
     },
     {
         "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -578,6 +706,150 @@
         "documentation": {}
     },
     {
+        "label": "NoteCreate",
+        "importPath": "app.api.v1.notes.schemas",
+        "description": "app.api.v1.notes.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.notes.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "NoteUpdate",
+        "importPath": "app.api.v1.notes.schemas",
+        "description": "app.api.v1.notes.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.notes.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "create_note",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_notes",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_note_by_id",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "update_note",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "delete_note",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_note_versions",
+        "importPath": "app.services.note_service",
+        "description": "app.services.note_service",
+        "isExtraImport": true,
+        "detail": "app.services.note_service",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "SnippetCreate",
         "importPath": "app.api.v1.snippets.schemas",
         "description": "app.api.v1.snippets.schemas",
@@ -639,78 +911,6 @@
         "description": "app.services.snippet_service",
         "isExtraImport": true,
         "detail": "app.services.snippet_service",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
         "documentation": {}
     },
     {
@@ -803,6 +1003,14 @@
     },
     {
         "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -1128,11 +1336,28 @@
         "documentation": {}
     },
     {
+        "label": "FREE_TIER_NOTE_LIMIT",
+        "importPath": "app.constants",
+        "description": "app.constants",
+        "isExtraImport": true,
+        "detail": "app.constants",
+        "documentation": {}
+    },
+    {
         "label": "FREE_TIER_SNIPPET_LIMIT",
         "importPath": "app.constants",
         "description": "app.constants",
         "isExtraImport": true,
         "detail": "app.constants",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
         "documentation": {}
     },
     {
@@ -1226,15 +1451,6 @@
         "documentation": {}
     },
     {
-        "label": "json",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "json",
-        "description": "json",
-        "detail": "json",
-        "documentation": {}
-    },
-    {
         "label": "router",
         "kind": 5,
         "importPath": "backend.app.api.v1.ai.router",
@@ -1325,12 +1541,48 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.notes.router",
+        "description": "backend.app.api.v1.notes.router",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n@router.post(\"/\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(API_LIMIT)\nasync def create(request: Request, body: NoteCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):\n    try:\n        note = await create_note(db, current_user[\"id\"], current_user[\"plan\"], body.title, body.content, body.content_text)\n        return {\"success\": True, \"note\": note}\n    except ValueError as e:\n        raise HTTPException(status_code=400, detail=str(e))",
+        "detail": "backend.app.api.v1.notes.router",
+        "documentation": {}
+    },
+    {
         "label": "router",
         "kind": 5,
         "importPath": "backend.app.api.v1.notes.router",
         "description": "backend.app.api.v1.notes.router",
-        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def notes_health():\n    return {\"status\": \"notes service running\"}",
+        "peekOfCode": "router = APIRouter()\n@router.post(\"/\", status_code=status.HTTP_201_CREATED)\n@limiter.limit(API_LIMIT)\nasync def create(request: Request, body: NoteCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):\n    try:\n        note = await create_note(db, current_user[\"id\"], current_user[\"plan\"], body.title, body.content, body.content_text)\n        return {\"success\": True, \"note\": note}\n    except ValueError as e:\n        raise HTTPException(status_code=400, detail=str(e))\n    except Exception as e:",
         "detail": "backend.app.api.v1.notes.router",
+        "documentation": {}
+    },
+    {
+        "label": "NoteCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.notes.schemas",
+        "description": "backend.app.api.v1.notes.schemas",
+        "peekOfCode": "class NoteCreate(BaseModel):\n    title: str\n    content: dict = {}\n    content_text: str = \"\"\n    @field_validator(\"title\")\n    @classmethod\n    def validate_title(cls, v):\n        v = v.strip()\n        if not v:\n            raise ValueError(\"Title required\")",
+        "detail": "backend.app.api.v1.notes.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "NoteUpdate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.notes.schemas",
+        "description": "backend.app.api.v1.notes.schemas",
+        "peekOfCode": "class NoteUpdate(BaseModel):\n    title: Optional[str] = None\n    content: Optional[dict] = None\n    content_text: Optional[str] = None\n    word_count: Optional[int] = None\nclass NoteResponse(BaseModel):\n    id: str\n    user_id: str\n    title: str\n    content: dict",
+        "detail": "backend.app.api.v1.notes.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "NoteResponse",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.notes.schemas",
+        "description": "backend.app.api.v1.notes.schemas",
+        "peekOfCode": "class NoteResponse(BaseModel):\n    id: str\n    user_id: str\n    title: str\n    content: dict\n    content_text: str\n    word_count: int\n    created_at: datetime\n    updated_at: datetime",
+        "detail": "backend.app.api.v1.notes.schemas",
         "documentation": {}
     },
     {
@@ -1889,6 +2141,15 @@
         "description": "backend.app.services.auth_service",
         "peekOfCode": "settings = get_settings()\nasync def register_user(\n    db: AsyncSession,\n    email: str,\n    password: str,\n    display_name: str,\n    ip_address: str = None,\n) -> dict:\n    \"\"\"\n    Creates a new user account.",
         "detail": "backend.app.services.auth_service",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.services.note_service",
+        "description": "backend.app.services.note_service",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\ndef _fmt(n) -> dict:\n    content = n.content\n    if isinstance(content, str):\n        try: content = json.loads(content)\n        except: content = {}\n    return {\"id\": str(n.id), \"user_id\": str(n.user_id), \"title\": n.title, \"content\": content, \"content_text\": n.content_text or \"\", \"word_count\": n.word_count or 0, \"created_at\": n.created_at, \"updated_at\": n.updated_at}\nasync def create_note(db: AsyncSession, user_id: str, plan: str, title: str, content: dict = {}, content_text: str = \"\") -> dict:\n    if plan == \"free\":\n        r = await db.execute(text(\"SELECT COUNT(*) FROM notes WHERE user_id=:u AND deleted_at IS NULL\"), {\"u\": user_id})",
+        "detail": "backend.app.services.note_service",
         "documentation": {}
     },
     {
