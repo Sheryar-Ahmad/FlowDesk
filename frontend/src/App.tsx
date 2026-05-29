@@ -8,6 +8,7 @@ const Register = lazy(() => import("./pages/auth/Register"))
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"))
 const SnippetList = lazy(() => import("./pages/snippets/SnippetList"))
 const NoteEditor = lazy(() => import("./pages/notes/NoteEditor"))
+const TaskBoard = lazy(() => import("./pages/tasks/TaskBoard"))
 
 const Loading = () => (
   <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -26,6 +27,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/snippets" element={<SnippetList />} />
           <Route path="/notes" element={<NoteEditor />} />
+          <Route path="/tasks" element={<TaskBoard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

@@ -7,7 +7,7 @@ import toast from "react-hot-toast"
 const features = [
   { icon: FileCode, title: "Snippets", desc: "Save and search code in 50+ languages", path: "/snippets", ready: true },
   { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks and tasks", path: "/notes", ready: true },
-  { icon: Kanban, title: "Tasks", desc: "Kanban project management", path: "/tasks", ready: false },
+  { icon: Kanban, title: "Tasks", desc: "Kanban project management", path: "/tasks", ready: true },
   { icon: Bot, title: "AI Assistant", desc: "Powered by Groq, Gemini, Ollama", path: "/ai", ready: false },
   { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: false },
   { icon: GitCompare, title: "Code Diff", desc: "Compare code side by side", path: "/diff", ready: false },
@@ -45,9 +45,7 @@ export default function Dashboard() {
         <p className="text-gray-400 mb-8">Welcome back, {user?.display_name}. Everything in one place.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature) => (
-            <div
-              key={feature.title}
-              onClick={() => feature.ready && navigate(feature.path)}
+            <div key={feature.title} onClick={() => feature.ready && navigate(feature.path)}
               className={`bg-gray-900 border rounded-xl p-6 transition-all duration-200 ${
                 feature.ready
                   ? "border-gray-700 hover:border-indigo-500 cursor-pointer hover:bg-gray-800 hover:shadow-lg hover:shadow-indigo-500/10"

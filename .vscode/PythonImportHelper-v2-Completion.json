@@ -168,6 +168,38 @@
         "documentation": {}
     },
     {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "status",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "APIRouter",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -288,6 +320,14 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "create_async_engine",
         "importPath": "sqlalchemy.ext.asyncio",
         "description": "sqlalchemy.ext.asyncio",
@@ -336,12 +376,28 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "structlog",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "structlog",
         "description": "structlog",
         "detail": "structlog",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
         "documentation": {}
     },
     {
@@ -473,6 +529,14 @@
         "documentation": {}
     },
     {
+        "label": "get_current_user",
+        "importPath": "app.core.middleware.auth_guard",
+        "description": "app.core.middleware.auth_guard",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.auth_guard",
+        "documentation": {}
+    },
+    {
         "label": "limiter",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
@@ -482,6 +546,22 @@
     },
     {
         "label": "AUTH_LIMIT",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "API_LIMIT",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
         "isExtraImport": true,
@@ -593,6 +673,22 @@
         "documentation": {}
     },
     {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "field_validator",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -649,6 +745,30 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -674,6 +794,14 @@
     },
     {
         "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -794,6 +922,22 @@
         "documentation": {}
     },
     {
+        "label": "date",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
@@ -827,6 +971,22 @@
     },
     {
         "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -911,6 +1071,126 @@
         "description": "app.services.snippet_service",
         "isExtraImport": true,
         "detail": "app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectCreate",
+        "importPath": "app.api.v1.tasks.schemas",
+        "description": "app.api.v1.tasks.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectUpdate",
+        "importPath": "app.api.v1.tasks.schemas",
+        "description": "app.api.v1.tasks.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TaskCreate",
+        "importPath": "app.api.v1.tasks.schemas",
+        "description": "app.api.v1.tasks.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TaskUpdate",
+        "importPath": "app.api.v1.tasks.schemas",
+        "description": "app.api.v1.tasks.schemas",
+        "isExtraImport": true,
+        "detail": "app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "create_project",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_projects",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_project_by_id",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "update_project",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "delete_project",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_columns",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "create_column",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "create_task",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "get_tasks",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "update_task",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
+        "documentation": {}
+    },
+    {
+        "label": "delete_task",
+        "importPath": "app.services.task_service",
+        "description": "app.services.task_service",
+        "isExtraImport": true,
+        "detail": "app.services.task_service",
         "documentation": {}
     },
     {
@@ -1003,6 +1283,14 @@
     },
     {
         "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -1352,6 +1640,14 @@
         "documentation": {}
     },
     {
+        "label": "FREE_TIER_PROJECT_LIMIT",
+        "importPath": "app.constants",
+        "description": "app.constants",
+        "isExtraImport": true,
+        "detail": "app.constants",
+        "documentation": {}
+    },
+    {
         "label": "json",
         "kind": 6,
         "isExtraImport": true,
@@ -1667,12 +1963,57 @@
         "documentation": {}
     },
     {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.tasks.router",
+        "description": "backend.app.api.v1.tasks.router",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\n# --- Projects ----------------------------------------------------------------\n@router.post(\"/projects\", status_code=201)\n@limiter.limit(API_LIMIT)\nasync def create_proj(request: Request, body: ProjectCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):\n    try:\n        project = await create_project(db, current_user[\"id\"], current_user[\"plan\"], body.name, body.description, body.color)\n        return {\"success\": True, \"project\": project}\n    except ValueError as e:",
+        "detail": "backend.app.api.v1.tasks.router",
+        "documentation": {}
+    },
+    {
         "label": "router",
         "kind": 5,
         "importPath": "backend.app.api.v1.tasks.router",
         "description": "backend.app.api.v1.tasks.router",
-        "peekOfCode": "router = APIRouter()\n@router.get(\"/health\")\nasync def tasks_health():\n    return {\"status\": \"tasks service running\"}",
+        "peekOfCode": "router = APIRouter()\n# --- Projects ----------------------------------------------------------------\n@router.post(\"/projects\", status_code=201)\n@limiter.limit(API_LIMIT)\nasync def create_proj(request: Request, body: ProjectCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):\n    try:\n        project = await create_project(db, current_user[\"id\"], current_user[\"plan\"], body.name, body.description, body.color)\n        return {\"success\": True, \"project\": project}\n    except ValueError as e:\n        raise HTTPException(status_code=400, detail=str(e))",
         "detail": "backend.app.api.v1.tasks.router",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.tasks.schemas",
+        "description": "backend.app.api.v1.tasks.schemas",
+        "peekOfCode": "class ProjectCreate(BaseModel):\n    name: str\n    description: Optional[str] = None\n    color: str = \"#6366f1\"\n    @field_validator(\"name\")\n    @classmethod\n    def validate_name(cls, v):\n        v = v.strip()\n        if not v: raise ValueError(\"Project name required\")\n        if len(v) > 200: raise ValueError(\"Name too long\")",
+        "detail": "backend.app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectUpdate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.tasks.schemas",
+        "description": "backend.app.api.v1.tasks.schemas",
+        "peekOfCode": "class ProjectUpdate(BaseModel):\n    name: Optional[str] = None\n    description: Optional[str] = None\n    color: Optional[str] = None\n    is_archived: Optional[bool] = None\nclass TaskCreate(BaseModel):\n    title: str\n    description: Optional[str] = None\n    status: str = \"todo\"\n    priority: str = \"medium\"",
+        "detail": "backend.app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TaskCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.tasks.schemas",
+        "description": "backend.app.api.v1.tasks.schemas",
+        "peekOfCode": "class TaskCreate(BaseModel):\n    title: str\n    description: Optional[str] = None\n    status: str = \"todo\"\n    priority: str = \"medium\"\n    due_date: Optional[date] = None\n    labels: Optional[List[str]] = []\n    @field_validator(\"title\")\n    @classmethod\n    def validate_title(cls, v):",
+        "detail": "backend.app.api.v1.tasks.schemas",
+        "documentation": {}
+    },
+    {
+        "label": "TaskUpdate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.tasks.schemas",
+        "description": "backend.app.api.v1.tasks.schemas",
+        "peekOfCode": "class TaskUpdate(BaseModel):\n    title: Optional[str] = None\n    description: Optional[str] = None\n    status: Optional[str] = None\n    priority: Optional[str] = None\n    due_date: Optional[date] = None\n    position: Optional[float] = None\n    labels: Optional[List[str]] = None\n    completed_at: Optional[datetime] = None",
+        "detail": "backend.app.api.v1.tasks.schemas",
         "documentation": {}
     },
     {
@@ -2159,6 +2500,15 @@
         "description": "backend.app.services.snippet_service",
         "peekOfCode": "logger = structlog.get_logger(__name__)\nasync def get_user_snippet_count(db: AsyncSession, user_id: str) -> int:\n    \"\"\"Returns total active snippets for a user.\"\"\"\n    result = await db.execute(\n        text(\"SELECT COUNT(*) FROM snippets WHERE user_id = :user_id AND deleted_at IS NULL\"),\n        {\"user_id\": user_id}\n    )\n    return result.scalar() or 0\nasync def create_snippet(\n    db: AsyncSession,",
         "detail": "backend.app.services.snippet_service",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.services.task_service",
+        "description": "backend.app.services.task_service",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\n# --- Projects ----------------------------------------------------------------\nasync def create_project(db: AsyncSession, user_id: str, plan: str, name: str, description: str = None, color: str = \"#6366f1\") -> dict:\n    if plan == \"free\":\n        r = await db.execute(text(\"SELECT COUNT(*) FROM projects WHERE user_id=:u AND is_archived=FALSE\"), {\"u\": user_id})\n        if (r.scalar() or 0) >= FREE_TIER_PROJECT_LIMIT:\n            raise ValueError(f\"Free tier limit: {FREE_TIER_PROJECT_LIMIT} projects. Upgrade to Pro.\")\n    r = await db.execute(text(\"\"\"\n        INSERT INTO projects (user_id, name, description, color)\n        VALUES (:u, :name, :desc, :color)",
+        "detail": "backend.app.services.task_service",
         "documentation": {}
     },
     {
