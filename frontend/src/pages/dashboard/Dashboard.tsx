@@ -5,12 +5,12 @@ import { useAuthStore } from "../../store/authStore"
 import toast from "react-hot-toast"
 
 const features = [
-  { icon: FileCode, title: "Snippets", desc: "Save and search code in 50+ languages", path: "/snippets", ready: true },
-  { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks and tasks", path: "/notes", ready: true },
-  { icon: Kanban, title: "Tasks", desc: "Kanban project management", path: "/tasks", ready: true },
-  { icon: Bot, title: "AI Assistant", desc: "Powered by Groq, Gemini, Ollama", path: "/ai", ready: false },
-  { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: false },
-  { icon: GitCompare, title: "Code Diff", desc: "Compare code side by side", path: "/diff", ready: false },
+  { icon: FileCode, title: "Snippets", desc: "Save and search code in 50+ languages", path: "/snippets", ready: true, color: "text-blue-400" },
+  { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks and tasks", path: "/notes", ready: true, color: "text-green-400" },
+  { icon: Kanban, title: "Tasks", desc: "Kanban project management for developers", path: "/tasks", ready: true, color: "text-yellow-400" },
+  { icon: Bot, title: "AI Assistant", desc: "Llama 3.3 70B — explain, fix, generate code", path: "/ai", ready: true, color: "text-purple-400" },
+  { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: false, color: "text-orange-400" },
+  { icon: GitCompare, title: "Code Diff", desc: "Compare code side by side instantly", path: "/diff", ready: false, color: "text-cyan-400" },
 ]
 
 export default function Dashboard() {
@@ -34,7 +34,9 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-gray-400 text-sm">Welcome, {user?.display_name}</span>
-          <span className="bg-indigo-900 text-indigo-400 text-xs px-2 py-1 rounded-full">{user?.plan}</span>
+          <span className={`text-xs px-2 py-1 rounded-full ${user?.plan === "pro" ? "bg-purple-900 text-purple-400" : "bg-indigo-900 text-indigo-400"}`}>
+            {user?.plan}
+          </span>
           <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
             <LogOut size={16} />Logout
           </button>
@@ -52,7 +54,7 @@ export default function Dashboard() {
                   : "border-gray-800 opacity-50 cursor-not-allowed"
               }`}
             >
-              <feature.icon className={`mb-4 ${feature.ready ? "text-indigo-500" : "text-gray-600"}`} size={32} />
+              <feature.icon className={`mb-4 ${feature.ready ? feature.color : "text-gray-600"}`} size={32} />
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-white font-semibold">{feature.title}</h3>
                 {feature.ready
