@@ -416,6 +416,22 @@
         "documentation": {}
     },
     {
+        "label": "create_async_engine",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "text",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
@@ -449,6 +465,14 @@
     },
     {
         "label": "event",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
+        "label": "text",
         "importPath": "sqlalchemy",
         "description": "sqlalchemy",
         "isExtraImport": true,
@@ -1720,6 +1744,14 @@
         "documentation": {}
     },
     {
+        "label": "sessionmaker",
+        "importPath": "sqlalchemy.orm",
+        "description": "sqlalchemy.orm",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.orm",
+        "documentation": {}
+    },
+    {
         "label": "AsyncAdaptedQueuePool",
         "importPath": "sqlalchemy.pool",
         "description": "sqlalchemy.pool",
@@ -1896,6 +1928,23 @@
         "description": "app.core.middleware.error_handler",
         "isExtraImport": true,
         "detail": "app.core.middleware.error_handler",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
         "documentation": {}
     },
     {
@@ -3165,6 +3214,33 @@
         "description": "backend.app.main",
         "peekOfCode": "app.state.limiter = limiter\n# --- Exception Handlers ---\napp.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)\napp.add_exception_handler(RequestValidationError, validation_exception_handler)\napp.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)\napp.add_exception_handler(Exception, general_exception_handler)\n# --- Security Middleware ---\nif not settings.DEBUG:\n    app.add_middleware(\n        TrustedHostMiddleware,",
         "detail": "backend.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "url",
+        "kind": 5,
+        "importPath": "backend.reset_ai",
+        "description": "backend.reset_ai",
+        "peekOfCode": "url = os.getenv('DATABASE_URL').replace('postgresql://', 'postgresql+asyncpg://')\nengine = create_async_engine(url)\nSession = sessionmaker(engine, class_=AsyncSession)\nasync def run():\n    async with Session() as s:\n        await s.execute(text('UPDATE users SET ai_messages_used_today=0'))\n        await s.commit()\n        print('AI limit reset for all users!')\nasyncio.run(run())",
+        "detail": "backend.reset_ai",
+        "documentation": {}
+    },
+    {
+        "label": "engine",
+        "kind": 5,
+        "importPath": "backend.reset_ai",
+        "description": "backend.reset_ai",
+        "peekOfCode": "engine = create_async_engine(url)\nSession = sessionmaker(engine, class_=AsyncSession)\nasync def run():\n    async with Session() as s:\n        await s.execute(text('UPDATE users SET ai_messages_used_today=0'))\n        await s.commit()\n        print('AI limit reset for all users!')\nasyncio.run(run())",
+        "detail": "backend.reset_ai",
+        "documentation": {}
+    },
+    {
+        "label": "Session",
+        "kind": 5,
+        "importPath": "backend.reset_ai",
+        "description": "backend.reset_ai",
+        "peekOfCode": "Session = sessionmaker(engine, class_=AsyncSession)\nasync def run():\n    async with Session() as s:\n        await s.execute(text('UPDATE users SET ai_messages_used_today=0'))\n        await s.commit()\n        print('AI limit reset for all users!')\nasyncio.run(run())",
+        "detail": "backend.reset_ai",
         "documentation": {}
     },
     {
