@@ -32,14 +32,6 @@
         "documentation": {}
     },
     {
-        "label": "status",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
         "label": "APIRouter",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -624,6 +616,14 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "List",
         "importPath": "typing",
         "description": "typing",
@@ -857,6 +857,15 @@
         "documentation": {}
     },
     {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
         "label": "get_db",
         "importPath": "app.database.connection",
         "description": "app.database.connection",
@@ -1066,6 +1075,22 @@
     },
     {
         "label": "analyze_code",
+        "importPath": "app.services.ai_service",
+        "description": "app.services.ai_service",
+        "isExtraImport": true,
+        "detail": "app.services.ai_service",
+        "documentation": {}
+    },
+    {
+        "label": "generate_session_title",
+        "importPath": "app.services.ai_service",
+        "description": "app.services.ai_service",
+        "isExtraImport": true,
+        "detail": "app.services.ai_service",
+        "documentation": {}
+    },
+    {
+        "label": "build_context_from_history",
         "importPath": "app.services.ai_service",
         "description": "app.services.ai_service",
         "isExtraImport": true,
@@ -1784,15 +1809,6 @@
         "documentation": {}
     },
     {
-        "label": "json",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "json",
-        "description": "json",
-        "detail": "json",
-        "documentation": {}
-    },
-    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -1887,7 +1903,7 @@
         "kind": 6,
         "importPath": "backend.app.api.v1.ai.router",
         "description": "backend.app.api.v1.ai.router",
-        "peekOfCode": "class Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"\n@router.post(\"/chat\")",
+        "peekOfCode": "class Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\n    session_id: Optional[str] = None\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"",
         "detail": "backend.app.api.v1.ai.router",
         "documentation": {}
     },
@@ -1896,7 +1912,7 @@
         "kind": 6,
         "importPath": "backend.app.api.v1.ai.router",
         "description": "backend.app.api.v1.ai.router",
-        "peekOfCode": "class ChatRequest(BaseModel):\n    messages: List[Message]\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"\n@router.post(\"/chat\")\n@limiter.limit(AI_LIMIT)\nasync def chat(\n    request: Request,",
+        "peekOfCode": "class ChatRequest(BaseModel):\n    messages: List[Message]\n    session_id: Optional[str] = None\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"\nclass SessionCreate(BaseModel):\n    title: Optional[str] = \"New Conversation\"\nasync def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:",
         "detail": "backend.app.api.v1.ai.router",
         "documentation": {}
     },
@@ -1905,7 +1921,16 @@
         "kind": 6,
         "importPath": "backend.app.api.v1.ai.router",
         "description": "backend.app.api.v1.ai.router",
-        "peekOfCode": "class AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"\n@router.post(\"/chat\")\n@limiter.limit(AI_LIMIT)\nasync def chat(\n    request: Request,\n    body: ChatRequest,\n    current_user: dict = Depends(get_current_user),",
+        "peekOfCode": "class AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"\nclass SessionCreate(BaseModel):\n    title: Optional[str] = \"New Conversation\"\nasync def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:\n    \"\"\"Gets user AI usage and context data.\"\"\"\n    result = await db.execute(\n        text(\"SELECT ai_messages_used_today, ai_messages_reset_at, plan, display_name FROM users WHERE id=:uid\"),",
+        "detail": "backend.app.api.v1.ai.router",
+        "documentation": {}
+    },
+    {
+        "label": "SessionCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.ai.router",
+        "description": "backend.app.api.v1.ai.router",
+        "peekOfCode": "class SessionCreate(BaseModel):\n    title: Optional[str] = \"New Conversation\"\nasync def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:\n    \"\"\"Gets user AI usage and context data.\"\"\"\n    result = await db.execute(\n        text(\"SELECT ai_messages_used_today, ai_messages_reset_at, plan, display_name FROM users WHERE id=:uid\"),\n        {\"uid\": user_id}\n    )\n    return result.fetchone()\nasync def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data) -> int:",
         "detail": "backend.app.api.v1.ai.router",
         "documentation": {}
     },
@@ -1914,7 +1939,7 @@
         "kind": 5,
         "importPath": "backend.app.api.v1.ai.router",
         "description": "backend.app.api.v1.ai.router",
-        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\nclass Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\nclass Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\n    session_id: Optional[str] = None\nclass AnalyzeRequest(BaseModel):\n    code: str",
         "detail": "backend.app.api.v1.ai.router",
         "documentation": {}
     },
@@ -1923,7 +1948,7 @@
         "kind": 5,
         "importPath": "backend.app.api.v1.ai.router",
         "description": "backend.app.api.v1.ai.router",
-        "peekOfCode": "router = APIRouter()\nclass Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str\n    task: str = \"explain\"",
+        "peekOfCode": "router = APIRouter()\nclass Message(BaseModel):\n    role: str\n    content: str\nclass ChatRequest(BaseModel):\n    messages: List[Message]\n    session_id: Optional[str] = None\nclass AnalyzeRequest(BaseModel):\n    code: str\n    language: str",
         "detail": "backend.app.api.v1.ai.router",
         "documentation": {}
     },
@@ -2639,11 +2664,38 @@
         "documentation": {}
     },
     {
+        "label": "build_system_prompt",
+        "kind": 2,
+        "importPath": "backend.app.services.ai_service",
+        "description": "backend.app.services.ai_service",
+        "peekOfCode": "def build_system_prompt(user_context: dict = {}) -> str:\n    name = user_context.get(\"name\", \"Developer\")\n    stack = user_context.get(\"stack\", \"\")\n    style = user_context.get(\"style\", \"\")\n    past_topics = user_context.get(\"past_topics\", \"\")\n    return f\"\"\"You are FlowDesk AI - the most advanced developer AI assistant ever built.\nYou are the combined knowledge of:\n- A Principal Engineer with 20 years experience\n- A Security Expert (OWASP, penetration testing)\n- A Performance Optimization Specialist",
+        "detail": "backend.app.services.ai_service",
+        "documentation": {}
+    },
+    {
+        "label": "detect_intent",
+        "kind": 2,
+        "importPath": "backend.app.services.ai_service",
+        "description": "backend.app.services.ai_service",
+        "peekOfCode": "def detect_intent(message: str) -> str:\n    \"\"\"Automatically detects what the user needs.\"\"\"\n    msg_lower = message.lower()\n    if any(w in msg_lower for w in [\"explain\", \"what is\", \"what does\", \"how does\", \"tell me about\"]):\n        return \"explain\"\n    elif any(w in msg_lower for w in [\"fix\", \"bug\", \"error\", \"issue\", \"not working\", \"broken\", \"crash\"]):\n        return \"fix\"\n    elif any(w in msg_lower for w in [\"review\", \"check\", \"audit\", \"look at\", \"feedback\"]):\n        return \"review\"\n    elif any(w in msg_lower for w in [\"optimize\", \"faster\", \"performance\", \"slow\", \"improve\"]):",
+        "detail": "backend.app.services.ai_service",
+        "documentation": {}
+    },
+    {
+        "label": "build_context_from_history",
+        "kind": 2,
+        "importPath": "backend.app.services.ai_service",
+        "description": "backend.app.services.ai_service",
+        "peekOfCode": "def build_context_from_history(sessions: list) -> dict:\n    \"\"\"Builds user context from all past sessions.\"\"\"\n    languages = {}\n    topics = []\n    for session in sessions[-10:]:  # Last 10 sessions\n        messages = session.get(\"messages\", [])\n        for msg in messages:\n            content = msg.get(\"content\", \"\").lower()\n            # Detect languages used\n            for lang in [\"python\", \"javascript\", \"typescript\", \"rust\", \"go\", \"java\", \"sql\"]:",
+        "detail": "backend.app.services.ai_service",
+        "documentation": {}
+    },
+    {
         "label": "logger",
         "kind": 5,
         "importPath": "backend.app.services.ai_service",
         "description": "backend.app.services.ai_service",
-        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\n# System prompt that makes AI a senior developer\nSYSTEM_PROMPT = \"\"\"You are FlowDesk AI - an elite senior software engineer assistant built into FlowDesk developer workspace.\nYour personality:\n- Expert in ALL programming languages and frameworks\n- Give concise, practical answers - no fluff\n- Always provide working code examples\n- Explain WHY not just WHAT\n- Point out potential bugs and security issues",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nsettings = get_settings()\n# --- Ultimate System Prompt ---------------------------------------------------\ndef build_system_prompt(user_context: dict = {}) -> str:\n    name = user_context.get(\"name\", \"Developer\")\n    stack = user_context.get(\"stack\", \"\")\n    style = user_context.get(\"style\", \"\")\n    past_topics = user_context.get(\"past_topics\", \"\")\n    return f\"\"\"You are FlowDesk AI - the most advanced developer AI assistant ever built.\nYou are the combined knowledge of:",
         "detail": "backend.app.services.ai_service",
         "documentation": {}
     },
@@ -2652,16 +2704,7 @@
         "kind": 5,
         "importPath": "backend.app.services.ai_service",
         "description": "backend.app.services.ai_service",
-        "peekOfCode": "settings = get_settings()\n# System prompt that makes AI a senior developer\nSYSTEM_PROMPT = \"\"\"You are FlowDesk AI - an elite senior software engineer assistant built into FlowDesk developer workspace.\nYour personality:\n- Expert in ALL programming languages and frameworks\n- Give concise, practical answers - no fluff\n- Always provide working code examples\n- Explain WHY not just WHAT\n- Point out potential bugs and security issues\n- Suggest best practices and optimizations",
-        "detail": "backend.app.services.ai_service",
-        "documentation": {}
-    },
-    {
-        "label": "SYSTEM_PROMPT",
-        "kind": 5,
-        "importPath": "backend.app.services.ai_service",
-        "description": "backend.app.services.ai_service",
-        "peekOfCode": "SYSTEM_PROMPT = \"\"\"You are FlowDesk AI - an elite senior software engineer assistant built into FlowDesk developer workspace.\nYour personality:\n- Expert in ALL programming languages and frameworks\n- Give concise, practical answers - no fluff\n- Always provide working code examples\n- Explain WHY not just WHAT\n- Point out potential bugs and security issues\n- Suggest best practices and optimizations\nYour capabilities:\n- Explain any code instantly",
+        "peekOfCode": "settings = get_settings()\n# --- Ultimate System Prompt ---------------------------------------------------\ndef build_system_prompt(user_context: dict = {}) -> str:\n    name = user_context.get(\"name\", \"Developer\")\n    stack = user_context.get(\"stack\", \"\")\n    style = user_context.get(\"style\", \"\")\n    past_topics = user_context.get(\"past_topics\", \"\")\n    return f\"\"\"You are FlowDesk AI - the most advanced developer AI assistant ever built.\nYou are the combined knowledge of:\n- A Principal Engineer with 20 years experience",
         "detail": "backend.app.services.ai_service",
         "documentation": {}
     },
