@@ -539,9 +539,8 @@ export default function AIAssistant() {
                     <AlertCircle size={14} className="text-red-400" />
                     <span className="text-red-300 text-sm">Daily limit reached. Upgrade to Pro for unlimited AI.</span>
                   </div>
-                  <button className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium">
-                    Upgrade
-                  </button>
+                  <button onClick={() => alert("Pro plan coming soon! Contact: sheryarahmad311@gmail.com")} className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium">
+  Upgrade          </button>
                 </div>
               )}
 

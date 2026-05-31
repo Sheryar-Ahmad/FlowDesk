@@ -1,5 +1,5 @@
 """
-ai_service.py - Ultimate Beast Mode AI Service
+ai_service.py - Ultimate AI assistant for developers with persistent memory, multi-model routing, and context-aware responses.
 ------------------------------------------------
 Features:
 - Persistent memory across all sessions
@@ -244,3 +244,56 @@ async def analyze_code(code: str, language: str, task: str = "explain") -> str:
     prompt = prompts.get(task, prompts["explain"])
     result = await chat_with_ai([{"role": "user", "content": prompt}], "pro", 0)
     return result["response"]
+
+
+async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
+    """
+    Gemini fallback when Groq limit is reached.
+    Uses Google Gemini 2.0 Flash - completely free.
+    """
+    from google import genai
+    from google.genai import types
+
+    if not settings.GEMINI_API_KEY:
+        raise ValueError("Gemini API key not configured.")
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    # Build conversation
+    system = build_system_prompt(user_context)
+    full_prompt = system + "\n\n"
+    for msg in messages:
+        role = "User" if msg["role"] == "user" else "Assistant"
+        full_prompt += f"{role}: {msg['content']}\n\n"
+    full_prompt += "Assistant:"
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=full_prompt,
+    )
+
+    last_msg = messages[-1]["content"] if messages else ""
+
+    return {
+        "response": response.text,
+        "tokens_used": len(response.text.split()) * 2,
+        "model": "gemini-2.0-flash",
+        "intent": detect_intent(last_msg),
+    }
+
+    # Build conversation history
+    history = []
+    for msg in messages[:-1]:
+        role = "user" if msg["role"] == "user" else "model"
+        history.append({"role": role, "parts": [msg["content"]]})
+
+    chat = model.start_chat(history=history)
+    last_msg = messages[-1]["content"] if messages else ""
+    response = chat.send_message(last_msg)
+
+    return {
+        "response": response.text,
+        "tokens_used": len(response.text.split()) * 2,
+        "model": "gemini-1.5-flash",
+        "intent": detect_intent(last_msg),
+    }

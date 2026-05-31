@@ -130,14 +130,22 @@ async def chat(
         else:
             all_messages = new_messages
 
-        # Call AI with full context
-        result_ai = await chat_with_ai(
-            messages=all_messages,
-            user_plan=current_user["plan"],
-            ai_messages_used=messages_used,
-            user_context=context,
-            session_messages=session_messages,
-        )
+      # Call AI with full context - Groq first, Gemini fallback
+        try:
+            result_ai = await chat_with_ai(
+                messages=all_messages,
+                user_plan=current_user["plan"],
+                ai_messages_used=messages_used,
+                user_context=context,
+                session_messages=session_messages,
+            )
+        except ValueError as groq_err:
+            if "429" in str(groq_err) or "rate_limit" in str(groq_err).lower():
+                logger.warning("Groq limit reached, switching to Gemini fallback")
+                from app.services.ai_service import chat_with_gemini
+                result_ai = await chat_with_gemini(all_messages, context)
+            else:
+                raise groq_err
 
         # Update session with new messages
         ai_msg = {"role": "assistant", "content": result_ai["response"]}
