@@ -15,7 +15,7 @@ import json
 from app.database.connection import get_db
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import limiter, AI_LIMIT
-from app.services.ai_service import chat_with_ai, analyze_code, generate_session_title, build_context_from_history
+from app.services.ai_service import chat_with_ai, analyze_code, generate_session_title, build_context_from_history, smart_ai_router
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -130,9 +130,9 @@ async def chat(
         else:
             all_messages = new_messages
 
-      # Call AI with full context - Groq first, Gemini fallback
+# Call AI with full context - Groq first, Gemini fallback
         try:
-            result_ai = await chat_with_ai(
+            result_ai = await smart_ai_router(
                 messages=all_messages,
                 user_plan=current_user["plan"],
                 ai_messages_used=messages_used,

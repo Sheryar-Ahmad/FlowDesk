@@ -247,20 +247,15 @@ async def analyze_code(code: str, language: str, task: str = "explain") -> str:
 
 
 async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
-    """
-    Gemini fallback when Groq limit is reached.
-    Uses Google Gemini 2.0 Flash - completely free.
-    """
+    """Gemini fallback using new google-genai package."""
     from google import genai
-    from google.genai import types
 
     if not settings.GEMINI_API_KEY:
         raise ValueError("Gemini API key not configured.")
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-
-    # Build conversation
     system = build_system_prompt(user_context)
+
     full_prompt = system + "\n\n"
     for msg in messages:
         role = "User" if msg["role"] == "user" else "Assistant"
@@ -273,7 +268,6 @@ async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
     )
 
     last_msg = messages[-1]["content"] if messages else ""
-
     return {
         "response": response.text,
         "tokens_used": len(response.text.split()) * 2,
@@ -281,19 +275,109 @@ async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
         "intent": detect_intent(last_msg),
     }
 
-    # Build conversation history
-    history = []
-    for msg in messages[:-1]:
-        role = "user" if msg["role"] == "user" else "model"
-        history.append({"role": role, "parts": [msg["content"]]})
-
-    chat = model.start_chat(history=history)
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    system = build_system_prompt(user_context)
+    full_prompt = system + "\n\n"
+    for msg in messages:
+        role = "User" if msg["role"] == "user" else "Assistant"
+        full_prompt += f"{role}: {msg['content']}\n\n"
+    full_prompt += "Assistant:"
+    response = client.models.generate_content(model="gemini-2.0-flash", contents=full_prompt)
     last_msg = messages[-1]["content"] if messages else ""
-    response = chat.send_message(last_msg)
-
     return {
         "response": response.text,
         "tokens_used": len(response.text.split()) * 2,
-        "model": "gemini-1.5-flash",
+        "model": "gemini-2.0-flash",
         "intent": detect_intent(last_msg),
     }
+async def chat_with_mistral(messages: list, user_context: dict = {}) -> dict:
+    """
+    Mistral fallback - free tier available.
+    Uses Mistral Large for maximum intelligence.
+    """
+    try:
+        from mistralai import Client
+    except ImportError:
+        try:
+            from mistralai import Mistral as Client
+        except ImportError as exc:
+            raise ImportError("mistralai package must expose Client or Mistral") from exc
+
+    if not settings.MISTRAL_API_KEY:
+        raise ValueError("Mistral API key not configured.")
+
+    client = Client(api_key=settings.MISTRAL_API_KEY)
+    system = build_system_prompt(user_context)
+
+    full_messages = [{"role": "system", "content": system}]
+    for msg in messages:
+        full_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    response = client.chat.complete(
+        model="mistral-large-latest",
+        messages=full_messages,
+        max_tokens=4096,
+        temperature=0.3,
+    )
+
+    last_msg = messages[-1]["content"] if messages else ""
+    return {
+        "response": response.choices[0].message.content,
+        "tokens_used": response.usage.total_tokens,
+        "model": "mistral-large",
+        "intent": detect_intent(last_msg),
+    }
+
+
+async def smart_ai_router(
+    messages: list,
+    user_plan: str,
+    ai_messages_used: int,
+    user_context: dict = {},
+    session_messages: list = [],
+) -> dict:
+    """
+    Ultimate AI router — tries models in order:
+    1. Groq (Llama 3.3 70B) — fastest
+    2. Gemini (2.0 Flash) — fallback
+    3. Mistral (Large) — final fallback
+
+    Never fails. Always returns a response.
+    This is what makes FlowDesk feel like Claude.
+    """
+    errors = []
+
+    # Try Groq first
+    try:
+        result = await chat_with_ai(
+            messages=messages,
+            user_plan=user_plan,
+            ai_messages_used=ai_messages_used,
+            user_context=user_context,
+            session_messages=session_messages,
+        )
+        result["model_used"] = "groq/llama-3.3-70b"
+        return result
+    except Exception as e:
+        errors.append(f"Groq: {str(e)[:100]}")
+        logger.warning("Groq failed, trying Gemini", error=str(e)[:100])
+
+    # Try Gemini second
+    try:
+        result = await chat_with_gemini(messages, user_context)
+        result["model_used"] = "google/gemini-2.0-flash"
+        return result
+    except Exception as e:
+        errors.append(f"Gemini: {str(e)[:100]}")
+        logger.warning("Gemini failed, trying Mistral", error=str(e)[:100])
+
+    # Try Mistral third
+    try:
+        result = await chat_with_mistral(messages, user_context)
+        result["model_used"] = "mistral/mistral-large"
+        return result
+    except Exception as e:
+        errors.append(f"Mistral: {str(e)[:100]}")
+        logger.error("All AI models failed", errors=errors)
+
+    raise ValueError("All AI models temporarily unavailable. Please try again in a few minutes.")

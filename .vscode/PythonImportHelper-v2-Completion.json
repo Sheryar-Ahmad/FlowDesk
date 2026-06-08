@@ -1122,6 +1122,14 @@
         "documentation": {}
     },
     {
+        "label": "smart_ai_router",
+        "importPath": "app.services.ai_service",
+        "description": "app.services.ai_service",
+        "isExtraImport": true,
+        "detail": "app.services.ai_service",
+        "documentation": {}
+    },
+    {
         "label": "RegisterRequest",
         "importPath": "app.api.v1.auth.schemas",
         "description": "app.api.v1.auth.schemas",

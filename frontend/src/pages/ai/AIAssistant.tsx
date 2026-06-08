@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  ArrowLeft, Bot, Send, Copy, Check, Loader2,
+  ArrowLeft, Send, Copy, Check, Loader2,
   Code, FileText, Zap, Shield, RefreshCw,
-  Trash2, Sparkles, Terminal, Brain, Lightbulb,
-  Search, GitBranch, Package, AlertCircle,
-  TrendingUp, Plus, Clock, ChevronRight,
+  Sparkles, Terminal, Brain, Lightbulb,
+  Search, AlertCircle,
+  TrendingUp, Plus, Clock,
   MessageSquare, X
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
@@ -26,6 +26,11 @@ interface Message {
   timestamp: Date
   tokens?: number
   intent?: string
+}
+
+interface SessionMessage {
+  role: Message["role"]
+  content: string
 }
 
 interface Session {
@@ -164,21 +169,25 @@ export default function AIAssistant() {
     try {
       const { data } = await api.get("/ai/usage")
       setUsage(data)
-    } catch {}
+    } catch (error) {
+      console.error("Failed to load usage", error)
+    }
   }
 
   const loadSessions = async () => {
     try {
       const { data } = await api.get("/ai/sessions")
       setSessions(data.sessions || [])
-    } catch {}
+    } catch (error) {
+      console.error("Failed to load sessions", error)
+    }
   }
 
   const loadSession = async (sessionId: string) => {
     setLoadingSession(true)
     try {
-      const { data } = await api.get(`/ai/sessions/${sessionId}`)
-      const msgs: Message[] = (data.session.messages || []).map((m: any, i: number) => ({
+      const { data } = await api.get<{ session: { messages: SessionMessage[]; created_at: string } }>(`/ai/sessions/${sessionId}`)
+      const msgs: Message[] = (data.session.messages || []).map((m, i) => ({
         id: `${sessionId}-${i}`,
         role: m.role,
         content: m.content,
