@@ -264,8 +264,20 @@ export default function AIAssistant() {
       // Refresh sessions list
       loadSessions()
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } }
-      toast.error(e.response?.data?.detail || "AI error. Try again.")
+      const e = err as { response?: { data?: { detail?: string }; status?: number } }
+      const detail = e.response?.data?.detail || ""
+      
+      if (detail.includes("All AI models") || detail.includes("temporarily unavailable")) {
+        // All models exhausted - show clear message
+        toast.error("⚠️ All AI services are busy. Please try again in 1-2 hours.", { duration: 8000 })
+        setUsage(prev => ({ ...prev, remaining: 0, used_today: typeof prev.limit === "number" ? prev.limit : 20 }))
+      } else if (detail.includes("Daily limit") || detail.includes("Free tier limit")) {
+        toast.error("Daily limit reached. Upgrade to Pro!", { duration: 5000 })
+        setUsage(prev => ({ ...prev, remaining: 0 }))
+      } else {
+        toast.error(detail || "AI error. Try again.")
+      }
+      
       setMessages(prev => prev.filter(m => m.id !== userMsg.id))
       setInput(userMsg.content)
     } finally {
@@ -548,7 +560,7 @@ export default function AIAssistant() {
                     <AlertCircle size={14} className="text-red-400" />
                     <span className="text-red-300 text-sm">Daily limit reached. Upgrade to Pro for unlimited AI.</span>
                   </div>
-                  <button onClick={() => alert("Pro plan coming soon! Contact: sheryarahmad311@gmail.com")} className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium">
+                  <button onClick={() => toast("🚀 Pro plan coming soon!", { duration: 4000 })} className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium">
   Upgrade          </button>
                 </div>
               )}

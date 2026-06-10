@@ -54,18 +54,27 @@ async def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data)
     """Resets daily limit if new day."""
     now = datetime.now(timezone.utc)
     messages_used = user_data.ai_messages_used_today or 0
+    reset_at = user_data.ai_messages_reset_at
 
-    if user_data.ai_messages_reset_at:
-        reset_at = user_data.ai_messages_reset_at
+    # Auto reset every 24 hours
+    if reset_at:
         if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
             reset_at = reset_at.replace(tzinfo=timezone.utc)
-        if (now - reset_at).days >= 1:
+        if (now - reset_at).total_seconds() >= 86400:
             messages_used = 0
             await db.execute(
-                text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=:now WHERE id=:uid"),
-                {"now": now, "uid": user_id}
+                text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=NOW() WHERE id=:uid"),
+                {"uid": user_id}
             )
             await db.commit()
+            logger.info("AI daily limit auto-reset", user_id=user_id)
+    else:
+        # First time — set reset timestamp
+        await db.execute(
+            text("UPDATE users SET ai_messages_reset_at=NOW() WHERE id=:uid AND ai_messages_reset_at IS NULL"),
+            {"uid": user_id}
+        )
+        await db.commit()
 
     return messages_used
 
@@ -324,12 +333,27 @@ async def get_usage(
     db: AsyncSession = Depends(get_db),
 ):
     """Get AI usage stats."""
+    now = datetime.now(timezone.utc)
     result = await db.execute(
-        text("SELECT ai_messages_used_today, plan FROM users WHERE id=:uid"),
+        text("SELECT ai_messages_used_today, ai_messages_reset_at, plan FROM users WHERE id=:uid"),
         {"uid": current_user["id"]}
     )
     user = result.fetchone()
     used = user.ai_messages_used_today or 0
+
+    # Auto reset check
+    if user.ai_messages_reset_at:
+        reset_at = user.ai_messages_reset_at
+        if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
+            reset_at = reset_at.replace(tzinfo=timezone.utc)
+        if (now - reset_at).total_seconds() >= 86400:
+            used = 0
+            await db.execute(
+                text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=NOW() WHERE id=:uid"),
+                {"uid": current_user["id"]}
+            )
+            await db.commit()
+
     return {
         "success": True,
         "used_today": used,
