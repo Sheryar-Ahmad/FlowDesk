@@ -360,6 +360,14 @@
         "documentation": {}
     },
     {
+        "label": "AsyncSession",
+        "importPath": "sqlalchemy.ext.asyncio",
+        "description": "sqlalchemy.ext.asyncio",
+        "isExtraImport": true,
+        "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
         "label": "create_async_engine",
         "importPath": "sqlalchemy.ext.asyncio",
         "description": "sqlalchemy.ext.asyncio",
@@ -429,6 +437,14 @@
         "description": "sqlalchemy.ext.asyncio",
         "isExtraImport": true,
         "detail": "sqlalchemy.ext.asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "text",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
         "documentation": {}
     },
     {
@@ -592,59 +608,11 @@
         "documentation": {}
     },
     {
-        "label": "List",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
         "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Optional",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pydantic",
         "documentation": {}
     },
     {
@@ -664,7 +632,71 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -785,6 +817,22 @@
     },
     {
         "label": "date",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "date",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -938,6 +986,14 @@
         "documentation": {}
     },
     {
+        "label": "get_db",
+        "importPath": "app.database.connection",
+        "description": "app.database.connection",
+        "isExtraImport": true,
+        "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
         "label": "check_db_connection",
         "importPath": "app.database.connection",
         "description": "app.database.connection",
@@ -951,6 +1007,14 @@
         "description": "app.database.connection",
         "isExtraImport": true,
         "detail": "app.database.connection",
+        "documentation": {}
+    },
+    {
+        "label": "get_current_user",
+        "importPath": "app.core.middleware.auth_guard",
+        "description": "app.core.middleware.auth_guard",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.auth_guard",
         "documentation": {}
     },
     {
@@ -1019,6 +1083,22 @@
     },
     {
         "label": "AUTH_LIMIT",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "limiter",
+        "importPath": "app.core.middleware.rate_limiter",
+        "description": "app.core.middleware.rate_limiter",
+        "isExtraImport": true,
+        "detail": "app.core.middleware.rate_limiter",
+        "documentation": {}
+    },
+    {
+        "label": "API_LIMIT",
         "importPath": "app.core.middleware.rate_limiter",
         "description": "app.core.middleware.rate_limiter",
         "isExtraImport": true,
@@ -1480,6 +1560,14 @@
         "description": "app.api.v1.ai.router",
         "isExtraImport": true,
         "detail": "app.api.v1.ai.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "app.api.v1.timer.router",
+        "description": "app.api.v1.timer.router",
+        "isExtraImport": true,
+        "detail": "app.api.v1.timer.router",
         "documentation": {}
     },
     {
@@ -2271,11 +2359,38 @@
         "documentation": {}
     },
     {
+        "label": "SessionCreate",
+        "kind": 6,
+        "importPath": "backend.app.api.v1.timer.router",
+        "description": "backend.app.api.v1.timer.router",
+        "peekOfCode": "class SessionCreate(BaseModel):\n    duration_minutes: int\n    completed: bool = True\n    session_date: Optional[str] = None\n@router.post(\"/sessions\", status_code=201)\n@limiter.limit(API_LIMIT)\nasync def create_session(\n    request: Request,\n    body: SessionCreate,\n    current_user: dict = Depends(get_current_user),",
+        "detail": "backend.app.api.v1.timer.router",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.timer.router",
+        "description": "backend.app.api.v1.timer.router",
+        "peekOfCode": "logger = structlog.get_logger(__name__)\nrouter = APIRouter()\nclass SessionCreate(BaseModel):\n    duration_minutes: int\n    completed: bool = True\n    session_date: Optional[str] = None\n@router.post(\"/sessions\", status_code=201)\n@limiter.limit(API_LIMIT)\nasync def create_session(\n    request: Request,",
+        "detail": "backend.app.api.v1.timer.router",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "backend.app.api.v1.timer.router",
+        "description": "backend.app.api.v1.timer.router",
+        "peekOfCode": "router = APIRouter()\nclass SessionCreate(BaseModel):\n    duration_minutes: int\n    completed: bool = True\n    session_date: Optional[str] = None\n@router.post(\"/sessions\", status_code=201)\n@limiter.limit(API_LIMIT)\nasync def create_session(\n    request: Request,\n    body: SessionCreate,",
+        "detail": "backend.app.api.v1.timer.router",
+        "documentation": {}
+    },
+    {
         "label": "api_router",
         "kind": 5,
         "importPath": "backend.app.api.router",
         "description": "backend.app.api.router",
-        "peekOfCode": "api_router = APIRouter()\napi_router.include_router(auth_router, prefix=\"/v1/auth\", tags=[\"Authentication\"])\napi_router.include_router(snippets_router, prefix=\"/v1/snippets\", tags=[\"Snippets\"])\napi_router.include_router(notes_router, prefix=\"/v1/notes\", tags=[\"Notes\"])\napi_router.include_router(tasks_router, prefix=\"/v1/tasks\", tags=[\"Tasks\"])\napi_router.include_router(ai_router, prefix=\"/v1/ai\", tags=[\"AI Assistant\"])",
+        "peekOfCode": "api_router = APIRouter()\napi_router.include_router(auth_router, prefix='/v1/auth', tags=['Authentication'])\napi_router.include_router(snippets_router, prefix='/v1/snippets', tags=['Snippets'])\napi_router.include_router(notes_router, prefix='/v1/notes', tags=['Notes'])\napi_router.include_router(tasks_router, prefix='/v1/tasks', tags=['Tasks'])\napi_router.include_router(ai_router, prefix='/v1/ai', tags=['AI Assistant'])\napi_router.include_router(timer_router, prefix='/v1/timer', tags=['Focus Timer'])",
         "detail": "backend.app.api.router",
         "documentation": {}
     },

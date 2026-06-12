@@ -9,7 +9,7 @@ const features = [
   { icon: FileText, title: "Notes", desc: "Rich text notes with code blocks and tasks", path: "/notes", ready: true, color: "text-green-400" },
   { icon: Kanban, title: "Tasks", desc: "Kanban project management for developers", path: "/tasks", ready: true, color: "text-yellow-400" },
   { icon: Bot, title: "AI Assistant", desc: "Llama 3.3 70B — explain, fix, generate code", path: "/ai", ready: true, color: "text-purple-400" },
-  { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: false, color: "text-orange-400" },
+  { icon: Timer, title: "Focus Timer", desc: "Pomodoro productivity timer", path: "/timer", ready: true, color: "text-orange-400" },
   { icon: GitCompare, title: "Code Diff", desc: "Compare code side by side instantly", path: "/diff", ready: false, color: "text-cyan-400" },
 ]
 
