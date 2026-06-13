@@ -6,9 +6,9 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-
 import { CSS } from "@dnd-kit/utilities"
 import {
   Plus, Trash2, ArrowLeft, Kanban, Calendar,
-  X, Loader2, CheckCircle, Clock,
+  X, Loader2, CheckCircle,
   AlertTriangle, Search, Bell, BarChart2,
-  Edit3, Save, Circle, Filter, Flag
+  Edit3, Save, Circle, Filter
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import {
@@ -39,7 +39,7 @@ const STATUS_MAP: Record<string, string> = {
 interface TaskFormProps {
   isEdit: boolean
   taskForm: { title: string; description: string; priority: string; due_date: string; labels: string[]; labelInput: string }
-  setTaskForm: (f: any) => void
+  setTaskForm: (f: { title: string; description: string; priority: string; due_date: string; labels: string[]; labelInput: string }) => void
   onSave: () => void
   onClose: () => void
   saving: boolean
@@ -295,7 +295,18 @@ export default function TaskBoard() {
   const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", labels: [] as string[], labelInput: "" })
   const [saving, setSaving] = useState(false)
 
-  const loadProjects = async () => {
+  const selectProject = useCallback(async (project: Project) => {
+    setSelectedProject(project)
+    setTasks([])
+    setColumns([])
+    try {
+      const [colData, taskData] = await Promise.all([getColumns(project.id), getTasks(project.id)])
+      setColumns(colData.columns || [])
+      setTasks(taskData.tasks || [])
+    } catch { toast.error("Failed to load board") }
+  }, [])
+
+  const loadProjects = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getProjects()
@@ -303,10 +314,10 @@ export default function TaskBoard() {
       if (data.projects?.length > 0) await selectProject(data.projects[0])
     } catch { toast.error("Failed to load projects") }
     finally { setLoading(false) }
-  }
+  }, [selectProject])
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
-  useEffect(() => { loadProjects() }, [])
+  useEffect(() => { loadProjects() }, [loadProjects])
 
   useKeyboard({
     "ctrl+k": () => document.getElementById("task-search")?.focus(),
