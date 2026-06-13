@@ -16,7 +16,7 @@
  */
 
 import { create } from "zustand"
-import { registerUser, loginUser, logoutUser, getCurrentUser } from "../services/api/auth.api"
+import { registerUser, loginUser, logoutUser } from "../services/api/auth.api"
 import type { RegisterData, LoginData } from "../services/api/auth.api"
 
 interface User {
@@ -60,10 +60,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: null,
       })
-    } catch (err: any) {
-      const message = err.response?.data?.detail || "Registration failed. Please try again."
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Registration failed. Please try again."
       set({ error: message, isLoading: false })
-      throw new Error(message)
     }
   },
 
@@ -78,10 +77,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: null,
       })
-    } catch (err: any) {
-      const message = err.response?.data?.detail || "Login failed. Please try again."
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Login failed. Please try again."
       set({ error: message, isLoading: false })
-      throw new Error(message)
     }
   },
 
@@ -92,7 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (accessToken) {
         await logoutUser(accessToken, "")
       }
-    } catch (err) {
+    } catch {
       // Even if logout API fails, clear local state
     } finally {
       set({
