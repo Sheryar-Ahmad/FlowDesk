@@ -2,6 +2,7 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Code2, Eye, EyeOff, Loader2, CheckCircle, XCircle } from "lucide-react"
 import toast from "react-hot-toast"
+import { API_BASE_URL } from "../../services/api/config"
 
 export default function Register() {
   const navigate = useNavigate()
@@ -88,7 +89,7 @@ export default function Register() {
     setIsLoading(true)
     
     try {
-      const response = await fetch("http://localhost:8000/api/v1/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

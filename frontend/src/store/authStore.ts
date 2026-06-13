@@ -64,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Registration failed. Please try again."
       set({ error: message, isLoading: false })
+      throw new Error(message, { cause: err })
     }
   },
 
@@ -81,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Login failed. Please try again."
       set({ error: message, isLoading: false })
+      throw new Error(message, { cause: err })
     }
   },
 
