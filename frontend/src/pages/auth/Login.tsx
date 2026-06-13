@@ -18,15 +18,15 @@ export default function Login() {
       await login({ email, password })
       toast.success("Welcome back!")
       navigate("/dashboard")
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Login failed. Please try again.")
     }
   }
 
   return (
-    <div className="min-h-screen bg-dark-300 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-dark-300 flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
             <Code2 className="text-primary-500" size={32} />
             <span className="text-2xl font-bold text-white">FlowDesk</span>

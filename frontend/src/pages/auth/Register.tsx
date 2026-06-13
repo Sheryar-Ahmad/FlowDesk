@@ -118,8 +118,8 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#11111b] flex items-center justify-center">
-        <div className="bg-[#1e1e2e] p-8 rounded-xl text-center">
+      <div className="min-h-screen bg-[#11111b] flex items-center justify-center px-4 py-8">
+        <div className="bg-[#1e1e2e] border border-gray-800 p-6 sm:p-8 rounded-xl text-center w-full max-w-md">
           <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Account Created!</h2>
           <p className="text-gray-400">Redirecting to login page...</p>
@@ -131,7 +131,7 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-[#11111b] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
             <Code2 className="text-[#6366f1]" size={32} />
             <span className="text-2xl font-bold text-white">FlowDesk</span>
@@ -139,7 +139,7 @@ export default function Register() {
           <p className="text-gray-400 mt-2">Create your free account</p>
         </div>
 
-        <div className="bg-[#1e1e2e] border border-gray-800 rounded-xl p-6">
+        <div className="bg-[#1e1e2e] border border-gray-800 rounded-xl p-5 sm:p-6">
           <form onSubmit={handleRegister} className="space-y-4">
              
             {error && (
@@ -208,7 +208,7 @@ export default function Register() {
                     />
                   </div>
                   <p className="text-xs" style={{ color: getStrengthColor() }}>{getStrengthText()}</p>
-                  <div className="grid grid-cols-2 gap-1 text-xs mt-2">
+                  <div className="grid grid-cols-1 min-[390px]:grid-cols-2 gap-1 text-xs mt-2">
                     <span className={passwordChecks[0] ? "text-green-400" : "text-gray-500"}>✓ 8+ characters</span>
                     <span className={passwordChecks[1] ? "text-green-400" : "text-gray-500"}>✓ Uppercase letter</span>
                     <span className={passwordChecks[2] ? "text-green-400" : "text-gray-500"}>✓ Lowercase letter</span>

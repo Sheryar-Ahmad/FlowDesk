@@ -23,3 +23,13 @@
 .ProseMirror mark { background-color: #fbbf2433; color: #fbbf24; border-radius: 0.125rem; padding: 0.125rem 0; }
 .ProseMirror hr { border-color: #374151; margin: 1.5rem 0; }
 .ProseMirror p.is-editor-empty:first-child::before { color: #6b7280; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
+
+@media (max-width: 767px) {
+  .ProseMirror {
+    min-height: 100%;
+  }
+
+  .ProseMirror pre {
+    padding: 0.75rem;
+  }
+}
