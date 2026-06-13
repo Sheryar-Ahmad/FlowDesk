@@ -21,7 +21,7 @@ import {
   Search, Plus, Copy, Trash2, Pin, PinOff, Code2,
   X, Check, Loader2, Tag, Globe, Lock, FileCode,
   Edit3, Save, ArrowLeft, Download, Share2,
-  BarChart2, Star, Zap, Filter
+  BarChart2, Zap
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import {
@@ -74,7 +74,7 @@ export default function SnippetList() {
   const [tagInput, setTagInput] = useState("")
   const [saving, setSaving] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [searchTimeout, setSearchTimeout] = useState<any>(null)
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/login")
@@ -90,7 +90,7 @@ export default function SnippetList() {
   const loadSnippets = useCallback(async (searchQuery?: string, lang?: string, sort?: string) => {
     setLoading(true)
     try {
-      const params: any = { page: 1, page_size: 100 }
+      const params: Record<string, string | number> = { page: 1, page_size: 100 }
       if (searchQuery && searchQuery.length >= 2) params.search = searchQuery
       if (lang && lang !== "all") params.language = lang
       const data = await getSnippets(params)
@@ -103,14 +103,14 @@ export default function SnippetList() {
 
       setSnippets(sorted)
       setTotal(data.total || 0)
-    } catch (err) {
+    } catch {
       toast.error("Failed to load snippets")
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { loadSnippets() }, [loadSnippets])
+  useEffect(() => { loadSnippets() }, [loadSnippets]) // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -133,7 +133,7 @@ export default function SnippetList() {
     await navigator.clipboard.writeText(snippet.code)
     await copySnippet(snippet.id).catch(() => {})
     setCopiedId(snippet.id)
-    toast.success("Copied to clipboard!", { icon: "??" })
+    toast.success("Copied to clipboard!", { icon: "📋" })
     setTimeout(() => setCopiedId(null), 2000)
     // Update use count locally
     setSnippets(prev => prev.map(s => s.id === snippet.id ? {...s, use_count: s.use_count + 1} : s))
@@ -167,7 +167,7 @@ export default function SnippetList() {
   }
 
   const handleAddTag = () => {
-    const tag = tagInput.trim().toLowerCase().replace(/[^a-z0-9\-]/g, "")
+    const tag = tagInput.trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
     if (!tag) return
     if (form.tags && form.tags.length >= 10) { toast.error("Max 10 tags"); return }
     if (form.tags && !form.tags.includes(tag)) {
@@ -186,13 +186,13 @@ export default function SnippetList() {
     setSaving(true)
     try {
       const result = await createSnippet(form)
-      toast.success("Snippet created! ??")
+      toast.success("Snippet created! 🚀")
       setShowCreateModal(false)
       setForm(emptyForm)
       loadSnippets(search, selectedLang, sortBy)
       setSelectedSnippet(result.snippet)
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to create snippet")
+    } catch {
+      toast.error("Failed to create snippet")
     } finally {
       setSaving(false)
     }
@@ -213,12 +213,12 @@ export default function SnippetList() {
     setSaving(true)
     try {
       const result = await updateSnippet(selectedSnippet.id, form)
-      toast.success("Snippet updated! ?")
+      toast.success("Snippet updated! ✅")
       setShowEditModal(false)
       loadSnippets(search, selectedLang, sortBy)
       setSelectedSnippet(result.snippet)
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to update")
+    } catch {
+      toast.error("Failed to update")
     } finally {
       setSaving(false)
     }
@@ -231,7 +231,7 @@ export default function SnippetList() {
       toast.success("Snippet deleted")
       if (selectedSnippet?.id === snippet.id) setSelectedSnippet(null)
       loadSnippets(search, selectedLang, sortBy)
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete snippet")
     }
   }
@@ -239,9 +239,9 @@ export default function SnippetList() {
   const handlePin = async (snippet: Snippet) => {
     try {
       await updateSnippet(snippet.id, { is_pinned: !snippet.is_pinned })
-      toast.success(snippet.is_pinned ? "Unpinned" : "Pinned! ??")
+      toast.success(snippet.is_pinned ? "Unpinned" : "Pinned! 📌")
       loadSnippets(search, selectedLang, sortBy)
-    } catch (err) {
+    } catch {
       toast.error("Failed to update")
     }
   }
@@ -249,11 +249,10 @@ export default function SnippetList() {
   // Stats
   const totalCopies = snippets.reduce((sum, s) => sum + s.use_count, 0)
   const topLanguage = snippets.length > 0
-    ? Object.entries(snippets.reduce((acc: any, s) => { acc[s.language] = (acc[s.language] || 0) + 1; return acc }, {}))
-        .sort((a: any, b: any) => b[1] - a[1])[0]?.[0]
+    ? Object.entries(snippets.reduce((acc: Record<string, number>, s) => { acc[s.language] = (acc[s.language] || 0) + 1; return acc }, {}))
+        .sort((a, b) => b[1] - a[1])[0]?.[0]
     : "none"
   const publicCount = snippets.filter(s => s.is_public).length
-  const pinnedCount = snippets.filter(s => s.is_pinned).length
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
@@ -335,13 +334,13 @@ export default function SnippetList() {
           {/* Sort */}
           <div className="px-3 py-2 border-b border-gray-800 flex gap-1">
             {[
-              { value: "newest", label: "Newest" },
-              { value: "most_used", label: "Popular" },
-              { value: "pinned", label: "Pinned" },
+              { value: "newest" as const, label: "Newest" },
+              { value: "most_used" as const, label: "Popular" },
+              { value: "pinned" as const, label: "Pinned" },
             ].map(s => (
               <button
                 key={s.value}
-                onClick={() => handleSort(s.value as any)}
+                onClick={() => handleSort(s.value)}
                 className={`flex-1 text-xs py-1 rounded transition-colors ${sortBy === s.value ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
               >
                 {s.label}
