@@ -76,7 +76,7 @@ class AuthService {
       
       localStorage.setItem('access_token', response.data.access_token);
       return response.data;
-    } catch (error) {
+    } catch {
       this.logout();
       return null;
     }
