@@ -16,7 +16,7 @@ import {
   getColumns, createColumn, getTasks,
   createTask, updateTask, deleteTask
 } from "../../services/api/tasks.api"
-import type { Project, Column, Task } from "../../services/api/tasks.api"
+import type { Project, Column, Task, UpdateTaskData } from "../../services/api/tasks.api"
 import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
 
@@ -48,14 +48,14 @@ interface TaskFormProps {
 function TaskFormModal({ isEdit, taskForm, setTaskForm, onSave, onClose, saving }: TaskFormProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+      <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-lg max-h-[92dvh] overflow-y-auto shadow-2xl">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800">
           <h2 className="text-lg font-bold text-white">{isEdit ? "✏️ Edit Task" : "✨ New Task"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800">
             <X size={18} />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 font-medium">Task Title *</label>
             <input type="text" value={taskForm.title}
@@ -71,7 +71,7 @@ function TaskFormModal({ isEdit, taskForm, setTaskForm, onSave, onClose, saving 
               className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
               placeholder="Add more details..." rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-400 mb-1.5 font-medium">Priority</label>
               <select value={taskForm.priority}
@@ -115,7 +115,7 @@ function TaskFormModal({ isEdit, taskForm, setTaskForm, onSave, onClose, saving 
               placeholder="Type label and press Enter" />
           </div>
         </div>
-        <div className="flex gap-3 p-5 border-t border-gray-800">
+        <div className="flex gap-3 p-4 sm:p-5 border-t border-gray-800">
           <button onClick={onClose} className="flex-1 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
           <button onClick={onSave} disabled={saving}
             className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50">
@@ -165,7 +165,7 @@ function TaskCard({ task, onUpdate, onDelete, onEdit }: {
               {task.title}
             </p>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button onClick={(e) => { e.stopPropagation(); onEdit(task) }}
               className="text-gray-500 hover:text-indigo-400 p-0.5 rounded"><Edit3 size={12} /></button>
             <button onClick={(e) => { e.stopPropagation(); onDelete(task.id) }}
@@ -217,7 +217,7 @@ function KanbanColumn({ column, tasks, onAddTask, onUpdateTask, onDeleteTask, on
   const colColor = COLUMN_COLORS[column.name] || "#6366f1"
 
   return (
-    <div className="flex-shrink-0 w-72 flex flex-col bg-gray-900 rounded-xl border border-gray-800">
+    <div className="flex-shrink-0 w-[calc(100vw-2rem)] max-w-sm sm:w-72 flex flex-col bg-gray-900 rounded-xl border border-gray-800 snap-center">
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export default function TaskBoard() {
     finally { setSaving(false) }
   }
 
-  const handleUpdateTask = async (taskId: string, updates: Record<string, unknown>) => {
+  const handleUpdateTask = async (taskId: string, updates: UpdateTaskData) => {
     try {
       const data = await updateTask(taskId, updates)
       setTasks(prev => prev.map(t => t.id === taskId ? data.task : t))
@@ -447,24 +447,24 @@ export default function TaskBoard() {
   const criticalTasks = tasks.filter(t => t.priority === "critical" && t.status !== "done").length
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen h-[100dvh] bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-900 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-gray-900 sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800">
             <ArrowLeft size={18} />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Kanban className="text-indigo-500" size={22} />
             <h1 className="text-xl font-bold text-white">Tasks</h1>
             {selectedProject && (
               <>
-                <span className="text-gray-600">|</span>
+                <span className="hidden sm:inline text-gray-600">|</span>
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedProject.color }} />
-                <span className="text-white font-medium text-sm">{selectedProject.name}</span>
+                <span className="text-white font-medium text-sm truncate max-w-28 sm:max-w-48">{selectedProject.name}</span>
                 {totalTasks > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="hidden lg:flex items-center gap-2">
                     <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
                     </div>
@@ -475,14 +475,14 @@ export default function TaskBoard() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {criticalTasks > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-red-400 bg-red-950 px-3 py-1.5 rounded-lg border border-red-800 animate-pulse">
+            <span className="hidden xl:flex items-center gap-1.5 text-xs text-red-400 bg-red-950 px-3 py-1.5 rounded-lg border border-red-800 animate-pulse">
               <Bell size={12} />{criticalTasks} critical
             </span>
           )}
           {overdueTasks > 0 && (
-            <span className="flex items-center gap-1.5 text-xs text-orange-400 bg-orange-950 px-3 py-1.5 rounded-lg border border-orange-800">
+            <span className="hidden xl:flex items-center gap-1.5 text-xs text-orange-400 bg-orange-950 px-3 py-1.5 rounded-lg border border-orange-800">
               <AlertTriangle size={12} />{overdueTasks} overdue
             </span>
           )}
@@ -492,14 +492,14 @@ export default function TaskBoard() {
           </button>
           <button onClick={() => setShowNewProject(true)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={16} />New Project
+            <Plus size={16} /><span className="hidden sm:inline">New Project</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
       {showStats && selectedProject && (
-        <div className="border-b border-gray-800 bg-gray-900 px-6 py-4 grid grid-cols-5 gap-4">
+        <div className="border-b border-gray-800 bg-gray-900 px-3 sm:px-6 py-3 sm:py-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
           {[
             { label: "Total", value: totalTasks, color: "text-indigo-400", bg: "bg-indigo-950" },
             { label: "Done", value: doneTasks, color: "text-green-400", bg: "bg-green-950" },
@@ -517,15 +517,15 @@ export default function TaskBoard() {
 
       {/* Search & Filter */}
       {selectedProject && (
-        <div className="border-b border-gray-800 bg-gray-900 px-6 py-2 flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="border-b border-gray-800 bg-gray-900 px-3 sm:px-6 py-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="relative w-full sm:flex-1 sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
             <input id="task-search" type="text" value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search tasks... (Ctrl+K)"
               className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-8 pr-4 py-1.5 text-sm focus:outline-none focus:border-indigo-500" />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
             <Filter size={14} className="text-gray-500" />
             {["all", "critical", "high", "medium", "low"].map(p => (
               <button key={p} onClick={() => setFilterPriority(p)}
@@ -537,13 +537,13 @@ export default function TaskBoard() {
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-56 border-r border-gray-800 bg-gray-900 flex flex-col flex-shrink-0">
-          <div className="p-3 border-b border-gray-800">
+        <div className="w-full md:w-56 max-h-40 md:max-h-none border-b md:border-b-0 md:border-r border-gray-800 bg-gray-900 flex flex-col flex-shrink-0">
+          <div className="hidden md:block p-3 border-b border-gray-800">
             <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Projects</p>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex md:block flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto p-2 gap-2 scrollbar-hide">
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-500" size={20} /></div>
             ) : projects.length === 0 ? (
@@ -555,21 +555,21 @@ export default function TaskBoard() {
             ) : (
               projects.map(project => (
                 <div key={project.id} onClick={() => selectProject(project)}
-                  className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all group mb-1 ${
+                  className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all group min-w-40 md:min-w-0 md:mb-1 ${
                     selectedProject?.id === project.id ? "bg-gray-800 border border-gray-700" : "hover:bg-gray-800 border border-transparent"
                   }`}
                 >
                   <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
                   <span className="text-white text-sm flex-1 truncate font-medium">{project.name}</span>
                   <button onClick={(e) => { e.stopPropagation(); handleDeleteProject(project) }}
-                    className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 p-0.5 rounded transition-all">
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-gray-600 hover:text-red-400 p-0.5 rounded transition-all">
                     <Trash2 size={11} />
                   </button>
                 </div>
               ))
             )}
           </div>
-          <div className="p-3 border-t border-gray-800">
+          <div className="hidden md:block p-3 border-t border-gray-800">
             <button onClick={() => setShowNewProject(true)}
               className="w-full flex items-center gap-2 text-gray-500 hover:text-white text-xs py-2 px-3 rounded-lg hover:bg-gray-800 transition-colors">
               <Plus size={12} />New Project
@@ -578,7 +578,7 @@ export default function TaskBoard() {
         </div>
 
         {/* Board */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-6">
           {!selectedProject ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -597,7 +597,7 @@ export default function TaskBoard() {
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <div className="flex gap-5 items-start">
+              <div className="flex gap-3 sm:gap-5 items-start snap-x snap-mandatory sm:snap-none">
                 {columns.map(column => (
                   <KanbanColumn key={column.id} column={column}
                     tasks={getTasksForColumn(column)}
@@ -618,7 +618,7 @@ export default function TaskBoard() {
                       toast.success("Column added!")
                     } catch { toast.error("Failed to add column") }
                   }}
-                  className="flex-shrink-0 w-72 h-14 flex items-center justify-center gap-2 border-2 border-dashed border-gray-800 rounded-xl text-gray-600 hover:text-indigo-400 hover:border-indigo-800 transition-all text-sm group"
+                  className="flex-shrink-0 w-[calc(100vw-2rem)] max-w-sm sm:w-72 h-14 flex items-center justify-center gap-2 border-2 border-dashed border-gray-800 rounded-xl text-gray-600 hover:text-indigo-400 hover:border-indigo-800 transition-all text-sm group snap-center"
                 >
                   <Plus size={16} className="group-hover:scale-110 transition-transform" />Add Column
                 </button>
@@ -631,12 +631,12 @@ export default function TaskBoard() {
       {/* New Project Modal */}
       {showNewProject && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-md max-h-[92dvh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800">
               <h2 className="text-lg font-bold text-white">🚀 New Project</h2>
               <button onClick={() => setShowNewProject(false)} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800"><X size={18} /></button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4">
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5 font-medium">Project Name</label>
                 <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)}
@@ -655,7 +655,7 @@ export default function TaskBoard() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 p-5 border-t border-gray-800">
+            <div className="flex gap-3 p-4 sm:p-5 border-t border-gray-800">
               <button onClick={() => setShowNewProject(false)} className="flex-1 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
               <button onClick={handleCreateProject} disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
