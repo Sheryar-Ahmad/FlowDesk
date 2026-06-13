@@ -35,9 +35,21 @@ export interface CreateSnippetData {
   description?: string
   tags?: string[]
   is_public?: boolean
+  collection_id?: string | null
 }
 
-export const getSnippets = async (params?: any) => {
+export interface SnippetQuery {
+  page?: number
+  page_size?: number
+  language?: string
+  search?: string
+}
+
+export interface UpdateSnippetData extends Partial<CreateSnippetData> {
+  is_pinned?: boolean
+}
+
+export const getSnippets = async (params?: SnippetQuery) => {
   const response = await api.get("/snippets/", { params })
   return response.data
 }
@@ -52,7 +64,7 @@ export const createSnippet = async (data: CreateSnippetData) => {
   return response.data
 }
 
-export const updateSnippet = async (id: string, data: any) => {
+export const updateSnippet = async (id: string, data: UpdateSnippetData) => {
   const response = await api.put(`/snippets/${id}`, data)
   return response.data
 }

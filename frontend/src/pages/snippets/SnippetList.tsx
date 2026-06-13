@@ -255,40 +255,40 @@ export default function SnippetList() {
   const publicCount = snippets.filter(s => s.is_public).length
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen h-[100dvh] bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between bg-gray-900 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="border-b border-gray-800 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 bg-gray-900 sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800">
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <FileCode className="text-indigo-500" size={24} />
             <h1 className="text-xl font-bold text-white">Snippets</h1>
             <span className="bg-indigo-900 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-medium">{total}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <button
             onClick={() => setShowStats(!showStats)}
             className="flex items-center gap-2 text-gray-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors text-sm"
           >
-            <BarChart2 size={16} />Stats
+            <BarChart2 size={16} /><span className="hidden sm:inline">Stats</span>
           </button>
           <button
             onClick={() => { setForm(emptyForm); setShowCreateModal(true) }}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
           >
-            <Plus size={16} />New Snippet
-            <span className="text-indigo-300 text-xs">Ctrl+M</span>
+            <Plus size={16} /><span className="hidden min-[390px]:inline">New Snippet</span>
+            <span className="text-indigo-300 text-xs hidden lg:inline">Ctrl+M</span>
           </button>
         </div>
       </div>
 
       {/* Stats Bar */}
       {showStats && (
-        <div className="border-b border-gray-800 bg-gray-900 px-6 py-4 grid grid-cols-4 gap-4">
+        <div className="border-b border-gray-800 bg-gray-900 px-3 sm:px-6 py-3 sm:py-4 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Total Snippets", value: total, icon: FileCode, color: "text-indigo-400" },
             { label: "Total Copies", value: totalCopies, icon: Copy, color: "text-green-400" },
@@ -306,10 +306,10 @@ export default function SnippetList() {
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left Panel */}
-        <div className="w-80 border-r border-gray-800 flex flex-col bg-gray-900">
+        <div className={`${selectedSnippet ? "hidden md:flex" : "flex"} w-full md:w-80 border-r border-gray-800 flex-col bg-gray-900`}>
 
           {/* Search */}
           <div className="p-3 border-b border-gray-800">
@@ -419,7 +419,7 @@ export default function SnippetList() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopy(snippet) }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 p-1 rounded hover:bg-gray-700"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 p-1 rounded hover:bg-gray-700"
                       >
                         {copiedId === snippet.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                       </button>
@@ -432,13 +432,20 @@ export default function SnippetList() {
         </div>
 
         {/* Right Panel - Detail View */}
-        <div className="flex-1 flex flex-col bg-gray-950">
+        <div className={`${selectedSnippet ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col bg-gray-950`}>
           {selectedSnippet ? (
             <>
               {/* Detail Header */}
-              <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-900">
+              <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-start sm:items-center justify-between gap-2 bg-gray-900">
+                <button
+                  onClick={() => setSelectedSnippet(null)}
+                  className="mobile-only text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 flex-shrink-0"
+                  aria-label="Back to snippets"
+                >
+                  <ArrowLeft size={18} />
+                </button>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-1 min-w-0">
                     {selectedSnippet.is_pinned && <Pin size={12} className="text-yellow-500" />}
                     <h2 className="text-lg font-bold text-white truncate">{selectedSnippet.title}</h2>
                     <span
@@ -448,8 +455,8 @@ export default function SnippetList() {
                       {selectedSnippet.language}
                     </span>
                     {selectedSnippet.is_public
-                      ? <span className="flex items-center gap-1 text-xs text-green-500 flex-shrink-0"><Globe size={10} />Public</span>
-                      : <span className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0"><Lock size={10} />Private</span>
+                      ? <span className="hidden sm:flex items-center gap-1 text-xs text-green-500 flex-shrink-0"><Globe size={10} />Public</span>
+                      : <span className="hidden sm:flex items-center gap-1 text-xs text-gray-500 flex-shrink-0"><Lock size={10} />Private</span>
                     }
                   </div>
                   {selectedSnippet.description && (
@@ -465,7 +472,7 @@ export default function SnippetList() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-1 ml-4">
+                <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 overflow-x-auto">
                   <button onClick={() => handlePin(selectedSnippet)} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-gray-800" title={selectedSnippet.is_pinned ? "Unpin" : "Pin"}>
                     {selectedSnippet.is_pinned ? <PinOff size={15} /> : <Pin size={15} />}
                   </button>
@@ -486,7 +493,7 @@ export default function SnippetList() {
                         : "bg-indigo-600 hover:bg-indigo-700 text-white"
                     }`}
                   >
-                    {copiedId === selectedSnippet.id ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
+                    {copiedId === selectedSnippet.id ? <><Check size={14} /><span className="hidden sm:inline">Copied!</span></> : <><Copy size={14} /><span className="hidden sm:inline">Copy</span></>}
                   </button>
                   <button onClick={() => handleDelete(selectedSnippet)} className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-gray-800" title="Delete">
                     <Trash2 size={15} />
@@ -520,8 +527,8 @@ export default function SnippetList() {
               </div>
 
               {/* Footer Bar */}
-              <div className="border-t border-gray-800 px-6 py-2 bg-gray-900 flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center gap-4">
+              <div className="border-t border-gray-800 px-3 sm:px-6 py-2 bg-gray-900 flex items-center justify-between gap-3 text-xs text-gray-500">
+                <div className="hidden md:flex items-center gap-4">
                   <span>Lines: {selectedSnippet.code.split("\n").length}</span>
                   <span>Chars: {selectedSnippet.code.length}</span>
                   <span className="flex items-center gap-1"><Copy size={10} />{selectedSnippet.use_count} copies</span>
@@ -551,8 +558,8 @@ export default function SnippetList() {
       {/* Create / Edit Modal */}
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[92dvh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800">
               <h2 className="text-lg font-bold text-white">
                 {showCreateModal ? "? Create New Snippet" : "?? Edit Snippet"}
               </h2>
@@ -561,8 +568,8 @@ export default function SnippetList() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 sm:p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5">Title *</label>
                   <input
@@ -665,7 +672,7 @@ export default function SnippetList() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-800">
+            <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-gray-800">
               <button onClick={() => { setShowCreateModal(false); setShowEditModal(false) }} className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
                 Cancel (Esc)
               </button>
