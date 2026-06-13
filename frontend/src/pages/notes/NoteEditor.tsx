@@ -1,6 +1,5 @@
 /**
- * NoteEditor.tsx - Beast Mode Notes System
- * The most powerful notes app for developers.
+ * NoteEditor.tsx - A rich text note editor for developers with support for code blocks, task lists, and more.
  * Features: Rich text, code blocks, auto-save,
  * word count, version history, search, keyboard shortcuts.
  */
@@ -24,7 +23,7 @@ import {
   ArrowLeft, Plus, Trash2, Search, Save,
   FileText, Clock, Hash, CheckSquare,
   Code, Bold, Italic, List, ListOrdered,
-  Loader2, X, History, Download
+  Loader2, X, Download
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { getNotes, createNote, updateNote, deleteNote } from "../../services/api/notes.api"
@@ -42,7 +41,7 @@ export default function NoteEditor() {
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
-  const saveTimeout = useRef<any>(null)
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [notes, setNotes] = useState<Note[]>([])
   const [total, setTotal] = useState(0)
@@ -52,9 +51,9 @@ export default function NoteEditor() {
   const [search, setSearch] = useState("")
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [title, setTitle] = useState("")
-  const [searchTimeout_, setSearchTimeout_] = useState<any>(null)
+  const [searchTimeout_, setSearchTimeout_] = useState<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated])
+  useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
 
   useKeyboard({
     "ctrl+k": () => searchRef.current?.focus(),
@@ -97,7 +96,7 @@ export default function NoteEditor() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { loadNotes() }, [loadNotes])
+  useEffect(() => { loadNotes() }, [loadNotes]) // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleSearch = (v: string) => {
     setSearch(v)
@@ -118,12 +117,12 @@ export default function NoteEditor() {
       await loadNotes()
       handleSelectNote(note.note)
       toast.success("New note created")
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to create note")
+    } catch {
+      toast.error("Failed to create note")
     }
   }
 
-  const autoSave = async (content: any, text: string) => {
+  const autoSave = async (content: Record<string, unknown>, text: string) => {
     if (!selectedNote) return
     try {
       await updateNote(selectedNote.id, { content, content_text: text, title })

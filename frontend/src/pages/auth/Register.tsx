@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react"
+﻿import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Code2, Eye, EyeOff, Loader2, CheckCircle, XCircle } from "lucide-react"
 import toast from "react-hot-toast"
@@ -15,40 +15,32 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [success, setSuccess] = useState(false)
-  
-  const [passwordLength, setPasswordLength] = useState(false)
-  const [passwordUppercase, setPasswordUppercase] = useState(false)
-  const [passwordLowercase, setPasswordLowercase] = useState(false)
-  const [passwordNumber, setPasswordNumber] = useState(false)
-  const [passwordSpecial, setPasswordSpecial] = useState(false)
 
-  useEffect(() => {
-    setPasswordLength(password.length >= 8)
-    setPasswordUppercase(/[A-Z]/.test(password))
-    setPasswordLowercase(/[a-z]/.test(password))
-    setPasswordNumber(/\d/.test(password))
-    setPasswordSpecial(/[!@#$%^&*(),.?":{}|<>]/.test(password))
-  }, [password])
+  const passwordChecks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[a-z]/.test(password),
+    /\d/.test(password),
+    /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  ]
+  const validCount = passwordChecks.filter(Boolean).length
 
   const getStrengthColor = () => {
-    const checks = [passwordLength, passwordUppercase, passwordLowercase, passwordNumber, passwordSpecial].filter(Boolean).length
-    if (checks === 5) return "#22c55e"
-    if (checks >= 3) return "#eab308"
-    if (checks > 0) return "#f97316"
+    if (validCount === 5) return "#22c55e"
+    if (validCount >= 3) return "#eab308"
+    if (validCount > 0) return "#f97316"
     return "#ef4444"
   }
 
   const getStrengthText = () => {
-    const checks = [passwordLength, passwordUppercase, passwordLowercase, passwordNumber, passwordSpecial].filter(Boolean).length
-    if (checks === 5) return "Strong password"
-    if (checks >= 3) return "Medium password"
-    if (checks > 0) return "Weak password"
+    if (validCount === 5) return "Strong password"
+    if (validCount >= 3) return "Medium password"
+    if (validCount > 0) return "Weak password"
     return "Too weak"
   }
 
   const getStrengthPercent = () => {
-    const checks = [passwordLength, passwordUppercase, passwordLowercase, passwordNumber, passwordSpecial].filter(Boolean).length
-    return (checks / 5) * 100
+    return (validCount / 5) * 100
   }
 
   const validateForm = () => {
@@ -64,19 +56,19 @@ export default function Register() {
       setError("Password must be at least 8 characters")
       return false
     }
-    if (!passwordUppercase) {
+    if (!passwordChecks[1]) {
       setError("Password must contain an uppercase letter")
       return false
     }
-    if (!passwordLowercase) {
+    if (!passwordChecks[2]) {
       setError("Password must contain a lowercase letter")
       return false
     }
-    if (!passwordNumber) {
+    if (!passwordChecks[3]) {
       setError("Password must contain a number")
       return false
     }
-    if (!passwordSpecial) {
+    if (!passwordChecks[4]) {
       setError("Password must contain a special character")
       return false
     }
@@ -87,7 +79,7 @@ export default function Register() {
     return true
   }
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
     
@@ -105,9 +97,9 @@ export default function Register() {
           display_name: name.trim(),
         }),
       })
-      
+       
       const data = await response.json()
-      
+       
       if (response.ok && data.success) {
         setSuccess(true)
         toast.success("Account created successfully! Redirecting to login...")
@@ -116,7 +108,7 @@ export default function Register() {
         setError(data.detail || data.message || "Registration failed")
         toast.error(data.detail || data.message || "Registration failed")
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please make sure the backend server is running.")
       toast.error("Network error. Backend server may not be running.")
     } finally {
@@ -149,7 +141,7 @@ export default function Register() {
 
         <div className="bg-[#1e1e2e] border border-gray-800 rounded-xl p-6">
           <form onSubmit={handleRegister} className="space-y-4">
-            
+             
             {error && (
               <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
                 <XCircle size={16} />
@@ -217,11 +209,11 @@ export default function Register() {
                   </div>
                   <p className="text-xs" style={{ color: getStrengthColor() }}>{getStrengthText()}</p>
                   <div className="grid grid-cols-2 gap-1 text-xs mt-2">
-                    <span className={passwordLength ? "text-green-400" : "text-gray-500"}>✓ 8+ characters</span>
-                    <span className={passwordUppercase ? "text-green-400" : "text-gray-500"}>✓ Uppercase letter</span>
-                    <span className={passwordLowercase ? "text-green-400" : "text-gray-500"}>✓ Lowercase letter</span>
-                    <span className={passwordNumber ? "text-green-400" : "text-gray-500"}>✓ Number</span>
-                    <span className={passwordSpecial ? "text-green-400" : "text-gray-500"}>✓ Special character</span>
+                    <span className={passwordChecks[0] ? "text-green-400" : "text-gray-500"}>✓ 8+ characters</span>
+                    <span className={passwordChecks[1] ? "text-green-400" : "text-gray-500"}>✓ Uppercase letter</span>
+                    <span className={passwordChecks[2] ? "text-green-400" : "text-gray-500"}>✓ Lowercase letter</span>
+                    <span className={passwordChecks[3] ? "text-green-400" : "text-gray-500"}>✓ Number</span>
+                    <span className={passwordChecks[4] ? "text-green-400" : "text-gray-500"}>✓ Special character</span>
                   </div>
                 </div>
               )}
