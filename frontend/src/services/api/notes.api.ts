@@ -11,15 +11,34 @@ api.interceptors.request.use((config) => {
 export interface Note {
   id: string
   title: string
-  content: any
+  content: Record<string, unknown>
   content_text: string
   word_count: number
   created_at: string
   updated_at: string
 }
 
-export const getNotes = async (params?: any) => (await api.get("/notes/", { params })).data
+export interface NoteQuery {
+  page?: number
+  page_size?: number
+  search?: string
+}
+
+export interface CreateNoteData {
+  title: string
+  content?: Record<string, unknown>
+  content_text?: string
+}
+
+export interface UpdateNoteData {
+  title?: string
+  content?: Record<string, unknown>
+  content_text?: string
+  word_count?: number
+}
+
+export const getNotes = async (params?: NoteQuery) => (await api.get("/notes/", { params })).data
 export const getNote = async (id: string) => (await api.get(`/notes/${id}`)).data
-export const createNote = async (data: any) => (await api.post("/notes/", data)).data
-export const updateNote = async (id: string, data: any) => (await api.put(`/notes/${id}`, data)).data
+export const createNote = async (data: CreateNoteData) => (await api.post("/notes/", data)).data
+export const updateNote = async (id: string, data: UpdateNoteData) => (await api.put(`/notes/${id}`, data)).data
 export const deleteNote = async (id: string) => (await api.delete(`/notes/${id}`)).data

@@ -73,7 +73,7 @@ export default function NoteEditor() {
     ],
     editorProps: {
       attributes: {
-        class: "prose prose-invert prose-sm max-w-none focus:outline-none min-h-full p-6",
+        class: "prose prose-invert prose-sm max-w-none focus:outline-none min-h-full p-4 sm:p-6",
       },
     },
     onUpdate: ({ editor }) => {
@@ -178,21 +178,21 @@ export default function NoteEditor() {
   const charCount = editor?.storage.characterCount.characters() || 0
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen h-[100dvh] bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-900 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-gray-900 sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <FileText className="text-indigo-500" size={22} />
             <h1 className="text-xl font-bold text-white">Notes</h1>
             <span className="bg-indigo-900 text-indigo-300 text-xs px-2 py-0.5 rounded-full">{total}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {selectedNote && (
             <>
               <span className={`text-xs flex items-center gap-1 ${saved ? "text-green-500" : "text-yellow-500"}`}>
@@ -202,20 +202,20 @@ export default function NoteEditor() {
                 <Download size={16} />
               </button>
               <button onClick={handleSave} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-medium">
-                <Save size={14} />Save <span className="text-indigo-300 text-xs">Ctrl+S</span>
+                <Save size={14} /><span className="hidden min-[390px]:inline">Save</span> <span className="text-indigo-300 text-xs hidden lg:inline">Ctrl+S</span>
               </button>
             </>
           )}
           <button onClick={handleNewNote} className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition-colors text-sm">
-            <Plus size={14} />New Note
+            <Plus size={14} /><span className="hidden min-[390px]:inline">New Note</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left Panel - Note List */}
-        <div className="w-72 border-r border-gray-800 flex flex-col bg-gray-900">
+        <div className={`${selectedNote ? "hidden md:flex" : "flex"} w-full md:w-72 border-r border-gray-800 flex-col bg-gray-900`}>
           <div className="p-3 border-b border-gray-800">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
@@ -254,7 +254,7 @@ export default function NoteEditor() {
                         </div>
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(note) }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1 rounded hover:bg-gray-700">
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1 rounded hover:bg-gray-700">
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -266,16 +266,23 @@ export default function NoteEditor() {
         </div>
 
         {/* Right Panel - Editor */}
-        <div className="flex-1 flex flex-col bg-gray-950">
+        <div className={`${selectedNote ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col bg-gray-950`}>
           {selectedNote ? (
             <>
               {/* Toolbar */}
-              <div className="border-b border-gray-800 px-6 py-2 flex items-center gap-1 bg-gray-900 flex-wrap">
+              <div className="border-b border-gray-800 px-3 sm:px-6 py-2 flex items-center gap-1 bg-gray-900 flex-wrap">
+                <button
+                  onClick={() => setSelectedNote(null)}
+                  className="mobile-only text-gray-400 hover:text-white p-1.5 rounded hover:bg-gray-800 flex-shrink-0"
+                  aria-label="Back to notes"
+                >
+                  <ArrowLeft size={17} />
+                </button>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="flex-1 bg-transparent text-xl font-bold text-white focus:outline-none mr-4 min-w-0"
+                  className="basis-[calc(100%-44px)] sm:flex-1 bg-transparent text-lg sm:text-xl font-bold text-white focus:outline-none sm:mr-4 min-w-0"
                   placeholder="Note title..."
                 />
                 <div className="flex items-center gap-0.5 border-r border-gray-700 pr-2 mr-2">
@@ -299,8 +306,8 @@ export default function NoteEditor() {
               </div>
 
               {/* Footer */}
-              <div className="border-t border-gray-800 px-6 py-2 bg-gray-900 flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center gap-4">
+              <div className="border-t border-gray-800 px-3 sm:px-6 py-2 bg-gray-900 flex items-center justify-between text-xs text-gray-500">
+                <div className="hidden sm:flex items-center gap-4">
                   <span>{wordCount} words</span>
                   <span>{charCount} characters</span>
                 </div>
@@ -315,7 +322,7 @@ export default function NoteEditor() {
                 <FileText className="text-gray-800 mx-auto mb-4" size={80} />
                 <h3 className="text-gray-500 text-xl font-semibold mb-2">Your Developer Notebook</h3>
                 <p className="text-gray-600 text-sm mb-6">Rich text notes with code blocks, task lists, and more</p>
-                <div className="flex items-center justify-center gap-3 text-xs text-gray-600 mb-6">
+                <div className="hidden sm:flex items-center justify-center gap-3 text-xs text-gray-600 mb-6">
                   <span className="bg-gray-800 px-3 py-1.5 rounded-lg">Ctrl+K to search</span>
                   <span className="bg-gray-800 px-3 py-1.5 rounded-lg">Ctrl+S to save</span>
                   <span className="bg-gray-800 px-3 py-1.5 rounded-lg">Auto-saves every 2s</span>
