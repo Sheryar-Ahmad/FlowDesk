@@ -16,7 +16,7 @@
  */
 
 import { create } from "zustand"
-import { registerUser, loginUser, logoutUser } from "../services/api/auth.api"
+import { getCurrentUser, registerUser, loginUser, logoutUser } from "../services/api/auth.api"
 import type { RegisterData, LoginData } from "../services/api/auth.api"
 
 interface User {
@@ -38,6 +38,7 @@ interface AuthState {
   register: (data: RegisterData) => Promise<void>
   login: (data: LoginData) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
   clearError: () => void
   setLoading: (loading: boolean) => void
 }
@@ -101,6 +102,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       })
     }
+  },
+
+  refreshUser: async () => {
+    const { accessToken } = get()
+    if (!accessToken) return
+
+    const response = await getCurrentUser(accessToken)
+    set({
+      user: response.user,
+      isAuthenticated: true,
+    })
   },
 
   clearError: () => set({ error: null }),

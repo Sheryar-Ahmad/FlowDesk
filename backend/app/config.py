@@ -2,8 +2,10 @@
 config.py - Application Settings
 """
 
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -42,12 +44,29 @@ class Settings(BaseSettings):
     # --- Payments ---
     LEMON_SQUEEZY_API_KEY: str = ""
     LEMON_SQUEEZY_WEBHOOK_SECRET: str = ""
+    LEMON_SQUEEZY_STORE_ID: str = ""
+    LEMON_SQUEEZY_VARIANT_ID: str = ""
+    LEMON_SQUEEZY_TEST_MODE: bool = False
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # --- Monitoring ---
     SENTRY_DSN: str = ""
 
     # --- CORS ---
     ALLOWED_ORIGINS: list = ["http://localhost:5173", "https://flowdesk.vercel.app"]
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_mode(cls, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+                return True
+            if normalized in {"0", "false", "no", "off", "release", "production"}:
+                return False
+        return value
 
     model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
