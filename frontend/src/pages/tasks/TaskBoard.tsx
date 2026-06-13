@@ -317,7 +317,7 @@ export default function TaskBoard() {
   }, [selectProject])
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
-  useEffect(() => { loadProjects() }, [loadProjects])
+  useEffect(() => { loadProjects() }, [loadProjects]) // eslint-disable-line react-hooks/set-state-in-effect
 
   useKeyboard({
     "ctrl+k": () => document.getElementById("task-search")?.focus(),
@@ -334,17 +334,6 @@ export default function TaskBoard() {
       })
     }
   }, [tasks])
-
-  const selectProject = async (project: Project) => {
-    setSelectedProject(project)
-    setTasks([])
-    setColumns([])
-    try {
-      const [colData, taskData] = await Promise.all([getColumns(project.id), getTasks(project.id)])
-      setColumns(colData.columns || [])
-      setTasks(taskData.tasks || [])
-    } catch { toast.error("Failed to load board") }
-  }
 
   const handleCreateProject = async () => {
     if (!projectName.trim()) { toast.error("Project name required"); return }
