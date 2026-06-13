@@ -157,7 +157,7 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(false)
   const [usage, setUsage] = useState({ used_today: 0, remaining: 20 as number | string, limit: 20 as number | string })
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useState(() => window.innerWidth >= 768)
   const [loadingSession, setLoadingSession] = useState(false)
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
@@ -195,6 +195,7 @@ export default function AIAssistant() {
       }))
       setMessages(msgs)
       setCurrentSessionId(sessionId)
+      if (window.innerWidth < 768) setShowSidebar(false)
     } catch {
       toast.error("Failed to load session")
     } finally {
@@ -206,6 +207,7 @@ export default function AIAssistant() {
     setMessages([])
     setCurrentSessionId(null)
     setInput("")
+    if (window.innerWidth < 768) setShowSidebar(false)
     inputRef.current?.focus()
   }
 
@@ -299,46 +301,46 @@ export default function AIAssistant() {
   const remainingPercent = Math.min(100, (remainingNum / limitNum) * 100)
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen h-[100dvh] bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-900 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <div className="border-b border-gray-800 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-gray-900 sticky top-0 z-40">
+        <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
           <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors">
             <ArrowLeft size={18} />
           </button>
           <button onClick={() => setShowSidebar(!showSidebar)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors">
             <MessageSquare size={18} />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
               <Brain size={18} className="text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-white font-bold text-sm">FlowDesk AI</h1>
-                <span className="text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800">Llama 3.3 70B</span>
+                <span className="hidden lg:inline text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800">Llama 3.3 70B</span>
                 {currentSessionId && (
-                  <span className="text-xs bg-green-950 text-green-400 px-2 py-0.5 rounded-full border border-green-800 flex items-center gap-1">
+                  <span className="hidden sm:flex text-xs bg-green-950 text-green-400 px-2 py-0.5 rounded-full border border-green-800 items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                     Memory Active
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 text-xs">Groq Powered • Ultra Fast • Context Aware</p>
+              <p className="hidden md:block text-gray-600 text-xs">Groq Powered • Ultra Fast • Context Aware</p>
             </div>
           </div>
           {loading && (
-            <div className="flex items-center gap-2 text-indigo-400 text-xs bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-800 animate-pulse">
+            <div className="hidden lg:flex items-center gap-2 text-indigo-400 text-xs bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-800 animate-pulse">
               <Brain size={12} className="animate-spin" />
               Thinking deeply...
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {user?.plan === "free" && (
-            <div className="flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700"
                   style={{
@@ -356,16 +358,24 @@ export default function AIAssistant() {
           )}
           <button onClick={startNewChat}
             className="flex items-center gap-2 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors border border-gray-700">
-            <Plus size={13} />New Chat
+            <Plus size={13} /><span className="hidden sm:inline">New Chat</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Sessions Sidebar */}
         {showSidebar && (
-          <div className="w-64 border-r border-gray-800 bg-gray-900 flex flex-col flex-shrink-0">
+          <button
+            type="button"
+            className="fixed inset-x-0 top-[61px] bottom-0 z-20 bg-black/65 md:hidden"
+            onClick={() => setShowSidebar(false)}
+            aria-label="Close chat history"
+          />
+        )}
+        {showSidebar && (
+          <div className="fixed left-0 top-[61px] bottom-0 z-30 w-[min(82vw,18rem)] md:static md:w-64 border-r border-gray-800 bg-gray-900 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none">
             <div className="p-3 border-b border-gray-800 flex items-center justify-between">
               <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Chat History</p>
               <span className="text-gray-600 text-xs">{sessions.length}</span>
@@ -435,7 +445,7 @@ export default function AIAssistant() {
         )}
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto">
@@ -444,21 +454,21 @@ export default function AIAssistant() {
                 <Loader2 className="animate-spin text-indigo-500" size={32} />
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-full px-6 py-12">
-                <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/30">
-                  <Brain size={40} className="text-white" />
+              <div className="flex flex-col items-center justify-center min-h-full px-4 sm:px-6 py-8 sm:py-12">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-5 sm:mb-6 shadow-2xl shadow-indigo-500/30">
+                  <Brain size={34} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">FlowDesk AI Assistant</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 text-center">FlowDesk AI Assistant</h2>
                 <p className="text-gray-500 text-center mb-1 max-w-lg text-sm">
                   Your personal senior developer. I think deeply and remember everything.
                 </p>
-                <p className="text-gray-700 text-xs mb-10 flex items-center gap-1">
+                <p className="text-gray-700 text-xs mb-7 sm:mb-10 flex items-center gap-1">
                   <Brain size={10} />Powered by Llama 3.3 70B via Groq
                 </p>
 
                 <div className="w-full max-w-3xl mb-6">
                   <p className="text-gray-600 text-xs font-medium mb-3 uppercase tracking-wider text-center">Quick Actions</p>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                     {QUICK_ACTIONS.map(action => (
                       <button key={action.label}
                         onClick={() => { setInput(action.prompt); inputRef.current?.focus() }}
@@ -470,24 +480,24 @@ export default function AIAssistant() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs text-gray-700">
+                <div className="hidden md:flex items-center gap-3 text-xs text-gray-700">
                   <span className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800">Enter to send</span>
                   <span className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800">Shift+Enter new line</span>
                   <span className="bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800">Paste code directly</span>
                 </div>
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+              <div className="max-w-4xl mx-auto px-3 sm:px-6 py-5 sm:py-8 space-y-6 sm:space-y-8">
                 {messages.map((message, idx) => (
-                  <div key={message.id} className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div key={message.id} className={`flex gap-2 sm:gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     {message.role === "assistant" && (
-                      <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-indigo-500/20">
+                      <div className="hidden sm:flex w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-indigo-500/20">
                         <Brain size={16} className="text-white" />
                       </div>
                     )}
 
-                    <div className={`max-w-3xl flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}>
-                      <div className={`px-5 py-4 rounded-2xl ${
+                    <div className={`min-w-0 max-w-[92%] sm:max-w-3xl flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}>
+                      <div className={`max-w-full px-4 sm:px-5 py-3 sm:py-4 rounded-2xl ${
                         message.role === "user"
                           ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-tr-sm"
                           : "bg-gray-900 border border-gray-800 rounded-tl-sm"
@@ -498,7 +508,7 @@ export default function AIAssistant() {
                         }
                       </div>
 
-                      <div className="flex items-center gap-3 mt-1.5 px-1">
+                      <div className="flex items-center gap-2 sm:gap-3 mt-1.5 px-1 flex-wrap">
                         <span className="text-gray-700 text-xs">
                           {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
@@ -535,7 +545,7 @@ export default function AIAssistant() {
                     </div>
 
                     {message.role === "user" && (
-                      <div className="w-9 h-9 bg-gray-800 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 border border-gray-700">
+                      <div className="hidden sm:flex w-9 h-9 bg-gray-800 rounded-xl items-center justify-center flex-shrink-0 mt-1 border border-gray-700">
                         <span className="text-white text-sm font-bold">
                           {user?.display_name?.charAt(0).toUpperCase()}
                         </span>
@@ -551,11 +561,11 @@ export default function AIAssistant() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-800 bg-gray-900 px-6 py-4">
+          <div className="border-t border-gray-800 bg-gray-900 px-3 sm:px-6 py-3 sm:py-4">
             <div className="max-w-4xl mx-auto">
 
               {isLimitReached && (
-                <div className="mb-3 p-3 bg-red-950 border border-red-800 rounded-xl flex items-center justify-between">
+                <div className="mb-3 p-3 bg-red-950 border border-red-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <AlertCircle size={14} className="text-red-400" />
                     <span className="text-red-300 text-sm">Daily limit reached. Upgrade to Pro for unlimited AI.</span>
@@ -577,7 +587,7 @@ export default function AIAssistant() {
                 ))}
               </div>
 
-              <div className="flex gap-3 items-end">
+              <div className="flex gap-2 sm:gap-3 items-end">
                 <div className="flex-1 relative">
                   <textarea
                     ref={inputRef}
@@ -601,7 +611,7 @@ export default function AIAssistant() {
                 <button
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading || isLimitReached}
-                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white px-6 py-3.5 rounded-xl transition-all font-medium disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-lg shadow-indigo-500/20"
+                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white px-4 sm:px-6 py-3.5 rounded-xl transition-all font-medium disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-lg shadow-indigo-500/20"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 </button>
@@ -609,7 +619,7 @@ export default function AIAssistant() {
 
               <div className="flex items-center justify-between mt-2">
                 <p className="text-gray-700 text-xs">Enter to send • Shift+Enter new line</p>
-                <p className="text-gray-700 text-xs flex items-center gap-1">
+                <p className="hidden sm:flex text-gray-700 text-xs items-center gap-1">
                   <Brain size={10} />
                   {currentSessionId ? "Memory active — AI remembers context" : "Start chatting to enable memory"}
                 </p>
