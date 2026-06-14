@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, FileText, Kanban, Bot, Timer, GitCompare,
   ArrowRight, Zap, Shield, Globe, ChevronRight,
-  Star, Check, Terminal, Sparkles, X,
+  Star, Check, Sparkles, X,
 } from "lucide-react"
 
 type LegalDocument = "privacy" | "terms"
@@ -455,7 +455,7 @@ export default function Landing() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLElement).style.color = "#E2E8F0" }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "#94A3B8" }}
             >
-              <Terminal size={14} /> Sign in
+              Sign in
             </Link>
           </div>
 
