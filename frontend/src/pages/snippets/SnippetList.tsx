@@ -510,7 +510,9 @@ export default function SnippetList() {
   const [showPalette, setShowPalette] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [showLibrary, setShowLibrary] = useState(false)
+  const [showLibrary, setShowLibrary] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
+  )
 
   /* Editor state */
   const [fullscreen, setFullscreen] = useState(false)
@@ -655,6 +657,9 @@ export default function SnippetList() {
 
   const toggleLibrary = () => {
     const next = !showLibrary
+    if (next && window.matchMedia("(max-width: 768px)").matches) {
+      setSelectedSnippet(null)
+    }
     setShowLibrary(next)
     if (!next) setShowFilters(false)
   }
@@ -673,6 +678,7 @@ export default function SnippetList() {
   const handleSelect = (s: Snippet, idx: number) => {
     setSelectedSnippet(s)
     setSelectedIndex(idx)
+    if (window.matchMedia("(max-width: 768px)").matches) setShowLibrary(false)
     // Update recently viewed
     setRecentIds(prev => {
       const next = [s.id, ...prev.filter(id => id !== s.id)].slice(0, 5)
@@ -1399,7 +1405,7 @@ export default function SnippetList() {
           ...(fullscreen ? { position: "fixed", inset: 0, zIndex: 500 } : {}),
           // On mobile show only when snippet selected
         }}
-        className={!isMobileDetailOpen && !selectedSnippet ? "hide-mobile-detail" : ""}
+        className={`snippet-detail-pane${!isMobileDetailOpen && showLibrary ? " hide-mobile-detail" : ""}`}
         >
           {selectedSnippet ? (
             <>
@@ -1410,7 +1416,10 @@ export default function SnippetList() {
               }}>
                 {/* Mobile back */}
                 <button
-                  onClick={() => setSelectedSnippet(null)}
+                  onClick={() => {
+                    setSelectedSnippet(null)
+                    setShowLibrary(true)
+                  }}
                   style={{
                     background: "none", border: "none", color: C.textMuted,
                     cursor: "pointer", display: "flex", padding: 4,
@@ -1876,13 +1885,14 @@ export default function SnippetList() {
           .hide-desktop { display: flex !important; }
           .snippet-list-pane {
             width: 100% !important;
-            display: flex !important;
           }
           .snippet-library-header {
             display: none !important;
           }
-          .snippet-library-toggle,
           .snippet-library-close {
+            display: none !important;
+          }
+          .snippet-list-pane.library-closed {
             display: none !important;
           }
           .snippet-row {
