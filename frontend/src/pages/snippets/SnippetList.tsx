@@ -212,6 +212,7 @@ function SnippetRow({
 
   return (
     <div
+      className={`snippet-row${selected ? " is-selected" : ""}`}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -229,6 +230,7 @@ function SnippetRow({
     >
       {/* Bulk checkbox */}
       <div
+        className={`snippet-bulk-check${bulkSelected ? " is-selected" : ""}`}
         onClick={e => { e.stopPropagation(); onBulkToggle() }}
         style={{
           width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2,
@@ -277,7 +279,10 @@ function SnippetRow({
 
       {/* Copy button */}
       <button
+        className="snippet-row-copy"
         onClick={e => { e.stopPropagation(); onCopy(snippet) }}
+        title={`Copy ${snippet.title}`}
+        aria-label={`Copy snippet ${snippet.title}`}
         style={{
           background: copiedId === snippet.id ? C.emerald : "rgba(255,255,255,0.06)",
           border: "none", borderRadius: 6, padding: "4px 7px",
@@ -293,7 +298,7 @@ function SnippetRow({
 
       {/* Code thumbnail on hover */}
       {hovered && (
-        <div style={{
+        <div className="snippet-code-thumbnail" style={{
           position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
           width: 80, height: 52, borderRadius: 6, overflow: "hidden",
           background: "#080B14", border: `1px solid ${l.color}35`,
@@ -987,6 +992,7 @@ export default function SnippetList() {
           <button
             onClick={() => setShowPalette(true)}
             title="Command palette (Ctrl+K)"
+            className="snippet-command-button"
             style={{
               display: "flex", alignItems: "center", gap: 6,
               background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
@@ -1652,7 +1658,7 @@ export default function SnippetList() {
 
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
               {/* Title + language row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
+              <div className="snippet-form-heading-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 11, color: C.textMuted, display: "block", marginBottom: 5 }}>Title *</label>
                   <input
@@ -1872,9 +1878,35 @@ export default function SnippetList() {
             width: 100% !important;
             display: flex !important;
           }
+          .snippet-library-header {
+            display: none !important;
+          }
           .snippet-library-toggle,
           .snippet-library-close {
             display: none !important;
+          }
+          .snippet-row {
+            width: calc(100% - 20px);
+            margin: 5px 10px;
+            padding: 12px !important;
+            box-sizing: border-box;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.025) !important;
+          }
+          .snippet-row.is-selected {
+            background: rgba(99,102,241,0.12) !important;
+          }
+          .snippet-bulk-check:not(.is-selected) {
+            display: none !important;
+          }
+          .snippet-row-copy {
+            opacity: 1 !important;
+          }
+          .snippet-code-thumbnail {
+            display: none !important;
+          }
+          .snippet-form-heading-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
           }
           .snippet-filter-backdrop {
             display: block;
@@ -1920,15 +1952,22 @@ export default function SnippetList() {
             display: none !important;
           }
         }
-        @media (max-width: 520px) {
-          .snippet-header-title,
+        @media (max-width: 640px) {
           .snippet-count,
           .snippet-header-icon,
           .snippet-command-kbd,
+          .snippet-command-button,
           .snippet-stats-button,
           .snippet-import,
           .snippet-export {
             display: none !important;
+          }
+          .snippet-header-title {
+            display: inline !important;
+            max-width: 92px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
         }
         @media (min-width: 769px) {
