@@ -13,14 +13,16 @@
  */
 
 import { useNavigate } from "react-router-dom"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, LogOut, FileCode, FileText, Kanban,
   Bot, Timer, GitCompare, Zap, ChevronRight,
-  Activity, Clock, Star, TrendingUp,
+  Activity, Clock, Star, TrendingUp, RefreshCw,
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { createProCheckout } from "../../services/api/payments.api"
+import { getDashboardStats } from "../../services/api/dashboard.api"
+import type { DashboardStats } from "../../services/api/dashboard.api"
 import axios from "axios"
 import toast from "react-hot-toast"
 
@@ -88,6 +90,47 @@ const features = [
   },
 ]
 
+const EMPTY_DASHBOARD_STATS: DashboardStats = {
+  focus_minutes_today: 0,
+  tasks_completed_today: 0,
+  snippets_saved_today: 0,
+  ai_sessions_today: 0,
+  snippets_total: 0,
+  notes_total: 0,
+  open_tasks: 0,
+}
+
+function getLocalDateKey(value = new Date()) {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, "0")
+  const day = String(value.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function formatMinutes(minutes: number) {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remaining = minutes % 60
+  return remaining ? `${hours}h ${remaining}m` : `${hours}h`
+}
+
+function getFeatureStat(feature: typeof features[number], stats: DashboardStats) {
+  switch (feature.path) {
+    case "/snippets":
+      return `${stats.snippets_total} saved`
+    case "/notes":
+      return `${stats.notes_total} notes`
+    case "/tasks":
+      return `${stats.open_tasks} open`
+    case "/ai":
+      return `${stats.ai_sessions_today} today`
+    case "/timer":
+      return `${formatMinutes(stats.focus_minutes_today)} today`
+    default:
+      return feature.stat
+  }
+}
+
 /* ─── ANIMATED CODE CANVAS ───────────────────────────────────────────── */
 function CodeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -154,9 +197,11 @@ function CodeCanvas() {
 /* ─── FEATURE CARD ───────────────────────────────────────────────────── */
 function FeatureCard({
   feature,
+  stat,
   onClick,
 }: {
   feature: typeof features[0]
+  stat: string
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
@@ -253,7 +298,7 @@ function FeatureCard({
           fontSize: 11, color: feature.accentColor,
           fontFamily: "monospace", opacity: 0.8,
         }}>
-          {feature.stat}
+          {stat}
         </span>
         <ChevronRight
           size={14}
@@ -309,6 +354,9 @@ export default function Dashboard() {
   const [time, setTime] = useState(new Date())
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [dashboardStats, setDashboardStats] = useState(EMPTY_DASHBOARD_STATS)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState(false)
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
 
@@ -317,6 +365,31 @@ export default function Dashboard() {
     const t = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  const loadDashboardStats = useCallback(async () => {
+    if (!isAuthenticated) return
+    setStatsLoading(true)
+    try {
+      const response = await getDashboardStats(getLocalDateKey())
+      setDashboardStats(response.stats)
+      setStatsError(false)
+    } catch {
+      setStatsError(true)
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => {
+      void loadDashboardStats()
+    }, 0)
+    window.addEventListener("focus", loadDashboardStats)
+    return () => {
+      window.clearTimeout(initialLoad)
+      window.removeEventListener("focus", loadDashboardStats)
+    }
+  }, [loadDashboardStats])
 
   // Global keyboard shortcuts (G + key)
   useEffect(() => {
@@ -626,6 +699,7 @@ export default function Dashboard() {
               <FeatureCard
                 key={f.title}
                 feature={f}
+                stat={statsLoading ? "Loading..." : statsError ? "Unavailable" : getFeatureStat(f, dashboardStats)}
                 onClick={() => navigate(f.path)}
               />
             ))}
@@ -642,13 +716,55 @@ export default function Dashboard() {
             borderRadius: 14, padding: "18px 20px",
             marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, color: "#334155", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
-              Today
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 8, marginBottom: 4,
+            }}>
+              <span style={{ fontSize: 11, color: "#334155", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>
+                Today
+              </span>
+              <button
+                type="button"
+                onClick={() => void loadDashboardStats()}
+                disabled={statsLoading}
+                aria-label="Refresh dashboard statistics"
+                title={statsError ? "Statistics unavailable. Try again." : "Refresh statistics"}
+                style={{
+                  width: 26, height: 26, borderRadius: 7,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  background: statsError ? "rgba(244,63,94,0.08)" : "rgba(255,255,255,0.03)",
+                  color: statsError ? "#f43f5e" : "#475569",
+                  cursor: statsLoading ? "wait" : "pointer",
+                }}
+              >
+                <RefreshCw size={12} style={{ animation: statsLoading ? "spin 1s linear infinite" : "none" }} />
+              </button>
             </div>
-            <QuickStat icon={Clock} label="Focus time" value="0m" color="#f97316" />
-            <QuickStat icon={Activity} label="Tasks completed" value="0" color="#10b981" />
-            <QuickStat icon={Star} label="Snippets saved" value="0" color="#6366f1" />
-            <QuickStat icon={TrendingUp} label="AI sessions" value="0" color="#a855f7" />
+            <QuickStat
+              icon={Clock}
+              label="Focus time"
+              value={statsLoading || statsError ? "—" : formatMinutes(dashboardStats.focus_minutes_today)}
+              color="#f97316"
+            />
+            <QuickStat
+              icon={Activity}
+              label="Tasks completed"
+              value={statsLoading || statsError ? "—" : String(dashboardStats.tasks_completed_today)}
+              color="#10b981"
+            />
+            <QuickStat
+              icon={Star}
+              label="Snippets saved"
+              value={statsLoading || statsError ? "—" : String(dashboardStats.snippets_saved_today)}
+              color="#6366f1"
+            />
+            <QuickStat
+              icon={TrendingUp}
+              label="AI sessions"
+              value={statsLoading || statsError ? "—" : String(dashboardStats.ai_sessions_today)}
+              color="#a855f7"
+            />
           </div>
 
           {/* Keyboard shortcuts reference */}
@@ -736,6 +852,9 @@ export default function Dashboard() {
       </div>
 
       <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.4); }
