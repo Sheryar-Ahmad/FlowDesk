@@ -16,7 +16,13 @@
  */
 
 import { create } from "zustand"
-import { getCurrentUser, registerUser, loginUser, logoutUser } from "../services/api/auth.api"
+import {
+  getAuthErrorMessage,
+  getCurrentUser,
+  registerUser,
+  loginUser,
+  logoutUser,
+} from "../services/api/auth.api"
 import type { RegisterData, LoginData } from "../services/api/auth.api"
 
 interface User {
@@ -62,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       })
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Registration failed. Please try again."
+      const message = getAuthErrorMessage(err, "Registration failed. Please try again.")
       set({ error: message, isLoading: false })
       throw new Error(message, { cause: err })
     }
@@ -80,7 +86,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       })
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || "Login failed. Please try again."
+      const message = getAuthErrorMessage(err, "Login failed. Please try again.")
       set({ error: message, isLoading: false })
       throw new Error(message, { cause: err })
     }

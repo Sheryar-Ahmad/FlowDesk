@@ -1,5 +1,6 @@
 ﻿import { Link } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
   Code2, FileText, Kanban, Bot, Timer, GitCompare,
   ArrowRight, Zap, Shield, Globe, ChevronRight,
@@ -305,16 +306,26 @@ function LegalDialog({
 }
 
 export default function Landing() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [activeFeature, setActiveFeature] = useState(0)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
-  const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null)
-  const closeLegalDialog = useCallback(() => setLegalDocument(null), [])
+  const legalParam = searchParams.get("legal")
+  const legalDocument: LegalDocument | null = legalParam === "privacy" || legalParam === "terms"
+    ? legalParam
+    : null
+  const openLegalDialog = useCallback((document: LegalDocument) => {
+    setSearchParams({ legal: document }, { replace: true })
+  }, [setSearchParams])
+  const closeLegalDialog = useCallback(() => {
+    setSearchParams({}, { replace: true })
+  }, [setSearchParams])
 
   // Auto-rotate active feature
   useEffect(() => {
+    if (legalDocument) return
     const t = setInterval(() => setActiveFeature(i => (i + 1) % FEATURES.length), 3000)
     return () => clearInterval(t)
-  }, [])
+  }, [legalDocument])
 
   const f = FEATURES[activeFeature]
 
@@ -898,7 +909,7 @@ export default function Landing() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button
             type="button"
-            onClick={() => setLegalDocument("privacy")}
+            onClick={() => openLegalDialog("privacy")}
             style={{ fontSize: 12, color: "#334155", background: "none", border: 0, padding: 0, cursor: "pointer" }}
             onMouseEnter={e => (e.currentTarget.style.color = "#64748B")}
             onMouseLeave={e => (e.currentTarget.style.color = "#334155")}
@@ -907,7 +918,7 @@ export default function Landing() {
           </button>
           <button
             type="button"
-            onClick={() => setLegalDocument("terms")}
+            onClick={() => openLegalDialog("terms")}
             style={{ fontSize: 12, color: "#334155", background: "none", border: 0, padding: 0, cursor: "pointer" }}
             onMouseEnter={e => (e.currentTarget.style.color = "#64748B")}
             onMouseLeave={e => (e.currentTarget.style.color = "#334155")}
