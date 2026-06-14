@@ -725,10 +725,15 @@ export default function AIAssistant() {
       const { data } = await api.get<{
         session: { title: string; messages: SessionMessage[]; created_at: string }
       }>(`/ai/sessions/${sessionId}`, { signal: controller.signal })
-      const msgs: Message[] = (data.session.messages || []).map((m, i) => ({
-        id: `${sessionId}-${i}`, role: m.role, content: m.content,
-        timestamp: new Date(data.session.created_at),
-      }))
+      const msgs: Message[] = (data.session.messages || [])
+        .map((message, index) => ({ message, index }))
+        .filter(({ message }) => typeof message.content === "string" && message.content.trim())
+        .map(({ message, index }) => ({
+          id: `${sessionId}-${index}`,
+          role: message.role,
+          content: message.content.trim(),
+          timestamp: new Date(data.session.created_at),
+        }))
       setMessages(msgs)
       setCurrentSessionId(sessionId)
       const storedPins = LS.get(`fd_pins_${sessionId}`, [])
@@ -844,11 +849,18 @@ export default function AIAssistant() {
         messages: [{ role: userMsg.role, content: userMsg.content }],
         session_id: currentSessionId,
       }, { signal: controller.signal })
+      const responseText = typeof data.response === "string" ? data.response.trim() : ""
+      if (!responseText) {
+        throw new Error("The AI returned an empty response. Please try again.")
+      }
+      if (!data.session_id) {
+        throw new Error("The AI response did not include a valid session.")
+      }
       const sessionId = data.session_id
       const now = new Date()
       const aiMsg: Message = {
         id: `${sessionId}-${messageIndex + 1}`, role: "assistant",
-        content: data.response, timestamp: now,
+        content: responseText, timestamp: now,
         tokens: data.tokens_used, intent: data.intent,
       }
       setMessages(prev => [
@@ -894,7 +906,7 @@ export default function AIAssistant() {
       if (axios.isCancel(err) || controller.signal.aborted) return
       const detail = axios.isAxiosError(err) && typeof err.response?.data?.detail === "string"
         ? err.response.data.detail
-        : ""
+        : err instanceof Error ? err.message : ""
       if (detail.includes("All AI models") || detail.includes("temporarily unavailable")) {
         toast.error("⚠️ All AI services busy. Try again in 1-2 hours.", { duration: 8000 })
         setUsage(prev => ({ ...prev, remaining: 0, used_today: typeof prev.limit === "number" ? prev.limit : 20 }))

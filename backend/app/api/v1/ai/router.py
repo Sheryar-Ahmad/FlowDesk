@@ -194,7 +194,14 @@ async def chat(
                     stored = json.loads(stored)
                 except (TypeError, json.JSONDecodeError):
                     stored = []
-            session_messages = stored if isinstance(stored, list) else []
+            session_messages = [
+                message
+                for message in stored
+                if isinstance(message, dict)
+                and message.get("role") in {"user", "assistant"}
+                and isinstance(message.get("content"), str)
+                and message["content"].strip()
+            ] if isinstance(stored, list) else []
 
         # Get past sessions for context building
         past_result = await db.execute(

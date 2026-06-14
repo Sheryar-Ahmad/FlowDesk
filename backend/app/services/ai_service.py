@@ -19,6 +19,39 @@ import re
 logger = structlog.get_logger(__name__)
 settings = get_settings()
 
+
+def extract_ai_text(content) -> str:
+    """Normalize provider-specific content shapes into non-empty text."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, dict):
+        return extract_ai_text(content.get("text") or content.get("content"))
+    if isinstance(content, (list, tuple)):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+                continue
+            if isinstance(item, dict):
+                value = item.get("text") or item.get("content")
+            else:
+                value = getattr(item, "text", None) or getattr(item, "content", None)
+            if value:
+                parts.append(str(value))
+        return "\n".join(parts).strip()
+    return ""
+
+
+def require_ai_text(content, provider: str) -> str:
+    """Reject empty provider responses so the router can try a fallback."""
+    text = extract_ai_text(content)
+    if not text:
+        raise ValueError(f"{provider} returned an empty response.")
+    return text
+
+
 # --- Ultimate System Prompt ---------------------------------------------------
 def build_system_prompt(user_context: dict = {}) -> str:
     name = user_context.get("name", "Developer")
@@ -191,8 +224,10 @@ async def chat_with_ai(
             frequency_penalty=0.1,
         )
 
-        ai_response = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens
+        if not response.choices:
+            raise ValueError("Groq returned no response choices.")
+        ai_response = require_ai_text(response.choices[0].message.content, "Groq")
+        tokens_used = getattr(response.usage, "total_tokens", 0) or 0
 
         logger.info("AI response", tokens=tokens_used, model=model, intent=intent)
 
@@ -270,29 +305,16 @@ async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
         contents=full_prompt,
     )
 
+    ai_response = require_ai_text(getattr(response, "text", None), "Gemini")
     last_msg = messages[-1]["content"] if messages else ""
     return {
-        "response": response.text,
-        "tokens_used": len(response.text.split()) * 2,
+        "response": ai_response,
+        "tokens_used": len(ai_response.split()) * 2,
         "model": "gemini-2.0-flash",
         "intent": detect_intent(last_msg),
     }
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    system = build_system_prompt(user_context)
-    full_prompt = system + "\n\n"
-    for msg in messages:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        full_prompt += f"{role}: {msg['content']}\n\n"
-    full_prompt += "Assistant:"
-    response = client.models.generate_content(model="gemini-2.0-flash", contents=full_prompt)
-    last_msg = messages[-1]["content"] if messages else ""
-    return {
-        "response": response.text,
-        "tokens_used": len(response.text.split()) * 2,
-        "model": "gemini-2.0-flash",
-        "intent": detect_intent(last_msg),
-    }
+
 async def chat_with_mistral(messages: list, user_context: dict = {}) -> dict:
     """
     Mistral fallback - free tier available.
@@ -323,10 +345,13 @@ async def chat_with_mistral(messages: list, user_context: dict = {}) -> dict:
         temperature=0.3,
     )
 
+    if not response.choices:
+        raise ValueError("Mistral returned no response choices.")
+    ai_response = require_ai_text(response.choices[0].message.content, "Mistral")
     last_msg = messages[-1]["content"] if messages else ""
     return {
-        "response": response.choices[0].message.content,
-        "tokens_used": response.usage.total_tokens,
+        "response": ai_response,
+        "tokens_used": getattr(response.usage, "total_tokens", 0) or 0,
         "model": "mistral-large",
         "intent": detect_intent(last_msg),
     }
@@ -359,6 +384,7 @@ async def smart_ai_router(
             user_context=user_context,
             session_messages=session_messages,
         )
+        result["response"] = require_ai_text(result.get("response"), "Groq")
         result["model_used"] = "groq/llama-3.3-70b"
         return result
     except Exception as e:
@@ -368,6 +394,7 @@ async def smart_ai_router(
     # Try Gemini second
     try:
         result = await chat_with_gemini(messages, user_context)
+        result["response"] = require_ai_text(result.get("response"), "Gemini")
         result["model_used"] = "google/gemini-2.0-flash"
         return result
     except Exception as e:
@@ -377,6 +404,7 @@ async def smart_ai_router(
     # Try Mistral third
     try:
         result = await chat_with_mistral(messages, user_context)
+        result["response"] = require_ai_text(result.get("response"), "Mistral")
         result["model_used"] = "mistral/mistral-large"
         return result
     except Exception as e:
