@@ -42,7 +42,7 @@ import {
   Maximize2, Minimize2, WrapText, ZoomIn, ZoomOut,
   Clock, Layers, Command,
   Upload, Hash, Sparkles,
-  PanelLeftOpen, PanelLeftClose,
+  PanelLeftOpen, PanelLeftClose, SlidersHorizontal,
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { DeleteButton } from "../../components/DeleteButton"
@@ -505,6 +505,7 @@ export default function SnippetList() {
   const [showPalette, setShowPalette] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showLibrary, setShowLibrary] = useState(false)
 
   /* Editor state */
   const [fullscreen, setFullscreen] = useState(false)
@@ -645,6 +646,18 @@ export default function SnippetList() {
       ? selectedLangs.filter(l => l !== lang)
       : [...selectedLangs, lang]
     setSelectedLangs(next)
+  }
+
+  const toggleLibrary = () => {
+    const next = !showLibrary
+    setShowLibrary(next)
+    if (!next) setShowFilters(false)
+  }
+
+  const toggleFilters = () => {
+    const next = !showFilters
+    setShowFilters(next)
+    if (next) setShowLibrary(true)
   }
 
   const handleSort = (s: SortKey) => {
@@ -924,7 +937,26 @@ export default function SnippetList() {
           </button>
           <button
             type="button"
-            onClick={() => setShowFilters(open => !open)}
+            onClick={toggleLibrary}
+            title={showLibrary ? "Close snippet library" : "Open snippet library"}
+            aria-label={showLibrary ? "Close snippet library" : "Open snippet library"}
+            aria-expanded={showLibrary}
+            className="snippet-library-toggle"
+            style={{
+              background: showLibrary ? "rgba(99,102,241,0.15)" : "transparent",
+              border: "none",
+              borderRadius: 7,
+              color: showLibrary ? C.indigo : C.textMuted,
+              cursor: "pointer",
+              display: "flex",
+              padding: 5,
+            }}
+          >
+            {showLibrary ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleFilters}
             title={showFilters ? "Close filters" : "Open filters"}
             aria-label={showFilters ? "Close snippet filters" : "Open snippet filters"}
             aria-expanded={showFilters}
@@ -939,7 +971,7 @@ export default function SnippetList() {
               padding: 5,
             }}
           >
-            {showFilters ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+            <SlidersHorizontal size={16} />
           </button>
           <FileCode className="snippet-header-icon" size={18} color={C.indigo} />
           <span className="snippet-header-title" style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Snippets</span>
@@ -1200,8 +1232,32 @@ export default function SnippetList() {
           background: "#0C0F1A",
           // On mobile, take full width
         }}
-        className={`snippet-list-pane${isMobileDetailOpen ? " mobile-detail-open" : ""}`}
+        className={`snippet-list-pane${showLibrary ? "" : " library-closed"}${isMobileDetailOpen ? " mobile-detail-open" : ""}`}
         >
+          <div className="snippet-library-header" style={{
+            padding: "9px 12px",
+            borderBottom: `1px solid ${C.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <FileCode size={13} color={C.indigo} />
+              <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Library</span>
+              <span style={{ fontSize: 10, color: C.textMuted, fontFamily: "monospace" }}>{displaySnippets.length}</span>
+            </div>
+            <button
+              type="button"
+              className="snippet-library-close"
+              onClick={toggleLibrary}
+              title="Close snippet library"
+              aria-label="Close snippet library"
+              style={{ background: "none", border: 0, color: C.textMuted, cursor: "pointer", display: "flex", padding: 2 }}
+            >
+              <PanelLeftClose size={15} />
+            </button>
+          </div>
+
           {/* Search */}
           <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}` }}>
             <div style={{ position: "relative" }}>
@@ -1814,6 +1870,11 @@ export default function SnippetList() {
           .hide-desktop { display: flex !important; }
           .snippet-list-pane {
             width: 100% !important;
+            display: flex !important;
+          }
+          .snippet-library-toggle,
+          .snippet-library-close {
+            display: none !important;
           }
           .snippet-filter-backdrop {
             display: block;
@@ -1876,6 +1937,9 @@ export default function SnippetList() {
           .hide-desktop { display: none !important; }
           .hide-mobile-detail {
             display: flex !important;
+          }
+          .snippet-list-pane.library-closed {
+            display: none !important;
           }
         }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
