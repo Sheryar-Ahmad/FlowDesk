@@ -6,13 +6,15 @@ import {
   Sparkles, Terminal, Brain, Lightbulb,
   Search, AlertCircle,
   TrendingUp, Plus, Clock,
-  MessageSquare, X
+  MessageSquare, PanelLeftOpen, PanelLeftClose
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
+import { DeleteButton } from "../../components/DeleteButton"
+import { API_BASE_URL } from "../../services/api/config"
 import axios from "axios"
 import toast from "react-hot-toast"
 
-const api = axios.create({ baseURL: "http://localhost:8000/api/v1", timeout: 60000 })
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 })
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -157,7 +159,7 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(false)
   const [usage, setUsage] = useState({ used_today: 0, remaining: 20 as number | string, limit: 20 as number | string })
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showSidebar, setShowSidebar] = useState(() => window.innerWidth >= 768)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [loadingSession, setLoadingSession] = useState(false)
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
@@ -309,8 +311,15 @@ export default function AIAssistant() {
           <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors">
             <ArrowLeft size={18} />
           </button>
-          <button onClick={() => setShowSidebar(!showSidebar)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors">
-            <MessageSquare size={18} />
+          <button
+            type="button"
+            onClick={() => setShowSidebar(open => !open)}
+            className={`p-1.5 rounded-lg transition-colors ${showSidebar ? "bg-indigo-950 text-indigo-400" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
+            title={showSidebar ? "Close chat history" : "Open chat history"}
+            aria-label={showSidebar ? "Close chat history" : "Open chat history"}
+            aria-expanded={showSidebar}
+          >
+            {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
           </button>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
@@ -378,7 +387,17 @@ export default function AIAssistant() {
           <div className="fixed left-0 top-[61px] bottom-0 z-30 w-[min(82vw,18rem)] md:static md:w-64 border-r border-gray-800 bg-gray-900 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none">
             <div className="p-3 border-b border-gray-800 flex items-center justify-between">
               <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Chat History</p>
-              <span className="text-gray-600 text-xs">{sessions.length}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-xs">{sessions.length}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSidebar(false)}
+                  className="p-1 text-gray-500 hover:text-white rounded hover:bg-gray-800"
+                  aria-label="Close chat history"
+                >
+                  <PanelLeftClose size={14} />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2">
@@ -420,10 +439,11 @@ export default function AIAssistant() {
                         <span className="text-gray-700 text-xs">{session.message_count} msgs</span>
                       </div>
                     </div>
-                    <button onClick={(e) => deleteSession(session.id, e)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition-all p-0.5 rounded flex-shrink-0">
-                      <X size={11} />
-                    </button>
+                    <DeleteButton
+                      onClick={(e) => void deleteSession(session.id, e)}
+                      title={`Delete ${session.title}`}
+                      aria-label={`Delete AI session ${session.title}`}
+                    />
                   </div>
                 ))
               )}

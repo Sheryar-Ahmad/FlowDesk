@@ -70,6 +70,18 @@ async def get_columns(db: AsyncSession, project_id: str, user_id: str) -> list:
 
 
 async def create_column(db: AsyncSession, project_id: str, user_id: str, name: str) -> dict:
+    owned = await db.execute(
+        text("SELECT 1 FROM projects WHERE id=:pid AND user_id=:uid"),
+        {"pid": project_id, "uid": user_id},
+    )
+    if not owned.scalar():
+        raise ValueError("Project not found.")
+    duplicate = await db.execute(
+        text("SELECT 1 FROM kanban_columns WHERE project_id=:pid AND LOWER(name)=LOWER(:name)"),
+        {"pid": project_id, "name": name},
+    )
+    if duplicate.scalar():
+        raise ValueError("A column with this name already exists.")
     r = await db.execute(text("SELECT COALESCE(MAX(position), -1)+1 FROM kanban_columns WHERE project_id=:pid"), {"pid": project_id})
     pos = r.scalar() or 0
     r = await db.execute(text("INSERT INTO kanban_columns (project_id, user_id, name, position) VALUES (:pid, :uid, :name, :pos) RETURNING id, project_id, user_id, name, position, color"), {"pid": project_id, "uid": user_id, "name": name, "pos": pos})
@@ -80,7 +92,14 @@ async def create_column(db: AsyncSession, project_id: str, user_id: str, name: s
 
 # --- Tasks -------------------------------------------------------------------
 
-async def create_task(db: AsyncSession, project_id: str, user_id: str, title: str, status: str = "todo", priority: str = "medium", description: str = None, due_date=None, labels: list = []) -> dict:
+async def create_task(db: AsyncSession, project_id: str, user_id: str, title: str, status: str = "todo", priority: str = "medium", description: str = None, due_date=None, labels: Optional[List[str]] = None) -> dict:
+    owned = await db.execute(
+        text("SELECT 1 FROM projects WHERE id=:pid AND user_id=:uid"),
+        {"pid": project_id, "uid": user_id},
+    )
+    if not owned.scalar():
+        raise ValueError("Project not found.")
+    labels = labels or []
     r = await db.execute(text("SELECT COALESCE(MAX(position), -1)+1 FROM tasks WHERE project_id=:pid AND status=:s"), {"pid": project_id, "s": status})
     pos = r.scalar() or 0
     r = await db.execute(text("""
@@ -101,15 +120,21 @@ async def get_tasks(db: AsyncSession, project_id: str, user_id: str) -> list:
 
 async def update_task(db: AsyncSession, task_id: str, user_id: str, updates: dict) -> Optional[dict]:
     fields, params = [], {"id": task_id, "u": user_id}
-    for f in ["title", "description", "status", "priority", "position", "due_date"]:
+    for f in ["title", "description", "status", "priority", "position"]:
         if f in updates and updates[f] is not None:
             fields.append(f"{f}=:{f}"); params[f] = updates[f]
+    if "due_date" in updates:
+        fields.append("due_date=:due_date")
+        params["due_date"] = updates["due_date"]
     if "labels" in updates:
         fields.append("labels=CAST(:labels AS jsonb)")
-        params["labels"] = json.dumps(updates["labels"])
-    if "status" in updates and updates["status"] == "done":
-        fields.append("completed_at=NOW()")
-    if not fields: return None
+        params["labels"] = json.dumps(updates["labels"] or [])
+    if "status" in updates and updates["status"] is not None:
+        fields.append("completed_at=NOW()" if updates["status"] == "done" else "completed_at=NULL")
+    if not fields:
+        r = await db.execute(text("SELECT id, project_id, user_id, title, description, status, priority, due_date, position, labels, created_at, updated_at, completed_at FROM tasks WHERE id=:id AND user_id=:u"), params)
+        t = r.fetchone()
+        return _fmt_task(t) if t else None
     fields.append("updated_at=NOW()")
     await db.execute(text(f"UPDATE tasks SET {','.join(fields)} WHERE id=:id AND user_id=:u"), params)
     await db.commit()

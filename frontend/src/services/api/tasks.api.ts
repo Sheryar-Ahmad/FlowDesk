@@ -1,7 +1,8 @@
 import axios from "axios"
 import { useAuthStore } from "../../store/authStore"
+import { API_BASE_URL } from "./config"
 
-const api = axios.create({ baseURL: "http://localhost:8000/api/v1", timeout: 10000 })
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 10000 })
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -36,6 +37,22 @@ export interface UpdateTaskData extends Partial<CreateTaskData> {
   completed_at?: string | null
 }
 
+export interface TaskPriorityInput {
+  title: string
+  due_date?: string
+  priority: string
+}
+
+interface TaskSubtasksResponse {
+  success: boolean
+  subtasks: string[]
+}
+
+interface TaskPrioritizeResponse {
+  success: boolean
+  response: string
+}
+
 export const getProjects = async () => (await api.get("/tasks/projects")).data
 export const createProject = async (data: CreateProjectData) => (await api.post("/tasks/projects", data)).data
 export const updateProject = async (id: string, data: UpdateProjectData) => (await api.put(`/tasks/projects/${id}`, data)).data
@@ -46,3 +63,9 @@ export const getTasks = async (projectId: string) => (await api.get(`/tasks/proj
 export const createTask = async (projectId: string, data: CreateTaskData) => (await api.post(`/tasks/projects/${projectId}/tasks`, data)).data
 export const updateTask = async (taskId: string, data: UpdateTaskData) => (await api.put(`/tasks/tasks/${taskId}`, data)).data
 export const deleteTask = async (taskId: string) => (await api.delete(`/tasks/tasks/${taskId}`)).data
+export const suggestTaskSubtasks = async (title: string, description: string) => (
+  await api.post<TaskSubtasksResponse>("/ai/task-subtasks", { title, description }, { timeout: 60000 })
+).data
+export const prioritizeTasks = async (tasks: TaskPriorityInput[]) => (
+  await api.post<TaskPrioritizeResponse>("/ai/task-prioritize", { tasks }, { timeout: 60000 })
+).data

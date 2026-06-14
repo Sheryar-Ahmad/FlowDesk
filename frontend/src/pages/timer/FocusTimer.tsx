@@ -33,12 +33,13 @@ import {
   ArrowLeft, Play, Pause, RotateCcw, Settings,
   Coffee, Brain,
   SkipForward, Volume2, VolumeX, Timer,
-  CheckCircle, BarChart2, Plus, Trash2,
+  CheckCircle, BarChart2, Plus,
   Maximize2, Minimize2, Download,
   FileText, AlertTriangle,
   Calendar, Target, Zap,
   HelpCircle, List, Bell, Minimize
 } from "lucide-react"
+import { DeleteButton } from "../../components/DeleteButton"
 import { useAuthStore } from "../../store/authStore"
 import axios from "axios"
 import toast from "react-hot-toast"
@@ -1067,12 +1068,12 @@ export default function FocusTimer() {
                   fontSize: 11, padding: "2px 8px", borderRadius: 99,
                   background: `${labelMeta?.color}22`, color: labelMeta?.color,
                 }}>{task.label}</span>
-                <button
+                <DeleteButton
                   onClick={() => deleteTask(task.id)}
-                  style={{ background: "none", border: "none", color: "#4b5563", cursor: "pointer", display: "flex" }}
-                >
-                  <Trash2 size={14} />
-                </button>
+                  title={`Delete ${task.text}`}
+                  aria-label={`Delete focus task ${task.text}`}
+                  iconSize={14}
+                />
               </div>
             )
           })}

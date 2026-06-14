@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime, date
 
@@ -30,7 +30,7 @@ class TaskCreate(BaseModel):
     status: str = "todo"
     priority: str = "medium"
     due_date: Optional[date] = None
-    labels: Optional[List[str]] = []
+    labels: List[str] = Field(default_factory=list)
 
     @field_validator("title")
     @classmethod

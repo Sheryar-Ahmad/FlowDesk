@@ -37,6 +37,26 @@ class AnalyzeRequest(BaseModel):
     task: str = "explain"
 
 
+class NoteSummaryRequest(BaseModel):
+    title: str = ""
+    content: str
+
+
+class TaskSubtasksRequest(BaseModel):
+    title: str
+    description: str = ""
+
+
+class TaskPriorityItem(BaseModel):
+    title: str
+    due_date: Optional[str] = None
+    priority: str = "medium"
+
+
+class TaskPrioritizeRequest(BaseModel):
+    tasks: List[TaskPriorityItem]
+
+
 class SessionCreate(BaseModel):
     title: Optional[str] = "New Conversation"
 
@@ -77,6 +97,58 @@ async def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data)
         await db.commit()
 
     return messages_used
+
+
+async def run_one_shot_ai(
+    db: AsyncSession,
+    current_user: dict,
+    prompt: str,
+    task_name: str,
+) -> dict:
+    """Run a metered AI request without creating a chat session."""
+    user_data = await get_user_ai_data(db, current_user["id"])
+    messages_used = await reset_daily_limit_if_needed(db, current_user["id"], user_data)
+    context = {
+        "name": user_data.display_name or current_user.get("display_name", "Developer"),
+        "task": task_name,
+    }
+    result_ai = await smart_ai_router(
+        messages=[{"role": "user", "content": prompt}],
+        user_plan=current_user["plan"],
+        ai_messages_used=messages_used,
+        user_context=context,
+        session_messages=[],
+    )
+    await db.execute(
+        text("UPDATE users SET ai_messages_used_today=ai_messages_used_today+1 WHERE id=:uid"),
+        {"uid": current_user["id"]},
+    )
+    await db.commit()
+    remaining = "unlimited" if current_user["plan"] == "pro" else max(0, 20 - messages_used - 1)
+    return {
+        "success": True,
+        "response": result_ai["response"],
+        "tokens_used": result_ai["tokens_used"],
+        "model": result_ai["model"],
+        "messages_remaining": remaining,
+    }
+
+
+def parse_subtasks(raw_response: str) -> List[str]:
+    cleaned = raw_response.replace("```json", "").replace("```", "").strip()
+    try:
+        start = cleaned.index("[")
+        end = cleaned.rindex("]") + 1
+        parsed = json.loads(cleaned[start:end])
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()][:5]
+    except (ValueError, json.JSONDecodeError):
+        pass
+    return [
+        line.strip().lstrip("-*0123456789.) ").strip()
+        for line in cleaned.splitlines()
+        if line.strip().lstrip("-*0123456789.) ").strip()
+    ][:5]
 
 
 @router.post("/chat")
@@ -325,6 +397,89 @@ async def analyze(
     except Exception as e:
         logger.error("Analyze error", error=str(e))
         raise HTTPException(status_code=500, detail="Analysis failed.")
+
+
+@router.post("/summarize")
+@limiter.limit(AI_LIMIT)
+async def summarize_note(
+    request: Request,
+    body: NoteSummaryRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Summarize a note without creating an AI chat session."""
+    content = body.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Note content is required.")
+
+    try:
+        prompt = (
+            "Summarize this developer note in 3 to 5 concise bullet points. "
+            "Return only the bullet points, with no heading or preamble.\n\n"
+            f"Title: {body.title.strip() or 'Untitled Note'}\n\n"
+            f"Note:\n{content[:12000]}"
+        )
+        return await run_one_shot_ai(db, current_user, prompt, "note_summary")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Note summarize error", error=str(e))
+        raise HTTPException(status_code=500, detail="Note summarization failed.")
+
+
+@router.post("/task-subtasks")
+@limiter.limit(AI_LIMIT)
+async def suggest_task_subtasks(
+    request: Request,
+    body: TaskSubtasksRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate actionable subtasks for a task."""
+    title = body.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Task title is required.")
+    prompt = (
+        "Break this developer task into 3 to 5 specific, actionable subtasks. "
+        "Return only a JSON array of strings.\n\n"
+        f"Task: {title[:500]}\n"
+        f"Description: {body.description.strip()[:4000]}"
+    )
+    try:
+        result = await run_one_shot_ai(db, current_user, prompt, "task_subtasks")
+        result["subtasks"] = parse_subtasks(result["response"])
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Task subtasks error", error=str(e))
+        raise HTTPException(status_code=500, detail="Subtask generation failed.")
+
+
+@router.post("/task-prioritize")
+@limiter.limit(AI_LIMIT)
+async def prioritize_tasks(
+    request: Request,
+    body: TaskPrioritizeRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recommend what the user should work on next."""
+    if not body.tasks:
+        raise HTTPException(status_code=400, detail="At least one task is required.")
+    task_data = [item.model_dump() for item in body.tasks[:20]]
+    prompt = (
+        "Analyze these open tasks and recommend what to work on first today. "
+        "Consider due dates and priority. Respond in 2 to 3 concise sentences.\n\n"
+        f"Tasks: {json.dumps(task_data)}"
+    )
+    try:
+        return await run_one_shot_ai(db, current_user, prompt, "task_prioritization")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Task prioritization error", error=str(e))
+        raise HTTPException(status_code=500, detail="Task prioritization failed.")
 
 
 @router.get("/usage")

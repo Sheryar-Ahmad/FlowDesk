@@ -76,8 +76,16 @@ async def list_columns(request: Request, project_id: str, current_user: dict = D
 @router.post("/projects/{project_id}/columns", status_code=201)
 @limiter.limit(API_LIMIT)
 async def add_column(request: Request, project_id: str, body: dict, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    column = await create_column(db, project_id, current_user["id"], body.get("name", "New Column"))
-    return {"success": True, "column": column}
+    name = str(body.get("name", "")).strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Column name required.")
+    if len(name) > 100:
+        raise HTTPException(status_code=400, detail="Column name too long.")
+    try:
+        column = await create_column(db, project_id, current_user["id"], name)
+        return {"success": True, "column": column}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # --- Tasks -------------------------------------------------------------------
@@ -93,8 +101,10 @@ async def list_tasks(request: Request, project_id: str, current_user: dict = Dep
 @limiter.limit(API_LIMIT)
 async def create_t(request: Request, project_id: str, body: TaskCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
-        task = await create_task(db, project_id, current_user["id"], body.title, body.status, body.priority, body.description, body.due_date, body.labels or [])
+        task = await create_task(db, project_id, current_user["id"], body.title, body.status, body.priority, body.description, body.due_date, body.labels)
         return {"success": True, "task": task}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Create task error", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to create task.")
@@ -103,7 +113,7 @@ async def create_t(request: Request, project_id: str, body: TaskCreate, current_
 @router.put("/tasks/{task_id}")
 @limiter.limit(API_LIMIT)
 async def update_t(request: Request, task_id: str, body: TaskUpdate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    task = await update_task(db, task_id, current_user["id"], body.model_dump(exclude_none=True))
+    task = await update_task(db, task_id, current_user["id"], body.model_dump(exclude_unset=True))
     if not task: raise HTTPException(status_code=404, detail="Task not found.")
     return {"success": True, "task": task}
 
