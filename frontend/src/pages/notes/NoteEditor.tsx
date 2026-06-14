@@ -435,6 +435,24 @@ function SlashMenu({
 }
 
 /* ─── POMODORO BADGE ──────────────────────────────────────────────────── */
+function ShortcutAction({
+  keys, label, onClick,
+}: {
+  keys: string
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      fontSize: 11, color: C.muted, display: "flex", alignItems: "center", gap: 5,
+      background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
+      borderRadius: 7, padding: "4px 10px", cursor: "pointer",
+    }}>
+      <kbd style={{ fontFamily: "monospace", color: C.indigo, fontSize: 10 }}>{keys}</kbd> {label}
+    </button>
+  )
+}
+
 function PomodoroBadge() {
   const [active, setActive] = useState(false)
   const [seconds, setSeconds] = useState(25 * 60)
@@ -570,6 +588,7 @@ export default function NoteEditor() {
   const titleRef = useRef("")
   const saveRevisionRef = useRef(0)
   const editorWrapRef = useRef<HTMLDivElement>(null)
+  const searchFocusPending = useRef(false)
 
   /* Core */
   const [notes, setNotes] = useState<Note[]>([])
@@ -723,19 +742,6 @@ export default function NoteEditor() {
   })
 
   /* ─── KEYBOARD SHORTCUTS ────────────────────────────────────────── */
-  useKeyboard({
-    "ctrl+k": () => searchRef.current?.focus(),
-    "ctrl+s": () => selectedNote && handleSave(),
-    "ctrl+h": () => setShowFindReplace(f => !f),
-    "ctrl+f": () => setFocusMode(f => !f),
-    "escape": () => {
-      setShowFindReplace(false)
-      setSlashMenu(null)
-      setSidebarOpen(false)
-      if (focusMode) setFocusMode(false)
-    },
-  }, { allowWhileTyping: ["ctrl+s", "ctrl+h", "ctrl+f"] })
-
   /* ─── LOAD ──────────────────────────────────────────────────────── */
   const loadNotes = useCallback(async (q?: string) => {
     setLoading(true)
@@ -922,6 +928,7 @@ export default function NoteEditor() {
         setTitle("")
         setSaved(true)
         editor?.commands.setContent(EMPTY_DOCUMENT, { emitUpdate: false })
+        setFocusMode(false)
         setSidebarOpen(true)
       }
       await loadNotes(search)
@@ -1013,6 +1020,7 @@ export default function NoteEditor() {
     setSelectedNote(null)
     setTitle("")
     editor?.commands.setContent(EMPTY_DOCUMENT, { emitUpdate: false })
+    setFocusMode(false)
     setSidebarOpen(true)
     toast.success("Note locked 🔒")
   }
@@ -1064,6 +1072,90 @@ export default function NoteEditor() {
     setActivePanel(null)
     toast.success("Version restored — save to confirm")
   }
+
+  const focusNoteSearch = () => {
+    searchFocusPending.current = true
+    setFocusMode(false)
+    setSidebarOpen(true)
+
+    if (sidebarOpen && !focusMode) {
+      window.requestAnimationFrame(() => {
+        searchRef.current?.focus()
+        searchRef.current?.select()
+        searchFocusPending.current = false
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (!sidebarOpen || focusMode || !searchFocusPending.current) return
+
+    const frame = window.requestAnimationFrame(() => {
+      const input = searchRef.current
+      if (!input) return
+      input.focus()
+      input.select()
+      searchFocusPending.current = false
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [focusMode, sidebarOpen])
+
+  const requireSelectedNote = (action: string) => {
+    if (selectedNoteRef.current && editor) return true
+    toast.error(`Select or create a note to ${action}`)
+    focusNoteSearch()
+    return false
+  }
+
+  const saveFromShortcut = () => {
+    if (!requireSelectedNote("save")) return
+    void handleSave()
+  }
+
+  const toggleFindReplace = () => {
+    if (!requireSelectedNote("find and replace text")) return
+    setActivePanel(null)
+    setShowFindReplace(open => !open)
+  }
+
+  const toggleFocusMode = () => {
+    if (!requireSelectedNote("use focus mode")) return
+    setActivePanel(null)
+    setShowFindReplace(false)
+    setSidebarOpen(false)
+    setFocusMode(active => !active)
+  }
+
+  const openSlashCommands = () => {
+    if (!requireSelectedNote("use slash commands") || !editor) return
+
+    setActivePanel(null)
+    setShowFindReplace(false)
+    setSidebarOpen(false)
+    editor.chain().focus().insertContent("/").run()
+
+    window.requestAnimationFrame(() => {
+      const coords = editor.view.coordsAtPos(editor.state.selection.from)
+      setSlashMenu({
+        x: Math.max(12, Math.min(coords.left, window.innerWidth - 220)),
+        y: Math.max(12, Math.min(coords.top, window.innerHeight - 380)),
+      })
+    })
+  }
+
+  useKeyboard({
+    "ctrl+k": focusNoteSearch,
+    "ctrl+s": saveFromShortcut,
+    "ctrl+h": toggleFindReplace,
+    "ctrl+f": toggleFocusMode,
+    "/": openSlashCommands,
+    "escape": () => {
+      setShowFindReplace(false)
+      setSlashMenu(null)
+      setSidebarOpen(false)
+      if (focusMode) setFocusMode(false)
+    },
+  }, { allowWhileTyping: ["ctrl+s", "ctrl+h", "ctrl+f"] })
 
   /* ─── RENDER ─────────────────────────────────────────────────────── */
   return (
@@ -1776,15 +1868,11 @@ export default function NoteEditor() {
                 </button>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 24, flexWrap: "wrap", justifyContent: "center" }}>
-                {[["Ctrl+K", "Search"], ["Ctrl+S", "Save"], ["Ctrl+H", "Find & Replace"], ["Ctrl+F", "Focus mode"], ["/", "Slash commands"]].map(([k, l]) => (
-                  <div key={k} style={{
-                    fontSize: 11, color: C.muted, display: "flex", alignItems: "center", gap: 5,
-                    background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
-                    borderRadius: 7, padding: "4px 10px",
-                  }}>
-                    <kbd style={{ fontFamily: "monospace", color: C.indigo, fontSize: 10 }}>{k}</kbd> {l}
-                  </div>
-                ))}
+                <ShortcutAction keys="Ctrl+K" label="Search" onClick={focusNoteSearch} />
+                <ShortcutAction keys="Ctrl+S" label="Save" onClick={saveFromShortcut} />
+                <ShortcutAction keys="Ctrl+H" label="Find & Replace" onClick={toggleFindReplace} />
+                <ShortcutAction keys="Ctrl+F" label="Focus mode" onClick={toggleFocusMode} />
+                <ShortcutAction keys="/" label="Slash commands" onClick={openSlashCommands} />
               </div>
             </div>
           )}
