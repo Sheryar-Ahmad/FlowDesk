@@ -40,10 +40,10 @@ Currently in active development following the Spiral SDLC model.
 - [x] Spiral 2 - Backend authentication
 - [x] Spiral 3 - Frontend UI
 - [x] Spiral 4 - Snippet Manager
-- [ ] Spiral 5 - Notes System
-- [ ] Spiral 6 - Task Board
-- [ ] Spiral 7 - AI Assistant
-- [ ] Spiral 8 - Additional features
+- [x] Spiral 5 - Notes System
+- [x] Spiral 6 - Task Board
+- [x] Spiral 7 - AI Assistant
+- [x] Spiral 8 - Additional features
 - [ ] Spiral 9 - Payments
 - [ ] Spiral 10 - API Tester
 - [ ] Spiral 11 - Desktop App
