@@ -14,6 +14,7 @@ from groq import Groq
 from app.config import get_settings
 import structlog
 import json
+import re
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
@@ -208,26 +209,28 @@ async def chat_with_ai(
 
 
 async def generate_session_title(messages: list) -> str:
-    """Auto-generates a title for the conversation."""
-    if not messages or not settings.GROQ_API_KEY:
+    """Build a fast, predictable title from the first user message."""
+    first_msg = next(
+        (
+            str(message.get("content", ""))
+            for message in messages
+            if message.get("role") == "user"
+        ),
+        "",
+    )
+    cleaned = re.sub(r"```[\s\S]*?```", " code ", first_msg)
+    cleaned = re.sub(r"[#*_>`~]+", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" .,:;!?-")
+    if not cleaned:
         return "New Conversation"
-    
-    try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        first_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
-        
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{
-                "role": "user",
-                "content": f"Generate a short 4-6 word title for this conversation. Only the title, nothing else: '{first_msg[:200]}'"
-            }],
-            max_tokens=20,
-            temperature=0.5,
-        )
-        return response.choices[0].message.content.strip().strip('"')
-    except:
-        return "New Conversation"
+
+    words = cleaned.split()
+    title = " ".join(words[:8])
+    if len(title) > 80:
+        title = title[:77].rstrip() + "..."
+    elif len(words) > 8:
+        title += "..."
+    return title
 
 
 async def analyze_code(code: str, language: str, task: str = "explain") -> str:

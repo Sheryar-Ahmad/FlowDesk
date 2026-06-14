@@ -19,7 +19,11 @@ from contextlib import asynccontextmanager
 
 from app.config import get_settings
 from app.api.router import api_router
-from app.database.connection import check_db_connection, close_db_connection
+from app.database.connection import (
+    check_db_connection,
+    close_db_connection,
+    ensure_database_schema,
+)
 from app.core.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from app.core.middleware.error_handler import (
     validation_exception_handler,
@@ -48,6 +52,10 @@ async def lifespan(app: FastAPI):
         logger.error("Database connection failed on startup")
     else:
         logger.info("Database connected successfully")
+        try:
+            await ensure_database_schema()
+        except Exception as error:
+            logger.error("Database schema upgrade failed", error=str(error))
 
     # Initialize Sentry error monitoring
     if settings.SENTRY_DSN:

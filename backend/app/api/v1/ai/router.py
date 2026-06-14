@@ -6,8 +6,8 @@ BACKEND FILE
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Literal, Optional
 from datetime import datetime, timezone
 import structlog
 import json
@@ -15,19 +15,19 @@ import json
 from app.database.connection import get_db
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import limiter, AI_LIMIT
-from app.services.ai_service import chat_with_ai, analyze_code, generate_session_title, build_context_from_history, smart_ai_router
+from app.services.ai_service import analyze_code, generate_session_title, build_context_from_history, smart_ai_router
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
 class Message(BaseModel):
-    role: str
-    content: str
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=20000)
 
 
 class ChatRequest(BaseModel):
-    messages: List[Message]
+    messages: List[Message] = Field(min_length=1, max_length=100)
     session_id: Optional[str] = None
 
 
@@ -57,8 +57,16 @@ class TaskPrioritizeRequest(BaseModel):
     tasks: List[TaskPriorityItem]
 
 
-class SessionCreate(BaseModel):
-    title: Optional[str] = "New Conversation"
+class SessionRename(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value: str) -> str:
+        title = " ".join(value.split())
+        if not title:
+            raise ValueError("Session title is required.")
+        return title
 
 
 async def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:
@@ -174,16 +182,19 @@ async def chat(
         if session_id:
             # Load existing session messages for memory
             result = await db.execute(
-                text("SELECT id, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
+                text("SELECT id, title, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
                 {"sid": session_id, "uid": current_user["id"]}
             )
             session_data = result.fetchone()
-            if session_data:
-                stored = session_data.messages
-                if isinstance(stored, str):
-                    try: stored = json.loads(stored)
-                    except: stored = []
-                session_messages = stored if isinstance(stored, list) else []
+            if not session_data:
+                raise HTTPException(status_code=404, detail="Session not found.")
+            stored = session_data.messages
+            if isinstance(stored, str):
+                try:
+                    stored = json.loads(stored)
+                except (TypeError, json.JSONDecodeError):
+                    stored = []
+            session_messages = stored if isinstance(stored, list) else []
 
         # Get past sessions for context building
         past_result = await db.execute(
@@ -194,8 +205,10 @@ async def chat(
         for row in past_result.fetchall():
             msgs = row.messages
             if isinstance(msgs, str):
-                try: msgs = json.loads(msgs)
-                except: msgs = []
+                try:
+                    msgs = json.loads(msgs)
+                except (TypeError, json.JSONDecodeError):
+                    msgs = []
             past_sessions.append({"messages": msgs})
 
         # Build user context from history
@@ -211,7 +224,7 @@ async def chat(
         else:
             all_messages = new_messages
 
-# Call AI with full context - Groq first, Gemini fallback
+        # Call AI with full context - Groq first, Gemini fallback
         try:
             result_ai = await smart_ai_router(
                 messages=all_messages,
@@ -234,6 +247,7 @@ async def chat(
 
         updated_messages = session_messages + [user_msg, ai_msg]
 
+        session_title = session_data.title if session_data else None
         if session_id and session_data:
             # Update existing session
             await db.execute(
@@ -251,15 +265,16 @@ async def chat(
             )
         else:
             # Create new session
-            title = await generate_session_title(new_messages)
+            session_title = await generate_session_title(new_messages)
             result_insert = await db.execute(
                 text("""
-                    INSERT INTO ai_sessions (user_id, messages, message_count, tokens_used, model_used)
-                    VALUES (:uid, CAST(:msgs AS jsonb), 1, :tokens, :model)
+                    INSERT INTO ai_sessions (user_id, title, messages, message_count, tokens_used, model_used)
+                    VALUES (:uid, :title, CAST(:msgs AS jsonb), 1, :tokens, :model)
                     RETURNING id
                 """),
                 {
                     "uid": current_user["id"],
+                    "title": session_title,
                     "msgs": json.dumps(updated_messages),
                     "tokens": result_ai["tokens_used"],
                     "model": result_ai["model"]
@@ -267,12 +282,6 @@ async def chat(
             )
             new_session = result_insert.fetchone()
             session_id = str(new_session.id)
-
-            # Update title separately
-            await db.execute(
-                text("UPDATE ai_sessions SET model_used=:model WHERE id=:sid"),
-                {"model": result_ai["model"], "sid": session_id}
-            )
 
         # Increment usage
         await db.execute(
@@ -290,9 +299,12 @@ async def chat(
             "model": result_ai["model"],
             "intent": result_ai.get("intent", "general"),
             "session_id": session_id,
+            "session_title": session_title,
             "messages_remaining": remaining,
         }
 
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -308,7 +320,7 @@ async def get_sessions(
     """Get all AI chat sessions for current user."""
     result = await db.execute(
         text("""
-            SELECT id, model_used, message_count, tokens_used, created_at, updated_at
+            SELECT id, title, model_used, message_count, tokens_used, created_at, updated_at
             FROM ai_sessions WHERE user_id=:uid
             ORDER BY updated_at DESC LIMIT 50
         """),
@@ -320,7 +332,7 @@ async def get_sessions(
         "sessions": [
             {
                 "id": str(s.id),
-                "title": f"Chat • {s.created_at.strftime('%b %d, %H:%M') if s.created_at else 'New Chat'}",
+                "title": s.title or "New Conversation",
                 "model": s.model_used,
                 "message_count": s.message_count,
                 "tokens_used": s.tokens_used,
@@ -340,7 +352,7 @@ async def get_session(
 ):
     """Get a specific session with all messages."""
     result = await db.execute(
-        text("SELECT id, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
+        text("SELECT id, title, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
         {"sid": session_id, "uid": current_user["id"]}
     )
     session = result.fetchone()
@@ -349,19 +361,59 @@ async def get_session(
 
     messages = session.messages
     if isinstance(messages, str):
-        try: messages = json.loads(messages)
-        except: messages = []
+        try:
+            messages = json.loads(messages)
+        except (TypeError, json.JSONDecodeError):
+            messages = []
 
     return {
         "success": True,
         "session": {
             "id": str(session.id),
+            "title": session.title or "New Conversation",
             "messages": messages,
             "message_count": session.message_count,
             "tokens_used": session.tokens_used,
             "model": session.model_used,
             "created_at": session.created_at,
         }
+    }
+
+
+@router.patch("/sessions/{session_id}")
+async def rename_session(
+    session_id: str,
+    body: SessionRename,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Rename one of the current user's AI chat sessions."""
+    result = await db.execute(
+        text(
+            """
+            UPDATE ai_sessions
+            SET title=:title, updated_at=NOW()
+            WHERE id=:sid AND user_id=:uid
+            RETURNING id, title, updated_at
+            """
+        ),
+        {
+            "title": body.title,
+            "sid": session_id,
+            "uid": current_user["id"],
+        },
+    )
+    session = result.fetchone()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    await db.commit()
+    return {
+        "success": True,
+        "session": {
+            "id": str(session.id),
+            "title": session.title,
+            "updated_at": session.updated_at,
+        },
     }
 
 
@@ -372,10 +424,12 @@ async def delete_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a chat session."""
-    await db.execute(
-        text("DELETE FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
+    result = await db.execute(
+        text("DELETE FROM ai_sessions WHERE id=:sid AND user_id=:uid RETURNING id"),
         {"sid": session_id, "uid": current_user["id"]}
     )
+    if not result.fetchone():
+        raise HTTPException(status_code=404, detail="Session not found.")
     await db.commit()
     return {"success": True, "message": "Session deleted."}
 

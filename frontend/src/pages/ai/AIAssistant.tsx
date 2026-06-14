@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   ArrowLeft, Send, Copy, Check, Loader2,
@@ -8,7 +8,11 @@ import {
   MessageSquare, PanelLeftOpen, PanelLeftClose,
   Download, Pin, Star, BookOpen,
   Hash, Mic, MicOff, Volume2,
-  BarChart2, X, Bookmark, Share2,
+  BarChart2, X, Share2,
+  Trash2, Settings, ChevronDown, ChevronUp,
+  Maximize2, Minimize2, GitBranch, Layers,
+  SortAsc, Cpu, Globe, Archive, Tag,
+  Keyboard, Pencil,
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { DeleteButton } from "../../components/DeleteButton"
@@ -16,6 +20,7 @@ import { API_BASE_URL } from "../../services/api/config"
 import axios from "axios"
 import toast from "react-hot-toast"
 
+/* ─── API ────────────────────────────────────────────────────────────────────── */
 const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 })
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
@@ -23,7 +28,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-/* ─── TYPES ─────────────────────────────────────────────────────────────────── */
+/* ─── TYPES ──────────────────────────────────────────────────────────────────── */
 interface Message {
   id: string
   role: "user" | "assistant"
@@ -33,13 +38,14 @@ interface Message {
   intent?: string
   pinned?: boolean
   bookmarked?: boolean
-  reaction?: "👍" | "👎" | "❤️" | null
+  reaction?: "👍" | "👎" | "❤️" | "🔥" | "💡" | null
+  edited?: boolean
+  collapsed?: boolean
+  tag?: string
+  readAt?: number
 }
 
-interface SessionMessage {
-  role: Message["role"]
-  content: string
-}
+interface SessionMessage { role: Message["role"]; content: string }
 
 interface Session {
   id: string
@@ -48,6 +54,21 @@ interface Session {
   tokens_used: number
   updated_at: string
   model: string
+}
+
+interface Snippet {
+  id: string
+  title: string
+  code: string
+  lang: string
+  ts: string
+  tags: string[]
+}
+
+interface PromptHistory {
+  text: string
+  ts: string
+  used: number
 }
 
 interface SpeechRecognitionInstance {
@@ -67,28 +88,84 @@ type SpeechRecognitionWindow = typeof window & {
   webkitSpeechRecognition?: SpeechRecognitionConstructor
 }
 
-/* ─── CONSTANTS ──────────────────────────────────────────────────────────────── */
-const C = {
-  bg: "#070B12", surface: "#0C1018", surface2: "#111827",
-  border: "rgba(255,255,255,0.06)", border2: "rgba(255,255,255,0.1)",
-  text: "#E2E8F0", muted: "#64748B", faint: "#1E293B",
-  indigo: "#6366F1", violet: "#8B5CF6", emerald: "#10B981",
-  amber: "#F59E0B", rose: "#F43F5E", cyan: "#22D3EE",
+interface ChatResponse {
+  response: string
+  tokens_used?: number
+  intent?: string
+  session_id: string
+  session_title?: string
+  messages_remaining?: number | string
 }
 
+/* ─── DESIGN TOKENS ───────────────────────────────────────────────────────────── */
+const THEMES = {
+  dark: {
+    bg: "#070B12", surface: "#0C1018", surface2: "#111827", surface3: "#162032",
+    border: "rgba(255,255,255,0.06)", border2: "rgba(255,255,255,0.11)",
+    text: "#E2E8F0", muted: "#64748B", faint: "#1E293B",
+    indigo: "#6366F1", violet: "#8B5CF6", emerald: "#10B981",
+    amber: "#F59E0B", rose: "#F43F5E", cyan: "#22D3EE", orange: "#F97316",
+    userBubble: "linear-gradient(135deg,#6366F1,#5855EB)",
+    aiBubble: "#0C1018",
+  },
+  midnight: {
+    bg: "#000000", surface: "#080808", surface2: "#101010", surface3: "#181818",
+    border: "rgba(255,255,255,0.05)", border2: "rgba(255,255,255,0.09)",
+    text: "#D1D5DB", muted: "#6B7280", faint: "#111111",
+    indigo: "#818CF8", violet: "#A78BFA", emerald: "#34D399",
+    amber: "#FCD34D", rose: "#FB7185", cyan: "#67E8F9", orange: "#FB923C",
+    userBubble: "linear-gradient(135deg,#818CF8,#6366F1)",
+    aiBubble: "#0A0A0A",
+  },
+  slate: {
+    bg: "#0F172A", surface: "#1E293B", surface2: "#273549", surface3: "#2E3F57",
+    border: "rgba(148,163,184,0.1)", border2: "rgba(148,163,184,0.18)",
+    text: "#F1F5F9", muted: "#94A3B8", faint: "#1E293B",
+    indigo: "#6366F1", violet: "#8B5CF6", emerald: "#10B981",
+    amber: "#F59E0B", rose: "#F43F5E", cyan: "#22D3EE", orange: "#F97316",
+    userBubble: "linear-gradient(135deg,#6366F1,#4F46E5)",
+    aiBubble: "#1E293B",
+  },
+}
+type ThemeName = keyof typeof THEMES
+
+/* ─── CONSTANTS ───────────────────────────────────────────────────────────────── */
 const QUICK_ACTIONS = [
-  { icon: Code,       label: "Explain",   prompt: "Explain this code in detail:\n\n",              color: "#60A5FA" },
-  { icon: Zap,        label: "Fix Bug",   prompt: "Find and fix ALL bugs:\n\n",                    color: "#FBBF24" },
-  { icon: Shield,     label: "Security",  prompt: "Security audit this code:\n\n",                 color: "#F87171" },
-  { icon: TrendingUp, label: "Optimize",  prompt: "Optimize for performance:\n\n",                 color: "#34D399" },
-  { icon: Terminal,   label: "Tests",     prompt: "Write comprehensive tests:\n\n",                color: "#A78BFA" },
-  { icon: FileText,   label: "Document",  prompt: "Add documentation:\n\n",                        color: "#22D3EE" },
-  { icon: RefreshCw,  label: "Refactor",  prompt: "Refactor following best practices:\n\n",        color: "#FB923C" },
-  { icon: Lightbulb,  label: "Improve",   prompt: "Suggest a better approach:\n\n",                color: "#F472B6" },
-  { icon: Search,     label: "Review",    prompt: "Senior developer code review:\n\n",             color: "#818CF8" },
-  { icon: Sparkles,   label: "Generate",  prompt: "Generate production-ready code for:\n\n",       color: "#10B981" },
-  { icon: BookOpen,   label: "Explain Concept", prompt: "Explain this concept in simple terms:\n\n", color: "#F59E0B" },
-  { icon: Hash,       label: "Regex",     prompt: "Write a regex pattern for:\n\n",                color: "#EC4899" },
+  { icon: Code,        label: "Explain",    prompt: "Explain this code in detail:\n\n",           color: "#60A5FA" },
+  { icon: Zap,         label: "Fix Bug",    prompt: "Find and fix ALL bugs:\n\n",                 color: "#FBBF24" },
+  { icon: Shield,      label: "Security",   prompt: "Security audit this code:\n\n",              color: "#F87171" },
+  { icon: TrendingUp,  label: "Optimize",   prompt: "Optimize for performance:\n\n",              color: "#34D399" },
+  { icon: Terminal,    label: "Tests",      prompt: "Write comprehensive tests:\n\n",             color: "#A78BFA" },
+  { icon: FileText,    label: "Document",   prompt: "Add documentation:\n\n",                     color: "#22D3EE" },
+  { icon: RefreshCw,   label: "Refactor",   prompt: "Refactor following best practices:\n\n",     color: "#FB923C" },
+  { icon: Lightbulb,   label: "Improve",    prompt: "Suggest a better approach:\n\n",             color: "#F472B6" },
+  { icon: Search,      label: "Review",     prompt: "Senior developer code review:\n\n",          color: "#818CF8" },
+  { icon: Sparkles,    label: "Generate",   prompt: "Generate production-ready code for:\n\n",    color: "#10B981" },
+  { icon: BookOpen,    label: "Explain Concept", prompt: "Explain this concept simply:\n\n",      color: "#F59E0B" },
+  { icon: Hash,        label: "Regex",      prompt: "Write a regex pattern for:\n\n",             color: "#EC4899" },
+  { icon: GitBranch,   label: "Git",        prompt: "Help me with this git situation:\n\n",       color: "#34D399" },
+  { icon: Globe,       label: "API Design", prompt: "Design a REST API for:\n\n",                 color: "#38BDF8" },
+  { icon: Cpu,         label: "Algorithm",  prompt: "Find the optimal algorithm for:\n\n",        color: "#A78BFA" },
+  { icon: Layers,      label: "Architecture", prompt: "Suggest an architecture for:\n\n",         color: "#FB923C" },
+]
+
+const PROMPT_TEMPLATES = [
+  { label: "API Design",     prompt: "Design a RESTful API for a ",         cat: "backend"   },
+  { label: "DB Schema",      prompt: "Design a database schema for:\n\n",   cat: "backend"   },
+  { label: "Architecture",   prompt: "Suggest an architecture for:\n\n",    cat: "system"    },
+  { label: "Code Review",    prompt: "Do a thorough code review of:\n\n",   cat: "review"    },
+  { label: "Error Debug",    prompt: "Help me debug this error:\n\n",        cat: "debug"     },
+  { label: "Git Message",    prompt: "Write a conventional git commit for: ", cat: "git"      },
+  { label: "SQL Query",      prompt: "Write an optimized SQL query to:\n\n", cat: "backend"  },
+  { label: "React Component", prompt: "Build a React component for:\n\n",   cat: "frontend"  },
+  { label: "Performance",    prompt: "Profile and fix performance issues:\n\n", cat: "optimize" },
+  { label: "Docker",         prompt: "Write a Dockerfile for:\n\n",          cat: "devops"   },
+  { label: "CI/CD",          prompt: "Set up CI/CD pipeline for:\n\n",       cat: "devops"   },
+  { label: "Test Suite",     prompt: "Write a complete test suite for:\n\n", cat: "testing"  },
+  { label: "Security Audit", prompt: "Perform a security audit of:\n\n",    cat: "security"  },
+  { label: "System Design",  prompt: "Design the system for:\n\n",           cat: "system"   },
+  { label: "Code Translate", prompt: "Translate this code to another language:\n\n", cat: "translate" },
+  { label: "Pseudocode",     prompt: "Write pseudocode for:\n\n",            cat: "algorithm" },
 ]
 
 const INTENT_COLORS: Record<string, { text: string; bg: string }> = {
@@ -101,35 +178,69 @@ const INTENT_COLORS: Record<string, { text: string; bg: string }> = {
   general:  { text: "#94A3B8", bg: "rgba(148,163,184,0.1)" },
 }
 
-const REACTIONS = ["👍", "👎", "❤️"] as const
+const REACTIONS = ["👍", "👎", "❤️", "🔥", "💡"] as const
 
-const PROMPT_TEMPLATES = [
-  { label: "API Design",      prompt: "Design a RESTful API for a " },
-  { label: "DB Schema",       prompt: "Design a database schema for: " },
-  { label: "Architecture",    prompt: "Suggest an architecture for: " },
-  { label: "Code Review",     prompt: "Do a thorough code review of:\n\n" },
-  { label: "Error Debug",     prompt: "Help me debug this error:\n\n" },
-  { label: "Git Message",     prompt: "Write a conventional git commit message for: " },
-  { label: "Regex Helper",    prompt: "Write a regex to match: " },
-  { label: "SQL Query",       prompt: "Write an optimized SQL query to: " },
+const MSG_TAGS = ["Important", "TODO", "Question", "Follow-up", "Reference", "Bug", "Feature"]
+const TAG_COLORS: Record<string, string> = {
+  Important: "#F43F5E", TODO: "#F59E0B", Question: "#6366F1",
+  "Follow-up": "#22D3EE", Reference: "#10B981", Bug: "#F87171", Feature: "#A78BFA",
+}
+
+const THINKING_TIPS = [
+  "Analyzing your request...",
+  "Consulting best practices...",
+  "Crafting the optimal solution...",
+  "Reviewing edge cases...",
+  "Almost ready...",
 ]
 
-/* ─── HELPERS ────────────────────────────────────────────────────────────────── */
-function getLocalPins(sessionId: string): string[] {
-  try { return JSON.parse(localStorage.getItem(`fd_pins_${sessionId}`) || "[]") } catch { return [] }
-}
-function setLocalPins(sessionId: string, ids: string[]) {
-  localStorage.setItem(`fd_pins_${sessionId}`, JSON.stringify(ids))
-}
-function getLocalBookmarks(): string[] {
-  try { return JSON.parse(localStorage.getItem("fd_ai_bookmarks") || "[]") } catch { return [] }
-}
-function setLocalBookmarks(ids: string[]) {
-  localStorage.setItem("fd_ai_bookmarks", JSON.stringify(ids))
+/* ─── LOCAL STORAGE HELPERS ──────────────────────────────────────────────────── */
+const LS = {
+  get: (k: string, def: unknown = null) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? def } catch { return def } },
+  set: (k: string, v: unknown) => {
+    try {
+      localStorage.setItem(k, JSON.stringify(v))
+    } catch {
+      // Storage may be unavailable in private or restricted browser contexts.
+    }
+  },
 }
 
-/* ─── MESSAGE CONTENT RENDERER ───────────────────────────────────────────────── */
-function MessageContent({ content }: { content: string }) {
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
+}
+
+function getStoredTheme(): ThemeName {
+  const value = LS.get("fd_ai_theme", "dark")
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(THEMES, value)
+    ? value as ThemeName
+    : "dark"
+}
+
+function getStoredFontSize() {
+  const value = LS.get("fd_ai_fontsize", 14)
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(18, Math.max(12, value))
+    : 14
+}
+
+function getStoredArray<T>(key: string): T[] {
+  const value = LS.get(key, [])
+  return Array.isArray(value) ? value as T[] : []
+}
+
+function getStoredBoolean(key: string, fallback: boolean) {
+  const value = LS.get(key, fallback)
+  return typeof value === "boolean" ? value : fallback
+}
+
+/* ─── MESSAGE RENDERER ───────────────────────────────────────────────────────── */
+function MessageContent({ content, fontSize, C: T }: { content: string; fontSize: number; C: typeof THEMES.dark }) {
   const parts = content.split(/(```[\s\S]*?```)/g)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -138,64 +249,66 @@ function MessageContent({ content }: { content: string }) {
           const lines = part.split("\n")
           const lang = lines[0].replace("```", "").trim() || "code"
           const code = lines.slice(1, -1).join("\n")
+          const lineCount = code.split("\n").length
           return (
-            <div key={i} style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border2}`, margin: "4px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: C.surface2, borderBottom: `1px solid ${C.border}` }}>
+            <div key={i} style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border2}`, margin: "4px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 12px", background: T.surface2, borderBottom: `1px solid ${T.border}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    {["#EF4444","#F59E0B","#10B981"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.7 }} />)}
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {["#EF4444","#F59E0B","#10B981"].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: "50%", background: c, opacity: 0.75 }} />)}
                   </div>
-                  <span style={{ fontSize: 11, color: C.muted, fontFamily: "monospace" }}>{lang}</span>
+                  <span style={{ fontSize: 11, color: T.muted, fontFamily: "monospace", fontWeight: 600 }}>{lang}</span>
+                  <span style={{ fontSize: 10, color: T.faint === "#1E293B" ? "#334155" : "#222", background: T.surface3, padding: "1px 6px", borderRadius: 4 }}>{lineCount} lines</span>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => { navigator.clipboard.writeText(code); toast.success("Code copied!") }}
-                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.06)", border: `1px solid ${C.border}`, borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
-                    <Copy size={10} />Copy
-                  </button>
-                  <button onClick={() => {
-                    const blob = new Blob([code], { type: "text/plain" })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement("a"); a.href = url; a.download = `snippet.${lang}`; a.click()
-                    URL.revokeObjectURL(url); toast.success("Downloaded!")
-                  }}
-                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.06)", border: `1px solid ${C.border}`, borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}>
-                    <Download size={10} />Save
-                  </button>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {[
+                    { label: "Copy", icon: <Copy size={9} />, action: () => { navigator.clipboard.writeText(code); toast.success("Copied!") } },
+                    { label: "Save", icon: <Download size={9} />, action: () => {
+                      const blob = new Blob([code], { type: "text/plain" })
+                      const url = URL.createObjectURL(blob)
+                      const extension = lang.replace(/[^\w.-]/g, "") || "txt"
+                      const a = document.createElement("a"); a.href = url; a.download = `snippet.${extension}`; a.click()
+                      URL.revokeObjectURL(url); toast.success("Saved!")
+                    }},
+                  ].map(btn => (
+                    <button key={btn.label} onClick={btn.action} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, color: T.muted, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, borderRadius: 5, padding: "3px 7px", cursor: "pointer" }}>
+                      {btn.icon}{btn.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <pre style={{ padding: "14px 16px", background: "#050810", overflowX: "auto", margin: 0, fontSize: 13, lineHeight: 1.6 }}>
-                <code style={{ color: "#86EFAC", fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>{code}</code>
+              <pre style={{ padding: "14px 16px", background: "#050810", overflowX: "auto", margin: 0, fontSize: 13, lineHeight: 1.65, maxHeight: 420, overflowY: "auto" }}>
+                <code style={{ color: "#86EFAC", fontFamily: "'JetBrains Mono','Fira Code',monospace" }}>{code}</code>
               </pre>
-              <div style={{ padding: "4px 14px", background: C.surface2, borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>{code.split("\n").length} lines • {code.length} chars</span>
-              </div>
             </div>
           )
         }
         return (
-          <div key={i} style={{ fontSize: 14, color: "#CBD5E1", lineHeight: 1.75 }}>
+          <div key={i} style={{ fontSize, color: "#CBD5E1", lineHeight: 1.78 }}>
             {part.split("\n").map((line, j) => {
-              const withBold = line.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#F8FAFC;font-weight:600">$1</strong>')
-              const withItalic = withBold.replace(/\*(.*?)\*/g, '<em style="color:#CBD5E1">$1</em>')
-              const withCode = withItalic.replace(/`([^`]+)`/g, '<code style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:12px;color:#A5B4FC">$1</code>')
-              if (line.startsWith("# ")) return <h1 key={j} style={{ fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: "14px 0 6px" }}>{line.slice(2)}</h1>
-              if (line.startsWith("## ")) return <h2 key={j} style={{ fontSize: 16, fontWeight: 600, color: "#F1F5F9", margin: "10px 0 4px" }}>{line.slice(3)}</h2>
-              if (line.startsWith("### ")) return <h3 key={j} style={{ fontSize: 14, fontWeight: 600, color: "#A5B4FC", margin: "8px 0 3px" }}>{line.slice(4)}</h3>
-              if (line.startsWith("> ")) return <blockquote key={j} style={{ borderLeft: `3px solid ${C.indigo}`, paddingLeft: 12, margin: "4px 0", color: C.muted, fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: withCode.slice(2) }} />
+              const safeLine = escapeHtml(line)
+              const b = safeLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#F8FAFC;font-weight:600">$1</strong>')
+              const it = b.replace(/\*(.*?)\*/g, '<em style="color:#CBD5E1">$1</em>')
+              const c = it.replace(/`([^`]+)`/g, '<code style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:12px;color:#A5B4FC">$1</code>')
+              const lk = c.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" style="color:#60A5FA;text-decoration:underline">$1</a>')
+              if (line.startsWith("# "))   return <h1 key={j} style={{ fontSize: fontSize + 4, fontWeight: 700, color: "#F8FAFC", margin: "12px 0 5px" }}>{line.slice(2)}</h1>
+              if (line.startsWith("## "))  return <h2 key={j} style={{ fontSize: fontSize + 2, fontWeight: 600, color: "#F1F5F9", margin: "9px 0 3px" }}>{line.slice(3)}</h2>
+              if (line.startsWith("### ")) return <h3 key={j} style={{ fontSize: fontSize + 1, fontWeight: 600, color: "#A5B4FC", margin: "7px 0 3px" }}>{line.slice(4)}</h3>
+              if (line.startsWith("> "))   return <blockquote key={j} style={{ borderLeft: `3px solid ${T.indigo}`, paddingLeft: 12, margin: "4px 0", color: T.muted, fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: lk.slice(2) }} />
               if (line.startsWith("- ") || line.startsWith("• ")) return (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
-                  <span style={{ color: C.indigo, marginTop: 3, flexShrink: 0 }}>•</span>
-                  <span dangerouslySetInnerHTML={{ __html: withCode.slice(2) }} />
+                  <span style={{ color: T.indigo, marginTop: 4, flexShrink: 0 }}>•</span>
+                  <span dangerouslySetInnerHTML={{ __html: lk.slice(2) }} />
                 </div>
               )
               if (/^\d+\./.test(line)) return (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
-                  <span style={{ color: C.indigo, fontFamily: "monospace", fontSize: 11, marginTop: 3, flexShrink: 0 }}>{line.match(/^\d+/)?.[0]}.</span>
-                  <span dangerouslySetInnerHTML={{ __html: withCode.replace(/^\d+\.\s*/, "") }} />
+                  <span style={{ color: T.indigo, fontFamily: "monospace", fontSize: 11, marginTop: 4, flexShrink: 0 }}>{line.match(/^\d+/)?.[0]}.</span>
+                  <span dangerouslySetInnerHTML={{ __html: lk.replace(/^\d+\.\s*/, "") }} />
                 </div>
               )
               if (line === "") return <div key={j} style={{ height: 6 }} />
-              return <p key={j} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: withCode }} />
+              return <p key={j} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: lk }} />
             })}
           </div>
         )
@@ -205,65 +318,145 @@ function MessageContent({ content }: { content: string }) {
 }
 
 /* ─── THINKING ANIMATION ─────────────────────────────────────────────────────── */
-function ThinkingDots() {
+function ThinkingDots({ C: T }: { C: typeof THEMES.dark }) {
   const [elapsed, setElapsed] = useState(0)
+  const [tip, setTip] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(t)
+    const t1 = setInterval(() => setElapsed(e => e + 1), 1000)
+    const t2 = setInterval(() => setTip(t => (t + 1) % THINKING_TIPS.length), 3000)
+    return () => { clearInterval(t1); clearInterval(t2) }
   }, [])
   return (
     <div style={{ display: "flex", gap: 12 }}>
       <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Brain size={16} color="#fff" style={{ animation: "pulse 2s infinite" }} />
+        <Brain size={16} color="#fff" style={{ animation: "spin 3s linear infinite" }} />
       </div>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "14px 14px 14px 4px", padding: "12px 16px" }}>
-        <div style={{ fontSize: 11, color: C.indigo, marginBottom: 8, fontWeight: 600 }}>Thinking deeply… {elapsed > 0 ? `(${elapsed}s)` : ""}</div>
-        <div style={{ display: "flex", gap: 5 }}>
-          {[0, 150, 300].map(d => (
-            <div key={d} style={{ width: 8, height: 8, background: C.indigo, borderRadius: "50%", animation: "bounce 1s infinite", animationDelay: `${d}ms` }} />
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: "14px 14px 14px 4px", padding: "12px 16px", maxWidth: 260 }}>
+        <div style={{ fontSize: 11, color: T.indigo, marginBottom: 8, fontWeight: 600 }}>
+          {THINKING_TIPS[tip]} {elapsed > 2 ? `(${elapsed}s)` : ""}
+        </div>
+        <div style={{ display: "flex", gap: 5, marginBottom: 6 }}>
+          {[0, 180, 360].map(d => (
+            <div key={d} style={{ width: 8, height: 8, background: T.indigo, borderRadius: "50%", animation: "bounce 1.2s infinite", animationDelay: `${d}ms` }} />
           ))}
         </div>
+        {elapsed > 5 && <div style={{ fontSize: 10, color: T.muted }}>Complex request — taking a bit longer…</div>}
       </div>
     </div>
   )
 }
 
 /* ─── STATS MODAL ────────────────────────────────────────────────────────────── */
-function StatsModal({ messages, sessions, usage, onClose }: {
+function StatsModal({ messages, sessions, usage, onClose, C: T }: {
   messages: Message[]; sessions: Session[]
   usage: { used_today: number; remaining: number | string; limit: number | string }
-  onClose: () => void
+  onClose: () => void; C: typeof THEMES.dark
 }) {
-  const totalWords = messages.filter(m => m.role === "assistant").reduce((acc, m) => acc + m.content.split(/\s+/).length, 0)
-  const totalTokens = messages.reduce((acc, m) => acc + (m.tokens || 0), 0)
-  const codeBlocks = messages.filter(m => m.role === "assistant").reduce((acc, m) => acc + (m.content.match(/```/g) || []).length / 2, 0)
-  const avgResponse = messages.filter(m => m.role === "assistant").length > 0
-    ? Math.round(totalWords / messages.filter(m => m.role === "assistant").length)
-    : 0
+  const aiMsgs = messages.filter(m => m.role === "assistant")
+  const userMsgs = messages.filter(m => m.role === "user")
+  const totalWords = aiMsgs.reduce((a, m) => a + m.content.split(/\s+/).length, 0)
+  const totalTokens = messages.reduce((a, m) => a + (m.tokens || 0), 0)
+  const codeBlocks = Math.round(aiMsgs.reduce((a, m) => a + (m.content.match(/```/g) || []).length / 2, 0))
+  const avgLen = aiMsgs.length > 0 ? Math.round(totalWords / aiMsgs.length) : 0
+  const reactions = messages.filter(m => m.reaction).length
+  const pinned = messages.filter(m => m.pinned).length
+  const bookmarked = messages.filter(m => m.bookmarked).length
+  const sessionTokens = sessions.reduce((a, s) => a + (s.tokens_used || 0), 0)
+
+  const stats = [
+    { label: "Total Messages", value: messages.length, color: T.indigo },
+    { label: "AI Replies", value: aiMsgs.length, color: T.violet },
+    { label: "Your Messages", value: userMsgs.length, color: T.cyan },
+    { label: "Total Tokens", value: totalTokens.toLocaleString(), color: T.emerald },
+    { label: "Code Blocks", value: codeBlocks, color: "#34D399" },
+    { label: "Words Generated", value: totalWords.toLocaleString(), color: T.amber },
+    { label: "Avg Words/Reply", value: avgLen, color: "#F472B6" },
+    { label: "Sessions", value: sessions.length, color: T.muted },
+    { label: "All-time Tokens", value: sessionTokens.toLocaleString(), color: T.orange },
+    { label: "Used Today", value: usage.used_today, color: T.rose },
+    { label: "Reactions", value: reactions, color: T.amber },
+    { label: "Pinned/Saved", value: pinned + bookmarked, color: "#FB923C" },
+  ]
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 16 }}>
-      <div style={{ background: C.surface, borderRadius: 16, width: "100%", maxWidth: 440, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 8 }}>
-            <BarChart2 size={15} color={C.indigo} />Session Stats
+      <div style={{ background: T.surface, borderRadius: 16, width: "100%", maxWidth: 480, border: `1px solid ${T.border}`, overflow: "hidden", maxHeight: "90dvh", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 8 }}>
+            <BarChart2 size={15} color={T.indigo} />Conversation Stats
           </span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}><X size={15} /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={15} /></button>
         </div>
-        <div style={{ padding: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {[
-            { label: "Messages", value: messages.length, color: C.indigo },
-            { label: "AI Replies", value: messages.filter(m => m.role === "assistant").length, color: C.violet },
-            { label: "Total Tokens", value: totalTokens.toLocaleString(), color: C.cyan },
-            { label: "Code Blocks", value: Math.round(codeBlocks), color: C.emerald },
-            { label: "Words Generated", value: totalWords.toLocaleString(), color: C.amber },
-            { label: "Avg Words/Reply", value: avgResponse, color: "#F472B6" },
-            { label: "Sessions Total", value: sessions.length, color: C.muted },
-            { label: "Used Today", value: usage.used_today, color: C.rose },
-          ].map(s => (
-            <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "monospace" }}>{s.value}</div>
+        <div style={{ padding: 16, overflowY: "auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+            {stats.map(s => (
+              <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 10, color: T.muted, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: "monospace" }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+          {/* Intent breakdown */}
+          {aiMsgs.some(m => m.intent) && (
+            <div>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Intent Breakdown</div>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                {Object.keys(INTENT_COLORS).map(intent => {
+                  const count = aiMsgs.filter(m => m.intent === intent).length
+                  if (count === 0) return null
+                  const ic = INTENT_COLORS[intent]
+                  return (
+                    <span key={intent} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 99, background: ic.bg, color: ic.text, fontWeight: 600 }}>
+                      {intent} ({count})
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── SNIPPET VAULT ──────────────────────────────────────────────────────────── */
+function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: {
+  snippets: Snippet[]; onDelete: (id: string) => void
+  onCopy: (code: string) => void; onClose: () => void
+  C: typeof THEMES.dark
+}) {
+  const [q, setQ] = useState("")
+  const filtered = snippets.filter(s => s.title.toLowerCase().includes(q.toLowerCase()) || s.lang.toLowerCase().includes(q.toLowerCase()))
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 16 }}>
+      <div style={{ background: T.surface, borderRadius: 16, width: "100%", maxWidth: 560, border: `1px solid ${T.border}`, overflow: "hidden", maxHeight: "85dvh", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 10, alignItems: "center" }}>
+          <Archive size={15} color={T.indigo} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.text, flex: 1 }}>Snippet Vault ({snippets.length})</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={15} /></button>
+        </div>
+        <div style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search snippets…"
+            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 12px", color: T.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "32px 0", color: T.muted, fontSize: 13 }}>
+              {snippets.length === 0 ? "No saved snippets yet. Save code blocks from AI responses!" : "No results"}
+            </div>
+          ) : filtered.map(s => (
+            <div key={s.id} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+              <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${T.border}`, background: T.surface2 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.text, flex: 1 }}>{s.title}</span>
+                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(99,102,241,0.12)", color: T.indigo, fontFamily: "monospace" }}>{s.lang}</span>
+                <span style={{ fontSize: 10, color: T.muted }}>{new Date(s.ts).toLocaleDateString()}</span>
+                <button onClick={() => onCopy(s.code)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><Copy size={12} /></button>
+                <button onClick={() => onDelete(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><Trash2 size={12} /></button>
+              </div>
+              <pre style={{ margin: 0, padding: "10px 12px", fontSize: 12, color: "#86EFAC", fontFamily: "monospace", overflowX: "auto", maxHeight: 120, background: "#050810" }}>
+                {s.code.slice(0, 200)}{s.code.length > 200 ? "\n…" : ""}
+              </pre>
             </div>
           ))}
         </div>
@@ -272,24 +465,118 @@ function StatsModal({ messages, sessions, usage, onClose }: {
   )
 }
 
-/* ─── PROMPT TEMPLATES PANEL ─────────────────────────────────────────────────── */
-function TemplatesPanel({ onSelect, onClose }: { onSelect: (p: string) => void; onClose: () => void }) {
+/* ─── SETTINGS PANEL ─────────────────────────────────────────────────────────── */
+function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C: T, compactMode, setCompactMode, soundEnabled, setSoundEnabled, autoScroll, setAutoScroll, showTimestamps, setShowTimestamps }: {
+  themeName: ThemeName; fontSize: number
+  setTheme: (t: ThemeName) => void; setFontSize: (n: number) => void
+  onClose: () => void; C: typeof THEMES.dark
+  compactMode: boolean; setCompactMode: (v: boolean) => void
+  soundEnabled: boolean; setSoundEnabled: (v: boolean) => void
+  autoScroll: boolean; setAutoScroll: (v: boolean) => void
+  showTimestamps: boolean; setShowTimestamps: (v: boolean) => void
+}) {
   return (
-    <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, marginBottom: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", zIndex: 100, boxShadow: "0 -8px 32px rgba(0,0,0,0.5)" }}>
-      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>Prompt Templates</span>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}><X size={13} /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 16 }}>
+      <div style={{ background: T.surface, borderRadius: 16, width: "100%", maxWidth: 420, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 8 }}><Settings size={15} color={T.indigo} />Settings</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={15} /></button>
+        </div>
+        <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Theme */}
+          <div>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Theme</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(Object.keys(THEMES) as ThemeName[]).map(t => (
+                <button key={t} onClick={() => setTheme(t)} style={{
+                  flex: 1, padding: "8px", borderRadius: 8, border: `2px solid ${themeName === t ? T.indigo : T.border}`,
+                  background: THEMES[t].bg, cursor: "pointer", fontSize: 12, color: THEMES[t].text, fontWeight: 600, transition: "all 0.15s",
+                }}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>
+              ))}
+            </div>
+          </div>
+          {/* Font size */}
+          <div>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Font Size ({fontSize}px)</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 11, color: T.muted }}>Aa</span>
+              <input type="range" min={12} max={18} value={fontSize} onChange={e => setFontSize(Number(e.target.value))}
+                style={{ flex: 1, accentColor: T.indigo }} />
+              <span style={{ fontSize: 15, color: T.muted }}>Aa</span>
+            </div>
+          </div>
+          {/* Toggles */}
+          {[
+            { label: "Compact Mode", value: compactMode, set: setCompactMode, desc: "Tighter message spacing" },
+            { label: "Sound Effects", value: soundEnabled, set: setSoundEnabled, desc: "Notification sounds" },
+            { label: "Auto Scroll", value: autoScroll, set: setAutoScroll, desc: "Scroll to new messages" },
+            { label: "Show Timestamps", value: showTimestamps, set: setShowTimestamps, desc: "Time on each message" },
+          ].map(opt => (
+            <div key={opt.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{opt.label}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{opt.desc}</div>
+              </div>
+              <button onClick={() => opt.set(!opt.value)} style={{
+                width: 42, height: 24, borderRadius: 99, border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s",
+                background: opt.value ? T.indigo : T.faint,
+              }}>
+                <div style={{ position: "absolute", top: 3, left: opt.value ? 20 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-      <div style={{ padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: 200, overflowY: "auto" }}>
-        {PROMPT_TEMPLATES.map(t => (
-          <button key={t.label} onClick={() => { onSelect(t.prompt); onClose() }} style={{
-            background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 8,
-            padding: "8px 10px", cursor: "pointer", textAlign: "left", fontSize: 12, color: C.muted,
-            transition: "all 0.12s",
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.indigo; (e.currentTarget as HTMLElement).style.color = C.text }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.muted }}
-          >{t.label}</button>
+    </div>
+  )
+}
+
+/* ─── KEYBOARD SHORTCUTS MODAL ───────────────────────────────────────────────── */
+function ShortcutsModal({ onClose, C: T }: { onClose: () => void; C: typeof THEMES.dark }) {
+  const shortcuts = [
+    ["Enter", "Send message"],
+    ["Shift+Enter", "New line"],
+    ["Ctrl+K", "Focus input"],
+    ["Ctrl+N", "New chat"],
+    ["Ctrl+/", "Keyboard shortcuts"],
+    ["Ctrl+B", "Toggle sidebar"],
+    ["Ctrl+E", "Export chat"],
+    ["Ctrl+F", "Search messages"],
+    ["Esc", "Close panels"],
+  ]
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 16 }}>
+      <div style={{ background: T.surface, borderRadius: 16, width: "100%", maxWidth: 360, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 8 }}><Keyboard size={15} color={T.indigo} />Keyboard Shortcuts</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={15} /></button>
+        </div>
+        <div style={{ padding: 16 }}>
+          {shortcuts.map(([k, l]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+              <span style={{ fontSize: 12, color: T.muted }}>{l}</span>
+              <kbd style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, background: "rgba(255,255,255,0.06)", color: T.indigo, border: `1px solid ${T.border}`, fontFamily: "monospace" }}>{k}</kbd>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── TAG PICKER ─────────────────────────────────────────────────────────────── */
+function TagPicker({ current, onSelect, onClose, C: T }: { current?: string; onSelect: (t: string | undefined) => void; onClose: () => void; C: typeof THEMES.dark }) {
+  return (
+    <div style={{ position: "absolute", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 8, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", top: "100%", right: 0, marginTop: 4, minWidth: 160 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <button onClick={() => { onSelect(undefined); onClose() }} style={{ textAlign: "left", padding: "5px 8px", borderRadius: 6, background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 12 }}>None</button>
+        {MSG_TAGS.map(t => (
+          <button key={t} onClick={() => { onSelect(t); onClose() }} style={{
+            textAlign: "left", padding: "5px 8px", borderRadius: 6, background: current === t ? "rgba(255,255,255,0.05)" : "none",
+            border: "none", cursor: "pointer", fontSize: 12, color: TAG_COLORS[t] || T.muted, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: TAG_COLORS[t] || T.muted }} />{t}
+          </button>
         ))}
       </div>
     </div>
@@ -302,87 +589,176 @@ export default function AIAssistant() {
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const inputAreaRef = useRef<HTMLDivElement>(null)
-
-  /* Core state */
-  const [messages, setMessages] = useState<Message[]>([])
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [usage, setUsage] = useState({ used_today: 0, remaining: 20 as number | string, limit: 20 as number | string })
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showSidebar, setShowSidebar] = useState(false)
-  const [loadingSession, setLoadingSession] = useState(false)
-
-  /* Enhanced features state */
-  const [showStats, setShowStats] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
-  const [sessionSearch, setSessionSearch] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showSearch, setShowSearch] = useState(false)
-  const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("md")
-  const [isListening, setIsListening] = useState(false)
-  const [pinnedMsgIds, setPinnedMsgIds] = useState<string[]>([])
-  const [bookmarkedMsgIds, setBookmarkedMsgIds] = useState<string[]>(getLocalBookmarks())
-  const [showBookmarks, setShowBookmarks] = useState(false)
-  const [showPinned, setShowPinned] = useState(false)
-  const [charCount, setCharCount] = useState(0)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const sessionLoadRef = useRef<AbortController | null>(null)
+  const chatRequestRef = useRef<AbortController | null>(null)
+  const sendingRef = useRef(false)
+
+  /* Core */
+  const [messages, setMessages]                   = useState<Message[]>([])
+  const [sessions, setSessions]                   = useState<Session[]>([])
+  const [currentSessionId, setCurrentSessionId]   = useState<string | null>(null)
+  const [input, setInput]                         = useState("")
+  const [loading, setLoading]                     = useState(false)
+  const [usage, setUsage]                         = useState({ used_today: 0, remaining: 20 as number | string, limit: 20 as number | string })
+  const [copiedId, setCopiedId]                   = useState<string | null>(null)
+  const [showSidebar, setShowSidebar]             = useState(false)
+  const [loadingSession, setLoadingSession]       = useState(false)
+
+  /* Theme & display */
+  const [themeName, setThemeName]                 = useState<ThemeName>(getStoredTheme)
+  const [fontSize, setFontSize]                   = useState<number>(getStoredFontSize)
+  const [compactMode, setCompactMode]             = useState<boolean>(() => getStoredBoolean("fd_ai_compact", false))
+  const [soundEnabled, setSoundEnabled]           = useState<boolean>(() => getStoredBoolean("fd_ai_sound", true))
+  const [autoScroll, setAutoScroll]               = useState<boolean>(() => getStoredBoolean("fd_ai_autoscroll", true))
+  const [showTimestamps, setShowTimestamps]       = useState<boolean>(() => getStoredBoolean("fd_ai_timestamps", true))
+  const [fullscreen, setFullscreen]               = useState(false)
+
+  /* Panels / modals */
+  const [showStats, setShowStats]                 = useState(false)
+  const [showSettings, setShowSettings]           = useState(false)
+  const [showShortcuts, setShowShortcuts]         = useState(false)
+  const [showTemplates, setShowTemplates]         = useState(false)
+  const [showSnippets, setShowSnippets]           = useState(false)
+  const [showSearch, setShowSearch]               = useState(false)
+  const [showPromptHistory, setShowPromptHistory] = useState(false)
+
+  /* Search / filter */
+  const [searchQuery, setSearchQuery]             = useState("")
+  const [sessionSearch, setSessionSearch]         = useState("")
+  const [activeTagFilter, setActiveTagFilter]     = useState<string | null>(null)
+  const [sidebarView, setSidebarView]             = useState<"history"|"pinned"|"bookmarks">("history")
+  const [sortOrder, setSortOrder]                 = useState<"newest"|"oldest">("newest")
+
+  /* Message features */
+  const [pinnedMsgIds, setPinnedMsgIds]           = useState<string[]>([])
+  const [bookmarkedMsgIds, setBookmarkedMsgIds]   = useState<string[]>(() => getStoredArray<string>("fd_ai_bookmarks"))
+  const [editingMsgId, setEditingMsgId]           = useState<string | null>(null)
+  const [editingText, setEditingText]             = useState("")
+  const [editingSessionId, setEditingSessionId]   = useState<string | null>(null)
+  const [sessionTitleDraft, setSessionTitleDraft] = useState("")
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null)
+  const [collapsedIds, setCollapsedIds]           = useState<Set<string>>(new Set())
+  const [tagPickerFor, setTagPickerFor]           = useState<string | null>(null)
+  const [msgTags, setMsgTags]                     = useState<Record<string, string>>({})
+
+  /* Input */
+  const [charCount, setCharCount]                 = useState(0)
+  const [isListening, setIsListening]             = useState(false)
+  const [isDragOver, setIsDragOver]               = useState(false)
+  const [promptHistory, setPromptHistory]         = useState<PromptHistory[]>(() => getStoredArray<PromptHistory>("fd_ai_prompts"))
+
+  /* Snippets */
+  const [snippets, setSnippets]                   = useState<Snippet[]>(() => getStoredArray<Snippet>("fd_ai_snippets"))
+
+  /* Persist settings */
+  useEffect(() => { LS.set("fd_ai_theme", themeName) }, [themeName])
+  useEffect(() => { LS.set("fd_ai_fontsize", fontSize) }, [fontSize])
+  useEffect(() => { LS.set("fd_ai_compact", compactMode) }, [compactMode])
+  useEffect(() => { LS.set("fd_ai_sound", soundEnabled) }, [soundEnabled])
+  useEffect(() => { LS.set("fd_ai_autoscroll", autoScroll) }, [autoScroll])
+  useEffect(() => { LS.set("fd_ai_timestamps", showTimestamps) }, [showTimestamps])
+  useEffect(() => { LS.set("fd_ai_bookmarks", bookmarkedMsgIds) }, [bookmarkedMsgIds])
+  useEffect(() => { LS.set("fd_ai_snippets", snippets) }, [snippets])
+  useEffect(() => { LS.set("fd_ai_prompts", promptHistory) }, [promptHistory])
+
+  const T = THEMES[themeName]
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages])
-  useEffect(() => { loadUsage(); loadSessions() }, []) // eslint-disable-line
+  useEffect(() => {
+    if (autoScroll) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, autoScroll])
 
-  const loadUsage = async () => {
+  /* Sound helper */
+  const playPing = useCallback(() => {
+    if (!soundEnabled) return
+    try {
+      const AudioContextApi = window.AudioContext
+        ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AudioContextApi) return
+      const ctx = new AudioContextApi()
+      const osc = ctx.createOscillator(); const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.frequency.value = 880; gain.gain.setValueAtTime(0.1, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+      osc.onended = () => { void ctx.close() }
+      osc.start(); osc.stop(ctx.currentTime + 0.3)
+    } catch (error) {
+      console.debug("Unable to play AI response sound", error)
+    }
+  }, [soundEnabled])
+
+  const loadUsage = useCallback(async () => {
     try {
       const { data } = await api.get("/ai/usage")
       setUsage(data)
     } catch (error) {
-      console.error("Failed to load usage", error)
+      console.error("Failed to load AI usage", error)
     }
-  }
+  }, [])
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
-      const { data } = await api.get("/ai/sessions")
-      setSessions(data.sessions || [])
+      const { data } = await api.get<{ sessions?: Session[] }>("/ai/sessions")
+      const nextSessions = Array.isArray(data.sessions)
+        ? data.sessions.filter(session =>
+            session
+            && typeof session.id === "string"
+            && typeof session.title === "string"
+            && typeof session.updated_at === "string")
+        : []
+      setSessions(nextSessions)
     } catch (error) {
-      console.error("Failed to load sessions", error)
+      console.error("Failed to load AI sessions", error)
     }
-  }
+  }, [])
 
-  const loadSession = async (sessionId: string) => {
+  const loadSession = useCallback(async (sessionId: string) => {
+    sessionLoadRef.current?.abort()
+    chatRequestRef.current?.abort()
+    sendingRef.current = false
+    setLoading(false)
+    const controller = new AbortController()
+    sessionLoadRef.current = controller
     setLoadingSession(true)
     try {
-      const { data } = await api.get<{ session: { messages: SessionMessage[]; created_at: string } }>(`/ai/sessions/${sessionId}`)
+      const { data } = await api.get<{
+        session: { title: string; messages: SessionMessage[]; created_at: string }
+      }>(`/ai/sessions/${sessionId}`, { signal: controller.signal })
       const msgs: Message[] = (data.session.messages || []).map((m, i) => ({
-        id: `${sessionId}-${i}`,
-        role: m.role,
-        content: m.content,
+        id: `${sessionId}-${i}`, role: m.role, content: m.content,
         timestamp: new Date(data.session.created_at),
       }))
       setMessages(msgs)
       setCurrentSessionId(sessionId)
-      setPinnedMsgIds(getLocalPins(sessionId))
+      const storedPins = LS.get(`fd_pins_${sessionId}`, [])
+      setPinnedMsgIds(Array.isArray(storedPins) ? storedPins as string[] : [])
+      setEditingSessionId(null)
       if (window.innerWidth < 768) setShowSidebar(false)
-    } catch {
-      toast.error("Failed to load session")
+    } catch (error) {
+      if (!axios.isCancel(error) && !controller.signal.aborted) {
+        toast.error("Failed to load session")
+      }
     } finally {
-      setLoadingSession(false)
+      if (sessionLoadRef.current === controller) {
+        sessionLoadRef.current = null
+        setLoadingSession(false)
+      }
     }
-  }
+  }, [])
 
-  const startNewChat = () => {
-    setMessages([])
-    setCurrentSessionId(null)
-    setInput("")
-    setPinnedMsgIds([])
-    setShowSearch(false)
-    setSearchQuery("")
+  const startNewChat = useCallback(() => {
+    sessionLoadRef.current?.abort()
+    chatRequestRef.current?.abort()
+    sendingRef.current = false
+    setLoading(false)
+    setLoadingSession(false)
+    setMessages([]); setCurrentSessionId(null); setInput(""); setPinnedMsgIds([])
+    setSearchQuery(""); setShowSearch(false); setActiveTagFilter(null)
+    setEditingSessionId(null); setSessionTitleDraft("")
     if (window.innerWidth < 768) setShowSidebar(false)
     inputRef.current?.focus()
-  }
+  }, [])
 
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -391,298 +767,475 @@ export default function AIAssistant() {
       setSessions(prev => prev.filter(s => s.id !== sessionId))
       if (currentSessionId === sessionId) startNewChat()
       toast.success("Session deleted")
-    } catch {
-      toast.error("Failed to delete")
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : null
+      toast.error(typeof detail === "string" ? detail : "Failed to delete session")
     }
   }
 
-  /* ── Voice Input ─────────────────────────────────────────────────── */
-  const toggleVoice = useCallback(() => {
-    const speechWindow = window as SpeechRecognitionWindow
-    const SpeechRecognitionApi = speechWindow.webkitSpeechRecognition ?? speechWindow.SpeechRecognition
-    if (!SpeechRecognitionApi) {
-      toast.error("Speech recognition not supported in this browser")
-      return
-    }
-    if (isListening) {
-      recognitionRef.current?.stop()
-      setIsListening(false)
-      return
-    }
-    const recognition = new SpeechRecognitionApi()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = "en-US"
-    recognition.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = e.results[0][0].transcript
-      setInput(prev => prev + (prev ? " " : "") + transcript)
-      setCharCount(prev => prev + transcript.length)
-      setIsListening(false)
-    }
-    recognition.onerror = () => { setIsListening(false); toast.error("Voice input failed") }
-    recognition.onend = () => setIsListening(false)
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-    toast("Listening… speak now 🎤", { duration: 3000 })
-  }, [isListening])
+  const beginRenameSession = (session: Session, event: React.MouseEvent) => {
+    event.stopPropagation()
+    setEditingSessionId(session.id)
+    setSessionTitleDraft(session.title)
+  }
 
-  /* ── Send message ────────────────────────────────────────────────── */
+  const renameSession = async (sessionId: string) => {
+    const title = sessionTitleDraft.replace(/\s+/g, " ").trim()
+    if (!title) {
+      toast.error("Session name cannot be empty")
+      return
+    }
+    if (title.length > 120) {
+      toast.error("Session name must be 120 characters or less")
+      return
+    }
+
+    setRenamingSessionId(sessionId)
+    try {
+      const { data } = await api.patch<{ session: { title: string; updated_at: string } }>(
+        `/ai/sessions/${sessionId}`,
+        { title },
+      )
+      setSessions(prev => prev.map(session => session.id === sessionId
+        ? { ...session, title: data.session.title, updated_at: data.session.updated_at }
+        : session))
+      setEditingSessionId(null)
+      setSessionTitleDraft("")
+      toast.success("Session renamed")
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : null
+      toast.error(typeof detail === "string" ? detail : "Failed to rename session")
+    } finally {
+      setRenamingSessionId(null)
+    }
+  }
+
+  /* ── Send ──────────────────────────────────────────────────────────── */
   const sendMessage = useCallback(async (messageText?: string) => {
-    const text = messageText || input
-    if (!text.trim() || loading) return
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: text.trim(),
-      timestamp: new Date(),
+    const text = (messageText ?? input).trim()
+    if (!text || sendingRef.current) return
+    if (text.length > 20000) {
+      toast.error("Message is too long. Keep it under 20,000 characters.")
+      return
     }
+    sendingRef.current = true
+    const controller = new AbortController()
+    chatRequestRef.current = controller
 
+    // Save to prompt history
+    setPromptHistory(prev => {
+      const existing = prev.find(prompt => prompt.text === text)
+      if (existing) {
+        return prev.map(prompt => prompt.text === text
+          ? { ...prompt, used: prompt.used + 1, ts: new Date().toISOString() }
+          : prompt)
+      }
+      return [{ text, ts: new Date().toISOString(), used: 1 }, ...prev].slice(0, 50)
+    })
+
+    const optimisticId = `pending-${crypto.randomUUID()}`
+    const messageIndex = messages.length
+    const userMsg: Message = { id: optimisticId, role: "user", content: text, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
-    setInput("")
-    setCharCount(0)
-    setLoading(true)
+    setInput(""); setCharCount(0); setLoading(true)
 
     try {
-      const conversationMsgs = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-      const { data } = await api.post("/ai/chat", {
-        messages: conversationMsgs,
+      const { data } = await api.post<ChatResponse>("/ai/chat", {
+        messages: [{ role: userMsg.role, content: userMsg.content }],
         session_id: currentSessionId,
-      })
-
+      }, { signal: controller.signal })
+      const sessionId = data.session_id
+      const now = new Date()
       const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.response,
-        timestamp: new Date(),
-        tokens: data.tokens_used,
-        intent: data.intent,
+        id: `${sessionId}-${messageIndex + 1}`, role: "assistant",
+        content: data.response, timestamp: now,
+        tokens: data.tokens_used, intent: data.intent,
       }
-
-      setMessages(prev => [...prev, aiMsg])
-      setCurrentSessionId(data.session_id)
-      setUsage(prev => ({
-        ...prev,
-        used_today: prev.used_today + 1,
-        remaining: typeof prev.remaining === "number" ? Math.max(0, prev.remaining - 1) : prev.remaining,
-      }))
-      loadSessions()
+      setMessages(prev => [
+        ...prev.map(message => message.id === optimisticId
+          ? { ...message, id: `${sessionId}-${messageIndex}` }
+          : message),
+        aiMsg,
+      ])
+      setCurrentSessionId(sessionId)
+      if (data.messages_remaining !== undefined) {
+        setUsage(prev => ({
+          ...prev,
+          used_today: prev.used_today + 1,
+          remaining: data.messages_remaining ?? prev.remaining,
+        }))
+      }
+      const title = data.session_title?.trim() || text.split(/\s+/).slice(0, 8).join(" ")
+      setSessions(prev => {
+        const existing = prev.find(session => session.id === sessionId)
+        if (existing) {
+          return prev.map(session => session.id === sessionId
+            ? {
+                ...session,
+                title: data.session_title || session.title,
+                message_count: session.message_count + 1,
+                tokens_used: session.tokens_used + (data.tokens_used || 0),
+                updated_at: now.toISOString(),
+              }
+            : session)
+        }
+        return [{
+          id: sessionId,
+          title,
+          message_count: 1,
+          tokens_used: data.tokens_used || 0,
+          updated_at: now.toISOString(),
+          model: "",
+        }, ...prev]
+      })
+      void loadSessions()
+      playPing()
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string }; status?: number } }
-      const detail = e.response?.data?.detail || ""
+      if (axios.isCancel(err) || controller.signal.aborted) return
+      const detail = axios.isAxiosError(err) && typeof err.response?.data?.detail === "string"
+        ? err.response.data.detail
+        : ""
       if (detail.includes("All AI models") || detail.includes("temporarily unavailable")) {
-        toast.error("⚠️ All AI services are busy. Please try again in 1-2 hours.", { duration: 8000 })
+        toast.error("⚠️ All AI services busy. Try again in 1-2 hours.", { duration: 8000 })
         setUsage(prev => ({ ...prev, remaining: 0, used_today: typeof prev.limit === "number" ? prev.limit : 20 }))
       } else if (detail.includes("Daily limit") || detail.includes("Free tier limit")) {
         toast.error("Daily limit reached. Upgrade to Pro!", { duration: 5000 })
         setUsage(prev => ({ ...prev, remaining: 0 }))
-      } else {
-        toast.error(detail || "AI error. Try again.")
-      }
+      } else { toast.error(detail || "AI error. Try again.") }
       setMessages(prev => prev.filter(m => m.id !== userMsg.id))
-      setInput(userMsg.content)
-      setCharCount(userMsg.content.length)
+      setInput(userMsg.content); setCharCount(userMsg.content.length)
     } finally {
-      setLoading(false)
-      inputRef.current?.focus()
+      if (chatRequestRef.current === controller) {
+        chatRequestRef.current = null
+        sendingRef.current = false
+        setLoading(false)
+        inputRef.current?.focus()
+      }
     }
-  }, [input, loading, messages, currentSessionId])
+  }, [currentSessionId, input, loadSessions, messages, playPing])
 
-  /* ── Copy ────────────────────────────────────────────────────────── */
+  /* ── Voice ─────────────────────────────────────────────────────────── */
+  const toggleVoice = useCallback(() => {
+    const speechWindow = window as SpeechRecognitionWindow
+    const SpeechRecognitionApi = speechWindow.webkitSpeechRecognition ?? speechWindow.SpeechRecognition
+    if (!SpeechRecognitionApi) {
+      toast.error("Speech recognition not supported"); return
+    }
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return }
+    const rec = new SpeechRecognitionApi()
+    rec.continuous = false; rec.interimResults = false; rec.lang = "en-US"
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0]?.[0]?.transcript?.trim()
+      if (!transcript) return
+      const nextInput = input + (input ? " " : "") + transcript
+      setInput(nextInput)
+      setCharCount(nextInput.length)
+      setIsListening(false)
+    }
+    rec.onerror = () => { setIsListening(false); toast.error("Voice input failed") }
+    rec.onend = () => setIsListening(false)
+    recognitionRef.current = rec; rec.start(); setIsListening(true)
+    toast("Listening… 🎤", { duration: 3000 })
+  }, [input, isListening])
+
+  /* ── Drag & Drop file ──────────────────────────────────────────────── */
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+    if (file.size > 100000) { toast.error("File too large (max 100KB)"); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      if (typeof ev.target?.result !== "string") return
+      const attachment = `\n\`\`\`\n${ev.target.result.slice(0, 3000)}\n\`\`\`\n`
+      const nextInput = input + attachment
+      setInput(nextInput)
+      setCharCount(nextInput.length)
+      toast.success(`${file.name} attached!`)
+    }
+    reader.onerror = () => toast.error("Failed to read the file")
+    reader.readAsText(file)
+  }
+
+  /* ── Export ────────────────────────────────────────────────────────── */
+  const handleExportChat = useCallback((format: "md" | "json" | "txt" = "md") => {
+    if (messages.length === 0) { toast.error("No messages to export"); return }
+    const content = format === "md"
+      ? `# FlowDesk AI Chat Export\n_${new Date().toLocaleString()}_\n\n---\n\n` +
+        messages.map(m => `**${m.role === "user" ? "You" : "AI"}** (${m.timestamp.toLocaleTimeString()})\n\n${m.content}`).join("\n\n---\n\n")
+      : format === "json"
+        ? JSON.stringify({ exported: new Date().toISOString(), session: currentSessionId, messages: messages.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp, tokens: m.tokens, intent: m.intent })) }, null, 2)
+        : messages.map(m => `[${m.role.toUpperCase()}] ${m.content}`).join("\n\n")
+    const mime = format === "md" ? "text/markdown" : format === "json" ? "application/json" : "text/plain"
+    const blob = new Blob([content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a"); a.href = url; a.download = `chat-${Date.now()}.${format}`; a.click()
+    URL.revokeObjectURL(url); toast.success(`Exported as .${format}!`)
+  }, [messages, currentSessionId])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const timer = window.setTimeout(() => {
+      void loadUsage()
+      void loadSessions()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [isAuthenticated, loadSessions, loadUsage])
+
+  useEffect(() => () => {
+    sessionLoadRef.current?.abort()
+    chatRequestRef.current?.abort()
+    recognitionRef.current?.stop()
+  }, [])
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        const key = event.key.toLowerCase()
+        if (key === "k") { event.preventDefault(); inputRef.current?.focus() }
+        if (key === "n") { event.preventDefault(); startNewChat() }
+        if (key === "b") { event.preventDefault(); setShowSidebar(open => !open) }
+        if (key === "e") { event.preventDefault(); handleExportChat() }
+        if (key === "f") { event.preventDefault(); setShowSearch(open => !open) }
+        if (key === "/") { event.preventDefault(); setShowShortcuts(open => !open) }
+      }
+      if (event.key === "Escape") {
+        setShowStats(false); setShowSettings(false); setShowShortcuts(false)
+        setShowTemplates(false); setShowSnippets(false); setShowSearch(false)
+        setShowPromptHistory(false); setTagPickerFor(null); setEditingMsgId(null)
+        setEditingSessionId(null); setSessionTitleDraft("")
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [handleExportChat, startNewChat])
+
+  /* ── Copy ──────────────────────────────────────────────────────────── */
   const handleCopy = (msg: Message) => {
     navigator.clipboard.writeText(msg.content)
-    setCopiedId(msg.id)
-    toast.success("Copied!")
+    setCopiedId(msg.id); toast.success("Copied!")
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  /* ── Export chat ─────────────────────────────────────────────────── */
-  const handleExportChat = () => {
-    if (messages.length === 0) { toast.error("No messages to export"); return }
-    const md = messages.map(m => `**${m.role === "user" ? "You" : "AI"}** (${m.timestamp.toLocaleTimeString()})\n\n${m.content}`).join("\n\n---\n\n")
-    const blob = new Blob([md], { type: "text/markdown" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a"); a.href = url; a.download = `chat-${Date.now()}.md`; a.click()
-    URL.revokeObjectURL(url)
-    toast.success("Chat exported as Markdown!")
-  }
-
-  /* ── Pin message ─────────────────────────────────────────────────── */
+  /* ── Pin ───────────────────────────────────────────────────────────── */
   const togglePin = (msgId: string) => {
     const next = pinnedMsgIds.includes(msgId) ? pinnedMsgIds.filter(id => id !== msgId) : [...pinnedMsgIds, msgId]
     setPinnedMsgIds(next)
-    if (currentSessionId) setLocalPins(currentSessionId, next)
+    if (currentSessionId) LS.set(`fd_pins_${currentSessionId}`, next)
     toast(pinnedMsgIds.includes(msgId) ? "Unpinned" : "Pinned 📌")
   }
 
-  /* ── Bookmark message ────────────────────────────────────────────── */
+  /* ── Bookmark ──────────────────────────────────────────────────────── */
   const toggleBookmark = (msgId: string) => {
     const next = bookmarkedMsgIds.includes(msgId) ? bookmarkedMsgIds.filter(id => id !== msgId) : [...bookmarkedMsgIds, msgId]
-    setBookmarkedMsgIds(next)
-    setLocalBookmarks(next)
-    toast(bookmarkedMsgIds.includes(msgId) ? "Bookmark removed" : "Bookmarked! ⭐")
+    setBookmarkedMsgIds(next); toast(bookmarkedMsgIds.includes(msgId) ? "Removed" : "Bookmarked ⭐")
   }
 
-  /* ── React to message ────────────────────────────────────────────── */
+  /* ── React ─────────────────────────────────────────────────────────── */
   const addReaction = (msgId: string, reaction: typeof REACTIONS[number]) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reaction: m.reaction === reaction ? null : reaction } : m))
   }
 
-  /* ── Share message ───────────────────────────────────────────────── */
+  /* ── Share ─────────────────────────────────────────────────────────── */
   const shareMessage = (msg: Message) => {
     if (navigator.share) {
-      navigator.share({ title: "FlowDesk AI", text: msg.content }).catch(() => {})
-    } else {
-      navigator.clipboard.writeText(msg.content)
-      toast.success("Copied to clipboard for sharing!")
+      navigator.share({ title: "FlowDesk AI", text: msg.content }).catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        toast.error("Unable to open the share menu")
+      })
     }
+    else { navigator.clipboard.writeText(msg.content); toast.success("Copied for sharing!") }
   }
 
-  /* ── Read aloud ──────────────────────────────────────────────────── */
+  /* ── TTS ───────────────────────────────────────────────────────────── */
   const readAloud = (text: string) => {
     if (!("speechSynthesis" in window)) { toast.error("TTS not supported"); return }
     window.speechSynthesis.cancel()
-    const plain = text.replace(/```[\s\S]*?```/g, "").replace(/[#*`]/g, "").trim()
+    const plain = text.replace(/```[\s\S]*?```/g, "…code block…").replace(/[#*`]/g, "").trim()
     const utt = new SpeechSynthesisUtterance(plain)
-    utt.rate = 1.1; utt.pitch = 1
+    utt.rate = 1.05; utt.pitch = 1
     window.speechSynthesis.speak(utt)
     toast("Reading aloud 🔊", { duration: 2000 })
   }
 
-  /* ── Computed ────────────────────────────────────────────────────── */
+  /* ── Edit message ──────────────────────────────────────────────────── */
+  const startEdit = (msg: Message) => { setEditingMsgId(msg.id); setEditingText(msg.content) }
+  const saveEdit = (msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: editingText, edited: true } : m))
+    setEditingMsgId(null); setEditingText(""); toast.success("Message edited")
+  }
+
+  /* ── Save snippet ──────────────────────────────────────────────────── */
+  const saveSnippet = (code: string, lang: string) => {
+    const title = prompt("Snippet title:")?.trim()
+    if (!title) return
+    const s: Snippet = { id: Date.now().toString(), title, code, lang, ts: new Date().toISOString(), tags: [] }
+    setSnippets(prev => [s, ...prev])
+    toast.success("Snippet saved to vault!")
+  }
+
+  /* ── Collapse message ──────────────────────────────────────────────── */
+  const toggleCollapse = (msgId: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(msgId)) next.delete(msgId)
+      else next.add(msgId)
+      return next
+    })
+  }
+
+  /* ── Tag message ───────────────────────────────────────────────────── */
+  const setMsgTag = (msgId: string, tag: string | undefined) => {
+    setMsgTags(prev => tag ? { ...prev, [msgId]: tag } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== msgId)))
+  }
+
+  /* ── Computed ──────────────────────────────────────────────────────── */
   const isLimitReached = user?.plan === "free" && usage.remaining === 0
   const remainingNum = typeof usage.remaining === "number" ? usage.remaining : 999
   const limitNum = typeof usage.limit === "number" ? usage.limit : 20
   const remainingPercent = Math.min(100, (remainingNum / limitNum) * 100)
 
-  const filteredSessions = sessions.filter(s =>
-    sessionSearch === "" || s.title.toLowerCase().includes(sessionSearch.toLowerCase())
-  )
+  const filteredSessions = useMemo(() => {
+    const query = sessionSearch.trim().toLowerCase()
+    return sessions
+      .filter(session => !query || session.title.toLowerCase().includes(query))
+      .sort((a, b) => {
+        const difference = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        return sortOrder === "newest" ? difference : -difference
+      })
+  }, [sessions, sessionSearch, sortOrder])
 
-  const displayMessages = searchQuery
-    ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages
+  const displayMessages = useMemo(() => {
+    let list = messages
+    if (searchQuery) list = list.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    if (activeTagFilter) list = list.filter(m => msgTags[m.id] === activeTagFilter)
+    return list
+  }, [messages, searchQuery, activeTagFilter, msgTags])
 
-  const pinnedMessages = messages.filter(m => pinnedMsgIds.includes(m.id))
-  const bookmarkedMessages = messages.filter(m => bookmarkedMsgIds.includes(m.id))
+  const pinnedMessages = useMemo(() => messages.filter(m => pinnedMsgIds.includes(m.id)), [messages, pinnedMsgIds])
+  const bookmarkedMessages = useMemo(() => messages.filter(m => bookmarkedMsgIds.includes(m.id)), [messages, bookmarkedMsgIds])
+  const usedTags = useMemo(() => [...new Set(Object.values(msgTags))], [msgTags])
 
-  const fontSizeMap = { sm: 12, md: 14, lg: 16 }
-
-  /* ─── RENDER ──────────────────────────────────────────────────────── */
+  /* ─── RENDER ────────────────────────────────────────────────────────── */
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: C.bg, color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden" }}>
+    <div style={{
+      height: fullscreen ? "100vh" : "100dvh", display: "flex", flexDirection: "column",
+      background: T.bg, color: T.text, fontFamily: "system-ui, -apple-system, sans-serif",
+      overflow: "hidden",
+      ...(fullscreen ? { position: "fixed", inset: 0, zIndex: 9999 } : {}),
+    }}
+    onDragOver={e => { e.preventDefault(); setIsDragOver(true) }}
+    onDragLeave={() => setIsDragOver(false)}
+    onDrop={handleDrop}
+    >
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-        @keyframes bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
-        * { box-sizing: border-box; }
-        textarea { font-family: inherit; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+        @keyframes bounce { 0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 99px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        textarea, input { font-family: inherit; }
+        button:focus-visible { outline: 2px solid ${T.indigo}; outline-offset: 2px; }
       `}</style>
 
-      {/* ── HEADER ───────────────────────────────────────────────────── */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, background: C.surface, padding: "0 12px", height: 54, display: "flex", alignItems: "center", gap: 8, flexShrink: 0, zIndex: 40 }}>
-        <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", padding: 6, borderRadius: 8 }}>
-          <ArrowLeft size={18} />
+      {/* Drag overlay */}
+      {isDragOver && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(99,102,241,0.12)", border: `3px dashed ${T.indigo}`, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.indigo }}>📂 Drop file to attach</div>
+        </div>
+      )}
+
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 12px", height: 52, display: "flex", alignItems: "center", gap: 6, flexShrink: 0, zIndex: 40 }}>
+        <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", padding: 6, borderRadius: 7 }}>
+          <ArrowLeft size={17} />
+        </button>
+        <button onClick={() => setShowSidebar(o => !o)} style={{ background: showSidebar ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer", color: showSidebar ? T.indigo : T.muted, display: "flex", padding: 6, borderRadius: 7 }}>
+          {showSidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
         </button>
 
-        <button onClick={() => setShowSidebar(o => !o)} style={{
-          background: showSidebar ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer",
-          color: showSidebar ? C.indigo : C.muted, display: "flex", padding: 6, borderRadius: 8,
-        }}>
-          {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-          <div style={{ width: 34, height: 34, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Brain size={17} color="#fff" />
+        {/* Brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9, flex: 1, minWidth: 0 }}>
+          <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Brain size={16} color="#fff" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>FlowDesk AI</span>
-              <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, background: "rgba(99,102,241,0.15)", color: C.indigo, border: `1px solid rgba(99,102,241,0.25)`, display: "none" }} className="lg-show">Llama 3.3 70B</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>FlowDesk AI</span>
               {currentSessionId && (
-                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: C.emerald, border: `1px solid rgba(16,185,129,0.2)`, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.emerald, animation: "pulse 2s infinite" }} />
-                  Memory On
+                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: T.emerald, border: `1px solid rgba(16,185,129,0.2)`, display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: T.emerald, animation: "pulse 2s infinite" }} />Memory On
                 </span>
               )}
               {loading && (
-                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, background: "rgba(99,102,241,0.08)", color: C.indigo, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Brain size={9} style={{ animation: "spin 1s linear infinite" }} />Thinking…
+                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 99, background: "rgba(99,102,241,0.1)", color: T.indigo, display: "flex", alignItems: "center", gap: 3 }}>
+                  <Brain size={8} style={{ animation: "spin 1.5s linear infinite" }} />Thinking
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 10, color: C.muted, display: "none" }} className="md-show">Groq Powered • Ultra Fast • Context Aware</div>
+            <div style={{ fontSize: 10, color: T.muted }}>Groq • Llama 3.3 70B • Ultra Fast</div>
           </div>
         </div>
 
-        {/* Header right actions */}
-        <div style={{ display: "flex", gap: 3, alignItems: "center", flexShrink: 0 }}>
-          {/* Usage bar - desktop only */}
+        {/* Header right */}
+        <div style={{ display: "flex", gap: 2, alignItems: "center", flexShrink: 0 }}>
+          {/* Usage */}
           {user?.plan === "free" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 4 }}>
-              <div style={{ width: 60, height: 4, background: C.faint, borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 99, width: `${remainingPercent}%`, background: remainingPercent > 50 ? C.emerald : remainingPercent > 20 ? C.amber : C.rose, transition: "width 0.5s" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginRight: 4 }}>
+              <div style={{ width: 50, height: 3, background: T.faint, borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 99, width: `${remainingPercent}%`, background: remainingPercent > 50 ? T.emerald : remainingPercent > 20 ? T.amber : T.rose, transition: "width 0.5s" }} />
               </div>
-              <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>{usage.remaining}/{usage.limit}</span>
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>{usage.remaining}/{usage.limit}</span>
             </div>
           )}
           {user?.plan === "pro" && (
-            <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: C.emerald, border: `1px solid rgba(16,185,129,0.2)`, display: "flex", alignItems: "center", gap: 4 }}>
-              <Sparkles size={9} />Unlimited
+            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: T.emerald, border: `1px solid rgba(16,185,129,0.2)`, display: "flex", alignItems: "center", gap: 3 }}>
+              <Sparkles size={8} />Pro
             </span>
           )}
 
-          {/* Search toggle */}
-          {messages.length > 0 && (
-            <button onClick={() => setShowSearch(s => !s)} title="Search messages" style={{ background: showSearch ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer", color: showSearch ? C.indigo : C.muted, padding: 6, borderRadius: 8, display: "flex" }}>
-              <Search size={15} />
-            </button>
-          )}
+          {/* Icon buttons */}
+          {[
+            { icon: <Search size={14} />, title: "Search (Ctrl+F)", active: showSearch, action: () => setShowSearch(s => !s), show: messages.length > 0 },
+            { icon: <Archive size={14} />, title: "Snippet Vault", active: showSnippets, action: () => setShowSnippets(true), show: true },
+            { icon: <BarChart2 size={14} />, title: "Stats", active: showStats, action: () => setShowStats(true), show: messages.length > 0 },
+            { icon: <Download size={14} />, title: "Export", active: false, action: () => handleExportChat("md"), show: messages.length > 0 },
+            { icon: <Keyboard size={14} />, title: "Shortcuts (Ctrl+/)", active: showShortcuts, action: () => setShowShortcuts(true), show: true },
+            { icon: <Settings size={14} />, title: "Settings", active: showSettings, action: () => setShowSettings(true), show: true },
+            { icon: fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />, title: "Fullscreen", active: fullscreen, action: () => setFullscreen(f => !f), show: true },
+          ].filter(b => b.show).map((b, i) => (
+            <button key={i} onClick={b.action} title={b.title} style={{
+              background: b.active ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer",
+              color: b.active ? T.indigo : T.muted, padding: 6, borderRadius: 7, display: "flex",
+              transition: "all 0.12s",
+            }}>{b.icon}</button>
+          ))}
 
-          {/* Font size */}
-          <button onClick={() => setFontSize(s => s === "sm" ? "md" : s === "md" ? "lg" : "sm")} title="Font size" style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: 6, borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
-            A{fontSize === "sm" ? "↓" : fontSize === "lg" ? "↑" : ""}
-          </button>
-
-          {/* Stats */}
-          {messages.length > 0 && (
-            <button onClick={() => setShowStats(true)} title="Stats" style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: 6, borderRadius: 8, display: "flex" }}>
-              <BarChart2 size={15} />
-            </button>
-          )}
-
-          {/* Export */}
-          {messages.length > 0 && (
-            <button onClick={handleExportChat} title="Export chat" style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: 6, borderRadius: 8, display: "flex" }}>
-              <Download size={15} />
-            </button>
-          )}
-
-          {/* New chat */}
-          <button onClick={startNewChat} style={{
-            display: "flex", alignItems: "center", gap: 5, fontSize: 12,
-            background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`,
-            borderRadius: 8, padding: "5px 10px", color: C.muted, cursor: "pointer",
-          }}>
-            <Plus size={13} /><span>New</span>
+          <button onClick={startNewChat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 10px", color: T.muted, cursor: "pointer" }}>
+            <Plus size={12} />New
           </button>
         </div>
       </div>
 
       {/* Search bar */}
       {showSearch && (
-        <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <Search size={13} color={C.muted} />
+        <div style={{ padding: "7px 14px", borderBottom: `1px solid ${T.border}`, background: T.surface, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <Search size={12} color={T.muted} />
           <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search in conversation…" autoFocus
-            style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 13 }} />
-          {searchQuery && <span style={{ fontSize: 11, color: C.muted }}>{displayMessages.length} results</span>}
-          <button onClick={() => { setShowSearch(false); setSearchQuery("") }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}><X size={13} /></button>
+            style={{ flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13 }} />
+          {/* Tag filter pills */}
+          {usedTags.length > 0 && usedTags.map(tag => (
+            <button key={tag} onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)} style={{
+              fontSize: 10, padding: "2px 7px", borderRadius: 99, border: "none", cursor: "pointer",
+              background: activeTagFilter === tag ? TAG_COLORS[tag] : "rgba(255,255,255,0.05)",
+              color: activeTagFilter === tag ? "#fff" : TAG_COLORS[tag] || T.muted, fontWeight: 600,
+            }}>{tag}</button>
+          ))}
+          {searchQuery && <span style={{ fontSize: 10, color: T.muted }}>{displayMessages.length} found</span>}
+          <button onClick={() => { setShowSearch(false); setSearchQuery(""); setActiveTagFilter(null) }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={12} /></button>
         </div>
       )}
 
@@ -690,424 +1243,560 @@ export default function AIAssistant() {
 
         {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
         {showSidebar && (
-          <button type="button" onClick={() => setShowSidebar(false)} aria-label="Close sidebar"
-            style={{ position: "fixed", inset: 0, top: 54, background: "rgba(0,0,0,0.6)", zIndex: 20, border: "none", cursor: "pointer", display: "block" }}
-            className="md-hide"
-          />
+          <button type="button" onClick={() => setShowSidebar(false)} style={{ position: "fixed", inset: 0, top: 52, background: "rgba(0,0,0,0.55)", zIndex: 20, border: "none", cursor: "pointer" }} className="md-overlay" />
         )}
-
         {showSidebar && (
-          <div style={{
-            position: "fixed", left: 0, top: 54, bottom: 0, zIndex: 30,
-            width: "min(82vw, 280px)", background: C.surface,
-            borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column",
-            boxShadow: "4px 0 24px rgba(0,0,0,0.4)",
-          }}>
-            {/* Sidebar header */}
-            <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-              <input value={sessionSearch} onChange={e => setSessionSearch(e.target.value)}
-                placeholder="Search sessions…"
-                style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 7, padding: "6px 10px", color: C.text, fontSize: 12, outline: "none" }} />
-              <button onClick={() => setShowSidebar(false)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}>
-                <PanelLeftClose size={15} />
+          <div style={{ position: "fixed", left: 0, top: 52, bottom: 0, zIndex: 30, width: "min(80vw,272px)", background: T.surface, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", boxShadow: "4px 0 24px rgba(0,0,0,0.4)" }}>
+
+            {/* Session search */}
+            <div style={{ padding: "9px 10px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 6 }}>
+              <input value={sessionSearch} onChange={e => setSessionSearch(e.target.value)} placeholder="Search sessions…"
+                style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 9px", color: T.text, fontSize: 12, outline: "none" }} />
+              <button onClick={() => setSortOrder(s => s === "newest" ? "oldest" : "newest")} title="Sort order" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 7px", cursor: "pointer", color: T.muted, display: "flex" }}>
+                <SortAsc size={12} />
               </button>
+              <button onClick={() => setShowSidebar(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><PanelLeftClose size={14} /></button>
             </div>
 
-            {/* View toggles */}
-            <div style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", gap: 5 }}>
-              <button onClick={() => { setShowBookmarks(false); setShowPinned(false) }} style={{
-                flex: 1, fontSize: 11, padding: "4px", borderRadius: 6, border: "none", cursor: "pointer",
-                background: !showBookmarks && !showPinned ? "rgba(99,102,241,0.15)" : "transparent",
-                color: !showBookmarks && !showPinned ? C.indigo : C.muted,
-              }}>History</button>
-              <button onClick={() => { setShowBookmarks(false); setShowPinned(true) }} style={{
-                flex: 1, fontSize: 11, padding: "4px", borderRadius: 6, border: "none", cursor: "pointer",
-                background: showPinned ? "rgba(249,115,22,0.15)" : "transparent",
-                color: showPinned ? "#FB923C" : C.muted,
-              }}><Pin size={10} style={{ display: "inline", marginRight: 3 }} />Pinned</button>
-              <button onClick={() => { setShowPinned(false); setShowBookmarks(true) }} style={{
-                flex: 1, fontSize: 11, padding: "4px", borderRadius: 6, border: "none", cursor: "pointer",
-                background: showBookmarks ? "rgba(245,158,11,0.15)" : "transparent",
-                color: showBookmarks ? C.amber : C.muted,
-              }}><Bookmark size={10} style={{ display: "inline", marginRight: 3 }} />Saved</button>
+            {/* View tabs */}
+            <div style={{ display: "flex", borderBottom: `1px solid ${T.border}`, padding: "0 8px" }}>
+              {([["history","History"],["pinned","Pinned"],["bookmarks","Saved"]] as const).map(([v, l]) => (
+                <button key={v} onClick={() => setSidebarView(v)} style={{
+                  flex: 1, fontSize: 11, padding: "8px 4px", borderBottom: `2px solid ${sidebarView === v ? T.indigo : "transparent"}`,
+                  background: "none", border: "none", cursor: "pointer", color: sidebarView === v ? T.indigo : T.muted, fontWeight: sidebarView === v ? 700 : 400,
+                }}>{l}</button>
+              ))}
             </div>
 
-            {/* New chat button */}
-            <div style={{ padding: "8px 10px" }}>
+            {/* New chat btn */}
+            <div style={{ padding: "8px 8px 4px" }}>
               <button onClick={startNewChat} style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 12px", borderRadius: 8, border: `1px solid ${!currentSessionId ? "rgba(99,102,241,0.3)" : C.border}`,
-                background: !currentSessionId ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.03)",
-                color: !currentSessionId ? C.indigo : C.muted, cursor: "pointer", fontSize: 13, fontWeight: 600,
+                width: "100%", display: "flex", alignItems: "center", gap: 7, padding: "8px 11px", borderRadius: 8,
+                border: `1px solid ${!currentSessionId ? "rgba(99,102,241,0.3)" : T.border}`,
+                background: !currentSessionId ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.02)",
+                color: !currentSessionId ? T.indigo : T.muted, cursor: "pointer", fontSize: 12, fontWeight: 600,
               }}>
-                <Plus size={14} />New Conversation
+                <Plus size={13} />New Conversation
               </button>
             </div>
 
-            {/* Session list / pinned / bookmarks */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
-              {showPinned ? (
-                pinnedMessages.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "32px 0", color: C.muted, fontSize: 12 }}>No pinned messages</div>
-                ) : pinnedMessages.map(m => (
-                  <div key={m.id} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.15)`, marginBottom: 5, fontSize: 12, color: C.text, cursor: "pointer" }}
-                    onClick={() => {
-                      const el = document.getElementById(`msg-${m.id}`)
-                      el?.scrollIntoView({ behavior: "smooth", block: "center" })
-                      if (window.innerWidth < 768) setShowSidebar(false)
-                    }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-                      <Pin size={9} color="#FB923C" />
-                      <span style={{ fontSize: 10, color: C.muted }}>{m.role === "user" ? "You" : "AI"}</span>
-                    </div>
-                    <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11 }}>{m.content.slice(0, 80)}</p>
+            {/* List */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px 8px" }}>
+              {sidebarView === "history" && (
+                filteredSessions.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "28px 0", color: T.muted, fontSize: 12 }}>
+                    <MessageSquare size={24} style={{ margin: "0 auto 8px", display: "block", color: T.faint }} />
+                    No sessions
                   </div>
-                ))
-              ) : showBookmarks ? (
-                bookmarkedMessages.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "32px 0", color: C.muted, fontSize: 12 }}>No bookmarks yet</div>
-                ) : bookmarkedMessages.map(m => (
-                  <div key={m.id} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(245,158,11,0.06)", border: `1px solid rgba(245,158,11,0.15)`, marginBottom: 5, cursor: "pointer" }}
-                    onClick={() => {
-                      const el = document.getElementById(`msg-${m.id}`)
-                      el?.scrollIntoView({ behavior: "smooth", block: "center" })
-                      if (window.innerWidth < 768) setShowSidebar(false)
-                    }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-                      <Star size={9} color={C.amber} />
-                      <span style={{ fontSize: 10, color: C.muted }}>{m.role === "user" ? "You" : "AI"}</span>
-                    </div>
-                    <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: C.text }}>{m.content.slice(0, 80)}</p>
-                  </div>
-                ))
-              ) : filteredSessions.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0" }}>
-                  <MessageSquare size={28} color={C.faint} style={{ margin: "0 auto 8px" }} />
-                  <p style={{ fontSize: 12, color: C.muted }}>No sessions found</p>
-                </div>
-              ) : (
-                filteredSessions.map(session => (
-                  <div key={session.id} onClick={() => loadSession(session.id)} style={{
-                    display: "flex", alignItems: "flex-start", gap: 8, padding: "9px 10px",
-                    borderRadius: 8, cursor: "pointer", marginBottom: 3,
-                    background: currentSessionId === session.id ? "rgba(99,102,241,0.1)" : "transparent",
-                    border: `1px solid ${currentSessionId === session.id ? "rgba(99,102,241,0.25)" : "transparent"}`,
+                ) : filteredSessions.map(s => (
+                  <div key={s.id} onClick={() => loadSession(s.id)} style={{
+                    display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 9px", borderRadius: 8,
+                    cursor: "pointer", marginBottom: 2,
+                    background: currentSessionId === s.id ? "rgba(99,102,241,0.1)" : "transparent",
+                    border: `1px solid ${currentSessionId === s.id ? "rgba(99,102,241,0.2)" : "transparent"}`,
                     transition: "all 0.12s",
                   }}
-                  onMouseEnter={e => { if (currentSessionId !== session.id) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)" }}
-                  onMouseLeave={e => { if (currentSessionId !== session.id) (e.currentTarget as HTMLElement).style.background = "transparent" }}
+                  onMouseEnter={e => { if (currentSessionId !== s.id) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)" }}
+                  onMouseLeave={e => { if (currentSessionId !== s.id) (e.currentTarget as HTMLElement).style.background = "transparent" }}
                   >
-                    <MessageSquare size={12} color={C.muted} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <MessageSquare size={11} color={T.muted} style={{ flexShrink: 0, marginTop: 2 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: C.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.title}</p>
-                      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-                        <span style={{ fontSize: 10, color: C.muted, display: "flex", alignItems: "center", gap: 3 }}>
-                          <Clock size={8} />{new Date(session.updated_at).toLocaleDateString()}
-                        </span>
-                        <span style={{ fontSize: 10, color: C.muted }}>{session.message_count} msgs</span>
+                      {editingSessionId === s.id ? (
+                        <input
+                          autoFocus
+                          value={sessionTitleDraft}
+                          maxLength={120}
+                          disabled={renamingSessionId === s.id}
+                          aria-label="Session name"
+                          onClick={event => event.stopPropagation()}
+                          onChange={event => setSessionTitleDraft(event.target.value)}
+                          onKeyDown={event => {
+                            event.stopPropagation()
+                            if (event.key === "Enter") {
+                              event.preventDefault()
+                              void renameSession(s.id)
+                            }
+                            if (event.key === "Escape") {
+                              setEditingSessionId(null)
+                              setSessionTitleDraft("")
+                            }
+                          }}
+                          style={{
+                            width: "100%", borderRadius: 5, border: `1px solid ${T.indigo}`,
+                            background: "rgba(255,255,255,0.05)", color: T.text,
+                            padding: "3px 6px", fontSize: 11, outline: "none",
+                          }}
+                        />
+                      ) : (
+                        <p
+                          title={s.title}
+                          onDoubleClick={event => beginRenameSession(s, event)}
+                          style={{ fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          {s.title}
+                        </p>
+                      )}
+                      <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                        <span style={{ fontSize: 10, color: T.muted, display: "flex", alignItems: "center", gap: 2 }}><Clock size={8} />{new Date(s.updated_at).toLocaleDateString()}</span>
+                        <span style={{ fontSize: 10, color: T.muted }}>{s.message_count}m</span>
+                        {s.tokens_used > 0 && <span style={{ fontSize: 10, color: T.muted }}>{s.tokens_used.toLocaleString()}t</span>}
                       </div>
                     </div>
-                    <DeleteButton onClick={e => void deleteSession(session.id, e)} title={`Delete ${session.title}`} aria-label={`Delete ${session.title}`} />
+                    <div onClick={event => event.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {editingSessionId === s.id ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void renameSession(s.id)}
+                            disabled={renamingSessionId === s.id}
+                            title="Save session name"
+                            aria-label="Save session name"
+                            style={{ background: "none", border: "none", color: T.emerald, cursor: "pointer", display: "flex", padding: 4 }}
+                          >
+                            {renamingSessionId === s.id
+                              ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+                              : <Check size={11} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingSessionId(null); setSessionTitleDraft("") }}
+                            title="Cancel rename"
+                            aria-label="Cancel rename"
+                            style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", display: "flex", padding: 4 }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={event => beginRenameSession(s, event)}
+                          title={`Rename ${s.title}`}
+                          aria-label={`Rename ${s.title}`}
+                          style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", display: "flex", padding: 4 }}
+                        >
+                          <Pencil size={11} />
+                        </button>
+                      )}
+                      <DeleteButton onClick={e => void deleteSession(s.id, e)} title={`Delete ${s.title}`} aria-label={`Delete ${s.title}`} />
+                    </div>
+                  </div>
+                ))
+              )}
+              {sidebarView === "pinned" && (
+                pinnedMessages.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "28px 0", color: T.muted, fontSize: 12 }}>No pinned messages</div>
+                ) : pinnedMessages.map(m => (
+                  <div key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (window.innerWidth < 768) setShowSidebar(false) }}
+                    style={{ padding: "8px 9px", borderRadius: 8, background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.15)`, marginBottom: 5, cursor: "pointer" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                      <Pin size={8} color="#FB923C" /><span style={{ fontSize: 9, color: T.muted }}>{m.role === "user" ? "You" : "AI"}</span>
+                    </div>
+                    <p style={{ fontSize: 11, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.content.slice(0, 70)}</p>
+                  </div>
+                ))
+              )}
+              {sidebarView === "bookmarks" && (
+                bookmarkedMessages.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "28px 0", color: T.muted, fontSize: 12 }}>No bookmarks yet</div>
+                ) : bookmarkedMessages.map(m => (
+                  <div key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (window.innerWidth < 768) setShowSidebar(false) }}
+                    style={{ padding: "8px 9px", borderRadius: 8, background: "rgba(245,158,11,0.06)", border: `1px solid rgba(245,158,11,0.15)`, marginBottom: 5, cursor: "pointer" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                      <Star size={8} color={T.amber} /><span style={{ fontSize: 9, color: T.muted }}>{m.role === "user" ? "You" : "AI"}</span>
+                      {msgTags[m.id] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: TAG_COLORS[msgTags[m.id]] + "20", color: TAG_COLORS[msgTags[m.id]] }}>{msgTags[m.id]}</span>}
+                    </div>
+                    <p style={{ fontSize: 11, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.content.slice(0, 70)}</p>
                   </div>
                 ))
               )}
             </div>
 
+            {/* Prompt history quick insert */}
+            {promptHistory.length > 0 && (
+              <div style={{ borderTop: `1px solid ${T.border}`, padding: 8 }}>
+                <button onClick={() => setShowPromptHistory(s => !s)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 11 }}>
+                  <Clock size={10} />Recent Prompts {showPromptHistory ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                </button>
+                {showPromptHistory && (
+                  <div style={{ maxHeight: 120, overflowY: "auto" }}>
+                    {promptHistory.slice(0, 8).map((p, i) => (
+                      <button key={i} onClick={() => { setInput(p.text); inputRef.current?.focus(); if (window.innerWidth < 768) setShowSidebar(false) }} style={{
+                        width: "100%", textAlign: "left", padding: "5px 8px", background: "none", border: "none", cursor: "pointer",
+                        color: T.muted, fontSize: 11, borderRadius: 6,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "none"}
+                      >↺ {p.text.slice(0, 45)}{p.text.length > 45 ? "…" : ""}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Memory indicator */}
             {currentSessionId && (
-              <div style={{ padding: 10, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ background: "rgba(16,185,129,0.08)", border: `1px solid rgba(16,185,129,0.2)`, borderRadius: 8, padding: "8px 10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                    <Brain size={11} color={C.emerald} />
-                    <span style={{ fontSize: 11, color: C.emerald, fontWeight: 600 }}>Memory Active</span>
+              <div style={{ padding: 9, borderTop: `1px solid ${T.border}` }}>
+                <div style={{ background: "rgba(16,185,129,0.07)", border: `1px solid rgba(16,185,129,0.18)`, borderRadius: 8, padding: "7px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                    <Brain size={10} color={T.emerald} /><span style={{ fontSize: 10, color: T.emerald, fontWeight: 700 }}>Memory Active</span>
                   </div>
-                  <p style={{ fontSize: 10, color: "rgba(16,185,129,0.5)", margin: 0, lineHeight: 1.4 }}>AI remembers your entire conversation context.</p>
+                  <p style={{ fontSize: 10, color: "rgba(16,185,129,0.45)", lineHeight: 1.4 }}>AI remembers full conversation context.</p>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ── MAIN CHAT AREA ──────────────────────────────────────────── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, fontSize: fontSizeMap[fontSize] }}>
+        {/* ── CHAT AREA ────────────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, fontSize }}>
 
           {/* Messages */}
           <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
             {loadingSession ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                <Loader2 size={28} color={C.indigo} style={{ animation: "spin 1s linear infinite" }} />
+                <Loader2 size={28} color={T.indigo} style={{ animation: "spin 1s linear infinite" }} />
               </div>
             ) : displayMessages.length === 0 && !loading ? (
-              /* ── EMPTY STATE ── */
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100%", padding: "32px 16px", textAlign: "center" }}>
-                <div style={{ width: 72, height: 72, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, boxShadow: "0 12px 40px rgba(99,102,241,0.3)" }}>
-                  <Brain size={34} color="#fff" />
+              /* Empty state */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100%", padding: "28px 16px", textAlign: "center" }}>
+                <div style={{ width: 68, height: 68, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, boxShadow: "0 10px 36px rgba(99,102,241,0.3)" }}>
+                  <Brain size={32} color="#fff" />
                 </div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 8 }}>FlowDesk AI Assistant</h2>
-                <p style={{ fontSize: 13, color: C.muted, maxWidth: 400, marginBottom: 4, lineHeight: 1.6 }}>
-                  Your personal senior developer. Ask anything — code, architecture, debugging, docs.
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 6 }}>FlowDesk AI</h2>
+                <p style={{ fontSize: 13, color: T.muted, maxWidth: 380, marginBottom: 4, lineHeight: 1.65 }}>
+                  Senior developer on demand. Drag & drop files, use voice input, paste code directly.
                 </p>
-                <p style={{ fontSize: 11, color: C.muted, marginBottom: 28, display: "flex", alignItems: "center", gap: 5 }}>
-                  <Brain size={10} />Powered by Llama 3.3 70B via Groq
+                <p style={{ fontSize: 10, color: T.muted, marginBottom: 24, display: "flex", alignItems: "center", gap: 4 }}>
+                  <Brain size={9} />Powered by Llama 3.3 70B via Groq
                 </p>
-
-                {/* Quick actions grid */}
-                <div style={{ width: "100%", maxWidth: 680, marginBottom: 24 }}>
-                  <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Quick Actions</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
-                    {QUICK_ACTIONS.map(action => (
-                      <button key={action.label} onClick={() => { setInput(action.prompt); inputRef.current?.focus() }} style={{
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
-                        padding: "12px 8px", background: C.surface, border: `1px solid ${C.border}`,
+                <div style={{ width: "100%", maxWidth: 660, marginBottom: 20 }}>
+                  <p style={{ fontSize: 10, color: T.muted, marginBottom: 9, textTransform: "uppercase", letterSpacing: 1 }}>Quick Actions</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 7 }}>
+                    {QUICK_ACTIONS.map(a => (
+                      <button key={a.label} onClick={() => { setInput(a.prompt); inputRef.current?.focus() }} style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                        padding: "11px 6px", background: T.surface, border: `1px solid ${T.border}`,
                         borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.indigo; (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.06)" }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.background = C.surface }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = T.indigo; (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.06)" }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.background = T.surface }}
                       >
-                        <action.icon size={16} style={{ color: action.color }} />
-                        <span style={{ fontSize: 11, color: C.muted }}>{action.label}</span>
+                        <a.icon size={15} style={{ color: a.color }} />
+                        <span style={{ fontSize: 10, color: T.muted }}>{a.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* Keyboard hints */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                  {[["Enter","Send"],["Shift+Enter","New line"],["Paste code","Directly"]].map(([k, l]) => (
-                    <span key={k} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 7, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, color: C.muted }}>
-                      <span style={{ color: C.indigo, fontFamily: "monospace" }}>{k}</span> — {l}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                  {[["Ctrl+/","Shortcuts"],["Ctrl+B","Sidebar"],["Drop file","Attach"],["🎤","Voice input"]].map(([k, l]) => (
+                    <span key={k} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, color: T.muted }}>
+                      <span style={{ color: T.indigo }}>{k}</span> — {l}
                     </span>
                   ))}
                 </div>
               </div>
             ) : (
-              /* ── MESSAGES ── */
-              <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 14px 12px", display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ maxWidth: 820, margin: "0 auto", padding: compactMode ? "16px 12px 8px" : "24px 14px 8px", display: "flex", flexDirection: "column", gap: compactMode ? 14 : 22 }}>
 
                 {/* Pinned banner */}
-                {pinnedMessages.length > 0 && !showSearch && (
-                  <div style={{ background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.2)`, borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <Pin size={12} color="#FB923C" />
-                    <span style={{ fontSize: 12, color: "#FB923C", fontWeight: 600 }}>{pinnedMessages.length} pinned message{pinnedMessages.length > 1 ? "s" : ""}</span>
-                    <span style={{ fontSize: 11, color: C.muted }}>— click Pinned in sidebar to view</span>
+                {pinnedMessages.length > 0 && !searchQuery && (
+                  <div style={{ background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.18)`, borderRadius: 9, padding: "7px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <Pin size={11} color="#FB923C" />
+                    <span style={{ fontSize: 11, color: "#FB923C", fontWeight: 600 }}>{pinnedMessages.length} pinned</span>
+                    <span style={{ fontSize: 10, color: T.muted }}>— view in sidebar Pinned tab</span>
                   </div>
                 )}
 
                 {displayMessages.map((message, idx) => {
                   const isPinned = pinnedMsgIds.includes(message.id)
                   const isBookmarked = bookmarkedMsgIds.includes(message.id)
-                  const intentStyle = INTENT_COLORS[message.intent || "general"] || INTENT_COLORS.general
+                  const isCollapsed = collapsedIds.has(message.id)
+                  const isEditing = editingMsgId === message.id
+                  const tag = msgTags[message.id]
                   const isHighlighted = searchQuery && message.content.toLowerCase().includes(searchQuery.toLowerCase())
+                  const intentStyle = INTENT_COLORS[message.intent || "general"] || INTENT_COLORS.general
 
                   return (
-                    <div key={message.id} id={`msg-${message.id}`} style={{
-                      display: "flex", gap: 10, justifyContent: message.role === "user" ? "flex-end" : "flex-start",
-                      outline: isHighlighted ? `2px solid rgba(99,102,241,0.4)` : "none",
-                      borderRadius: isHighlighted ? 12 : 0,
-                    }}>
+                    <div key={message.id} id={`msg-${message.id}`}
+                      style={{
+                        display: "flex", gap: 10, justifyContent: message.role === "user" ? "flex-end" : "flex-start",
+                        animation: "fadeIn 0.2s ease",
+                        outline: isHighlighted ? `2px solid rgba(99,102,241,0.35)` : "none",
+                        borderRadius: 12, padding: isHighlighted ? 4 : 0,
+                      }}>
+
                       {/* AI avatar */}
                       {message.role === "assistant" && (
-                        <div style={{ width: 34, height: 34, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                          <Brain size={15} color="#fff" />
+                        <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                          <Brain size={14} color="#fff" />
                         </div>
                       )}
 
-                      <div style={{ maxWidth: "90%", display: "flex", flexDirection: "column", alignItems: message.role === "user" ? "flex-end" : "flex-start", gap: 4 }}>
-                        {/* Pin/bookmark indicator */}
-                        {(isPinned || isBookmarked) && (
-                          <div style={{ display: "flex", gap: 4 }}>
-                            {isPinned && <span style={{ fontSize: 9, color: "#FB923C", display: "flex", alignItems: "center", gap: 2 }}><Pin size={8} />Pinned</span>}
-                            {isBookmarked && <span style={{ fontSize: 9, color: C.amber, display: "flex", alignItems: "center", gap: 2 }}><Star size={8} />Saved</span>}
+                      <div style={{ maxWidth: "91%", display: "flex", flexDirection: "column", alignItems: message.role === "user" ? "flex-end" : "flex-start", gap: 3 }}>
+                        {/* Tag + pin indicators */}
+                        {(isPinned || isBookmarked || tag) && (
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {isPinned && <span style={{ fontSize: 9, color: "#FB923C", display: "flex", alignItems: "center", gap: 2 }}><Pin size={7} />Pinned</span>}
+                            {isBookmarked && <span style={{ fontSize: 9, color: T.amber, display: "flex", alignItems: "center", gap: 2 }}><Star size={7} />Saved</span>}
+                            {tag && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, background: TAG_COLORS[tag] + "20", color: TAG_COLORS[tag], fontWeight: 700 }}>{tag}</span>}
                           </div>
                         )}
 
                         {/* Bubble */}
                         <div style={{
-                          padding: "12px 16px", borderRadius: message.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                          background: message.role === "user" ? "linear-gradient(135deg,#6366F1,#5855EB)" : C.surface,
-                          border: message.role === "assistant" ? `1px solid ${isPinned ? "rgba(249,115,22,0.3)" : C.border}` : "none",
+                          padding: compactMode ? "8px 12px" : "11px 15px",
+                          borderRadius: message.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+                          background: message.role === "user" ? T.userBubble : T.aiBubble,
+                          border: message.role === "assistant" ? `1px solid ${isPinned ? "rgba(249,115,22,0.25)" : T.border}` : "none",
                           maxWidth: "100%",
                         }}>
-                          {message.role === "assistant"
-                            ? <MessageContent content={message.content} />
-                            : <p style={{ fontSize: fontSizeMap[fontSize], color: "#fff", whiteSpace: "pre-wrap", lineHeight: 1.65, margin: 0 }}>{message.content}</p>
-                          }
+                          {/* Collapse toggle for long AI messages */}
+                          {message.role === "assistant" && message.content.length > 600 && (
+                            <button onClick={() => toggleCollapse(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 11, display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                              {isCollapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+                              {isCollapsed ? "Expand" : "Collapse"}
+                            </button>
+                          )}
+
+                          {isEditing ? (
+                            <div>
+                              <textarea value={editingText} onChange={e => setEditingText(e.target.value)} rows={4} style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "8px", color: T.text, fontSize, outline: "none", resize: "vertical", fontFamily: "inherit" }} />
+                              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                                <button onClick={() => saveEdit(message.id)} style={{ fontSize: 11, padding: "4px 10px", background: T.indigo, border: "none", borderRadius: 6, color: "#fff", cursor: "pointer" }}>Save</button>
+                                <button onClick={() => setEditingMsgId(null)} style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 6, color: T.muted, cursor: "pointer" }}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : isCollapsed ? (
+                            <p style={{ fontSize, color: T.muted, fontStyle: "italic" }}>{message.content.slice(0, 120)}…</p>
+                          ) : message.role === "assistant" ? (
+                            <MessageContent content={message.content} fontSize={fontSize} C={T} />
+                          ) : (
+                            <p style={{ fontSize, color: "#fff", whiteSpace: "pre-wrap", lineHeight: 1.65 }}>{message.content}</p>
+                          )}
                         </div>
 
-                        {/* Reaction */}
-                        {message.reaction && (
-                          <span style={{ fontSize: 16 }}>{message.reaction}</span>
-                        )}
+                        {/* Reaction bubble */}
+                        {message.reaction && <span style={{ fontSize: 15 }}>{message.reaction}</span>}
+
+                        {/* Edited badge */}
+                        {message.edited && <span style={{ fontSize: 9, color: T.muted, fontStyle: "italic" }}>edited</span>}
 
                         {/* Meta row */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingLeft: 2 }}>
-                          <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>
-                            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-
-                          {message.intent && message.intent !== "general" && (
-                            <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: intentStyle.bg, color: intentStyle.text }}>
-                              {message.intent}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          {showTimestamps && (
+                            <span style={{ fontSize: 9, color: T.muted, fontFamily: "monospace" }}>
+                              {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           )}
-
-                          {message.tokens && (
-                            <span style={{ fontSize: 10, color: C.muted }}>{message.tokens.toLocaleString()}t</span>
+                          {message.intent && message.intent !== "general" && (
+                            <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: intentStyle.bg, color: intentStyle.text }}>{message.intent}</span>
                           )}
+                          {message.tokens && <span style={{ fontSize: 9, color: T.muted, fontFamily: "monospace" }}>{message.tokens.toLocaleString()}t</span>}
 
-                          {/* Action buttons */}
-                          {message.role === "assistant" && (
-                            <>
-                              <button onClick={() => handleCopy(message)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                {copiedId === message.id ? <><Check size={10} color={C.emerald} /><span style={{ color: C.emerald }}>Copied</span></> : <><Copy size={10} />Copy</>}
+                          {/* Actions — always visible on mobile, hover on desktop */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+                            {/* Copy */}
+                            <button onClick={() => handleCopy(message)} style={{ background: "none", border: "none", cursor: "pointer", color: copiedId === message.id ? T.emerald : T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
+                              {copiedId === message.id ? <><Check size={9} />Copied</> : <><Copy size={9} />Copy</>}
+                            </button>
+
+                            {/* Edit (user only) */}
+                            {message.role === "user" && (
+                              <button onClick={() => startEdit(message)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", fontSize: 10 }}>
+                                ✏️
                               </button>
-                              <button onClick={() => togglePin(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: isPinned ? "#FB923C" : C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                <Pin size={10} />
-                              </button>
-                              <button onClick={() => toggleBookmark(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: isBookmarked ? C.amber : C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                <Star size={10} />
-                              </button>
-                              <button onClick={() => readAloud(message.content)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                <Volume2 size={10} />
-                              </button>
-                              <button onClick={() => shareMessage(message)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                <Share2 size={10} />
-                              </button>
-                              {/* Reactions */}
-                              {REACTIONS.map(r => (
-                                <button key={r} onClick={() => addReaction(message.id, r)} style={{
-                                  background: "none", border: "none", cursor: "pointer", fontSize: 12,
-                                  opacity: message.reaction === r ? 1 : 0.35, transition: "opacity 0.15s",
-                                }}>{r}</button>
-                              ))}
-                              {idx > 0 && (
-                                <button onClick={() => {
-                                  const prevUser = messages.slice(0, idx).reverse().find(m => m.role === "user")
-                                  if (prevUser) sendMessage(prevUser.content)
-                                }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex", alignItems: "center", gap: 3, fontSize: 10 }}>
-                                  <RefreshCw size={10} />Retry
+                            )}
+
+                            {/* AI-only actions */}
+                            {message.role === "assistant" && (
+                              <>
+                                <button onClick={() => togglePin(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: isPinned ? "#FB923C" : T.muted, display: "flex", fontSize: 10 }}>
+                                  <Pin size={9} />
                                 </button>
-                              )}
-                            </>
-                          )}
+                                <button onClick={() => toggleBookmark(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: isBookmarked ? T.amber : T.muted, display: "flex", fontSize: 10 }}>
+                                  <Star size={9} />
+                                </button>
+                                <button onClick={() => readAloud(message.content)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", fontSize: 10 }}>
+                                  <Volume2 size={9} />
+                                </button>
+                                <button onClick={() => shareMessage(message)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", fontSize: 10 }}>
+                                  <Share2 size={9} />
+                                </button>
+
+                                {/* Tag picker */}
+                                <div style={{ position: "relative" }}>
+                                  <button onClick={() => setTagPickerFor(tagPickerFor === message.id ? null : message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: tag ? TAG_COLORS[tag] : T.muted, display: "flex", fontSize: 10 }}>
+                                    <Tag size={9} />
+                                  </button>
+                                  {tagPickerFor === message.id && (
+                                    <TagPicker current={tag} onSelect={t => setMsgTag(message.id, t)} onClose={() => setTagPickerFor(null)} C={T} />
+                                  )}
+                                </div>
+
+                                {/* Reactions */}
+                                {REACTIONS.map(r => (
+                                  <button key={r} onClick={() => addReaction(message.id, r)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, opacity: message.reaction === r ? 1 : 0.28, transition: "opacity 0.15s" }}>{r}</button>
+                                ))}
+
+                                {/* Retry */}
+                                {idx > 0 && (
+                                  <button onClick={() => { const pu = messages.slice(0, idx).reverse().find(m => m.role === "user"); if (pu) sendMessage(pu.content) }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
+                                    <RefreshCw size={9} />Retry
+                                  </button>
+                                )}
+
+                                {/* Save to snippet vault */}
+                                {message.content.includes("```") && (
+                                  <button onClick={() => {
+                                    const match = message.content.match(/```(\w*)\n([\s\S]*?)```/)
+                                    if (match) saveSnippet(match[2], match[1] || "code")
+                                  }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
+                                    <Archive size={9} />Save
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* User avatar */}
                       {message.role === "user" && (
-                        <div style={{ width: 34, height: 34, background: C.surface2, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, border: `1px solid ${C.border}` }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
-                            {user?.display_name?.charAt(0).toUpperCase() || "U"}
-                          </span>
+                        <div style={{ width: 32, height: 32, background: T.surface2, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, border: `1px solid ${T.border}` }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{user?.display_name?.charAt(0).toUpperCase() || "U"}</span>
                         </div>
                       )}
                     </div>
                   )
                 })}
 
-                {loading && <ThinkingDots />}
+                {loading && <ThinkingDots C={T} />}
                 <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
-          {/* ── INPUT AREA ───────────────────────────────────────────── */}
-          <div ref={inputAreaRef} style={{ borderTop: `1px solid ${C.border}`, background: C.surface, padding: "10px 14px 12px", flexShrink: 0 }}>
-            <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          {/* ── INPUT AREA ──────────────────────────────────────────────── */}
+          <div style={{ borderTop: `1px solid ${T.border}`, background: T.surface, padding: "9px 13px 11px", flexShrink: 0 }}>
+            <div style={{ maxWidth: 820, margin: "0 auto" }}>
 
-              {/* Limit warning */}
               {isLimitReached && (
-                <div style={{ marginBottom: 10, padding: "10px 14px", background: "rgba(244,63,94,0.08)", border: `1px solid rgba(244,63,94,0.25)`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <AlertCircle size={13} color={C.rose} />
-                    <span style={{ fontSize: 13, color: C.rose }}>Daily limit reached. Upgrade to Pro for unlimited AI.</span>
+                <div style={{ marginBottom: 8, padding: "9px 13px", background: "rgba(244,63,94,0.07)", border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <AlertCircle size={12} color={T.rose} />
+                    <span style={{ fontSize: 12, color: T.rose }}>Daily limit reached. Upgrade to Pro for unlimited AI.</span>
                   </div>
-                  <button onClick={() => toast("🚀 Pro plan coming soon!", { duration: 4000 })} style={{ fontSize: 11, background: C.rose, border: "none", borderRadius: 6, padding: "5px 12px", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Upgrade</button>
+                  <button onClick={() => toast("🚀 Pro coming soon!", { duration: 4000 })} style={{ fontSize: 11, background: T.rose, border: "none", borderRadius: 6, padding: "4px 11px", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Upgrade</button>
                 </div>
               )}
 
-              {/* Quick actions scrollable bar */}
-              <div style={{ display: "flex", gap: 5, marginBottom: 8, overflowX: "auto", paddingBottom: 2 }}>
-                {QUICK_ACTIONS.slice(0, 8).map(action => (
-                  <button key={action.label} onClick={() => { setInput(action.prompt); inputRef.current?.focus() }} style={{
-                    flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
-                    fontSize: 11, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`,
-                    borderRadius: 7, padding: "4px 10px", color: C.muted, cursor: "pointer", transition: "all 0.12s",
+              {/* Quick actions bar */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 7, overflowX: "auto", paddingBottom: 2 }}>
+                {QUICK_ACTIONS.slice(0, 10).map(a => (
+                  <button key={a.label} onClick={() => { setInput(a.prompt); inputRef.current?.focus() }} style={{
+                    flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 10,
+                    background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`,
+                    borderRadius: 6, padding: "3px 9px", color: T.muted, cursor: "pointer", transition: "all 0.12s",
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = C.text; (e.currentTarget as HTMLElement).style.borderColor = C.border2 }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = C.muted; (e.currentTarget as HTMLElement).style.borderColor = C.border }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text; (e.currentTarget as HTMLElement).style.borderColor = T.border2 }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.borderColor = T.border }}
                   >
-                    <action.icon size={11} style={{ color: action.color }} />{action.label}
+                    <a.icon size={10} style={{ color: a.color }} />{a.label}
                   </button>
                 ))}
+                <button onClick={() => setShowTemplates(s => !s)} style={{
+                  flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 10,
+                  background: showTemplates ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.03)", border: `1px solid ${showTemplates ? T.indigo : T.border}`,
+                  borderRadius: 6, padding: "3px 9px", color: showTemplates ? T.indigo : T.muted, cursor: "pointer",
+                }}>
+                  <Sparkles size={10} />Templates
+                </button>
               </div>
 
-              {/* Textarea row */}
-              <div style={{ position: "relative", display: "flex", gap: 8, alignItems: "flex-end" }}>
-                {/* Templates popup */}
-                {showTemplates && (
-                  <TemplatesPanel onSelect={t => { setInput(t); inputRef.current?.focus() }} onClose={() => setShowTemplates(false)} />
-                )}
+              {/* Templates panel */}
+              {showTemplates && (
+                <div style={{ marginBottom: 8, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ padding: "8px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>Prompt Templates</span>
+                    <button onClick={() => setShowTemplates(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={11} /></button>
+                  </div>
+                  <div style={{ padding: 8, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 5, maxHeight: 160, overflowY: "auto" }}>
+                    {PROMPT_TEMPLATES.map(t => (
+                      <button key={t.label} onClick={() => { setInput(t.prompt); inputRef.current?.focus(); setShowTemplates(false) }} style={{
+                        background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, borderRadius: 7,
+                        padding: "7px 9px", cursor: "pointer", textAlign: "left", fontSize: 11, color: T.muted, transition: "all 0.12s",
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = T.indigo; (e.currentTarget as HTMLElement).style.color = T.text }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.color = T.muted }}
+                      >
+                        <div style={{ fontSize: 9, color: T.indigo, marginBottom: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.cat}</div>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {/* Left side buttons */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, flexShrink: 0 }}>
-                  <button onClick={() => setShowTemplates(t => !t)} title="Prompt templates" style={{
-                    background: showTemplates ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
-                    borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: showTemplates ? C.indigo : C.muted, display: "flex",
-                  }}>
-                    <Sparkles size={14} />
-                  </button>
+              {/* Input row */}
+              <div style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
+                {/* Left buttons */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                   <button onClick={toggleVoice} title="Voice input" style={{
-                    background: isListening ? "rgba(244,63,94,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${isListening ? "rgba(244,63,94,0.3)" : C.border}`,
-                    borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: isListening ? C.rose : C.muted, display: "flex",
+                    background: isListening ? "rgba(244,63,94,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${isListening ? "rgba(244,63,94,0.3)" : T.border}`,
+                    borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: isListening ? T.rose : T.muted, display: "flex",
+                    animation: isListening ? "pulse 1.5s infinite" : "none",
                   }}>
-                    {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                    {isListening ? <MicOff size={13} /> : <Mic size={13} />}
                   </button>
+                  {/* Export button (mobile-friendly) */}
+                  <div style={{ position: "relative" }}>
+                    <button title="Export chat" onClick={() => handleExportChat("md")} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: T.muted, display: "flex" }}>
+                      <Download size={13} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Textarea */}
                 <div style={{ flex: 1, position: "relative" }}>
-                  <textarea
-                    ref={inputRef}
-                    value={input}
+                  <textarea ref={inputRef} value={input}
                     onChange={e => { setInput(e.target.value); setCharCount(e.target.value.length) }}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                    placeholder={isLimitReached ? "Daily limit reached." : "Ask anything… paste code, describe problems, request generation"}
+                    placeholder={isLimitReached ? "Daily limit reached." : "Ask anything… paste code, drop files, use voice 🎤"}
                     disabled={loading || isLimitReached}
                     rows={3}
                     style={{
-                      width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
-                      borderRadius: 10, padding: "10px 44px 10px 14px",
-                      color: C.text, fontSize: fontSizeMap[fontSize], outline: "none", resize: "none",
+                      width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+                      borderRadius: 10, padding: "10px 42px 10px 13px",
+                      color: T.text, fontSize, outline: "none", resize: "none",
                       lineHeight: 1.65, transition: "border-color 0.15s",
                       fontFamily: "system-ui, -apple-system, sans-serif",
                     }}
-                    onFocus={e => (e.target.style.borderColor = "rgba(99,102,241,0.4)")}
-                    onBlur={e => (e.target.style.borderColor = C.border)}
+                    onFocus={e => (e.target.style.borderColor = "rgba(99,102,241,0.45)")}
+                    onBlur={e => (e.target.style.borderColor = T.border)}
                   />
                   {charCount > 0 && (
-                    <span style={{ position: "absolute", bottom: 8, right: 10, fontSize: 10, color: charCount > 3000 ? C.amber : C.muted, fontFamily: "monospace" }}>{charCount}</span>
+                    <span style={{ position: "absolute", bottom: 7, right: 9, fontSize: 9, color: charCount > 3000 ? T.amber : T.muted, fontFamily: "monospace" }}>{charCount}</span>
                   )}
                 </div>
 
-                {/* Send button */}
+                {/* Send */}
                 <button onClick={() => sendMessage()} disabled={!input.trim() || loading || isLimitReached} style={{
                   flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                   background: "linear-gradient(135deg,#6366F1,#8B5CF6)", border: "none", borderRadius: 10,
-                  padding: "0 16px", height: 88, cursor: (!input.trim() || loading || isLimitReached) ? "not-allowed" : "pointer",
-                  opacity: (!input.trim() || loading || isLimitReached) ? 0.4 : 1, transition: "opacity 0.15s",
-                  boxShadow: "0 4px 16px rgba(99,102,241,0.25)",
+                  padding: "0 15px", height: 84, cursor: (!input.trim() || loading || isLimitReached) ? "not-allowed" : "pointer",
+                  opacity: (!input.trim() || loading || isLimitReached) ? 0.38 : 1, transition: "opacity 0.15s",
+                  boxShadow: "0 4px 16px rgba(99,102,241,0.22)",
                 }}>
-                  {loading ? <Loader2 size={18} color="#fff" style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} color="#fff" />}
+                  {loading ? <Loader2 size={17} color="#fff" style={{ animation: "spin 1s linear infinite" }} /> : <Send size={17} color="#fff" />}
                 </button>
               </div>
 
-              {/* Footer hint */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, flexWrap: "wrap", gap: 4 }}>
-                <span style={{ fontSize: 10, color: C.muted }}>Enter to send • Shift+Enter new line</span>
-                <span style={{ fontSize: 10, color: C.muted, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Brain size={9} />
-                  {currentSessionId ? "Memory active — AI remembers context" : "Start chatting to enable memory"}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, flexWrap: "wrap", gap: 3 }}>
+                <span style={{ fontSize: 9, color: T.muted }}>Enter send • Shift+Enter line • Ctrl+/ shortcuts • Drop files</span>
+                <span style={{ fontSize: 9, color: T.muted, display: "flex", alignItems: "center", gap: 3 }}>
+                  <Brain size={8} />{currentSessionId ? "Memory active" : "New session"}
                 </span>
               </div>
             </div>
@@ -1115,10 +1804,19 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* Stats Modal */}
-      {showStats && (
-        <StatsModal messages={messages} sessions={sessions} usage={usage} onClose={() => setShowStats(false)} />
+      {/* ── MODALS ────────────────────────────────────────────────────────── */}
+      {showStats && <StatsModal messages={messages} sessions={sessions} usage={usage} onClose={() => setShowStats(false)} C={T} />}
+      {showSnippets && <SnippetVault snippets={snippets} onDelete={id => setSnippets(prev => prev.filter(s => s.id !== id))} onCopy={code => { navigator.clipboard.writeText(code); toast.success("Copied!") }} onClose={() => setShowSnippets(false)} C={T} />}
+      {showSettings && (
+        <SettingsPanel themeName={themeName} fontSize={fontSize} setTheme={t => setThemeName(t)} setFontSize={setFontSize}
+          onClose={() => setShowSettings(false)} C={T}
+          compactMode={compactMode} setCompactMode={setCompactMode}
+          soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
+          autoScroll={autoScroll} setAutoScroll={setAutoScroll}
+          showTimestamps={showTimestamps} setShowTimestamps={setShowTimestamps}
+        />
       )}
+      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} C={T} />}
     </div>
   )
 }

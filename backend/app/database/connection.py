@@ -148,6 +148,44 @@ async def check_db_connection() -> bool:
     return False
 
 
+async def ensure_database_schema() -> None:
+    """Apply small idempotent schema upgrades required by the current app."""
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS ai_sessions
+                ADD COLUMN IF NOT EXISTS title VARCHAR(120)
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                UPDATE ai_sessions
+                SET title = COALESCE(
+                    NULLIF(
+                        LEFT(
+                            REGEXP_REPLACE(
+                                BTRIM(COALESCE(messages->0->>'content', '')),
+                                '\\s+',
+                                ' ',
+                                'g'
+                            ),
+                            80
+                        ),
+                        ''
+                    ),
+                    'New Conversation'
+                )
+                WHERE title IS NULL OR BTRIM(title) = ''
+                """
+            )
+        )
+        await session.commit()
+    logger.info("Database schema upgrades verified")
+
+
 async def get_db_stats() -> dict:
     """
     Returns database connection pool statistics.
