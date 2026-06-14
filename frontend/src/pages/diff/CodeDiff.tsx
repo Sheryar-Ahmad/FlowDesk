@@ -5,7 +5,7 @@ import type { OnMount } from "@monaco-editor/react"
 import {
   ArrowLeft, GitCompare, Copy, Check, RotateCcw,
   ChevronUp, ChevronDown, Search, Download, Maximize2,
-  Minimize2, FileCode, RefreshCw, Bot
+  Minimize2, FileCode, RefreshCw, Bot, SlidersHorizontal
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { API_BASE_URL } from "../../services/api/config"
@@ -271,6 +271,7 @@ export default function CodeDiff() {
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [mobilePane, setMobilePane] = useState<"left" | "right">("left")
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
   const deferredLeftCode = useDeferredValue(leftCode)
   const deferredRightCode = useDeferredValue(rightCode)
 
@@ -502,98 +503,159 @@ function greet(name) {
   }
 
   return (
-    <div className={`relative bg-gray-950 flex flex-col ${fullscreen ? "fixed inset-0 z-50" : "min-h-screen h-[100dvh]"}`}>
+    <div className={`relative bg-gray-950 flex flex-col overflow-hidden ${fullscreen ? "fixed inset-0 z-50" : "min-h-screen h-[100dvh]"}`}>
 
       {/* Header */}
-      <div className="border-b border-gray-800 px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-900 sticky top-0 z-20 gap-2">
-        <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 min-w-0">
-          <button onClick={() => navigate("/dashboard")} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800">
-            <ArrowLeft size={18} />
-          </button>
-          <GitCompare className="text-indigo-500" size={20} />
-          <h1 className="text-white font-bold">Code Diff</h1>
-          {totalChanges > 0 && (
-            <div className="hidden sm:flex items-center gap-1.5">
-              <span className="text-xs bg-yellow-900 text-yellow-400 px-2 py-0.5 rounded-full">{changed}~</span>
-              <span className="text-xs bg-green-900 text-green-400 px-2 py-0.5 rounded-full">+{added}</span>
-              <span className="text-xs bg-red-900 text-red-400 px-2 py-0.5 rounded-full">-{removed}</span>
+      <div className="sticky top-0 z-20 border-b border-gray-800 bg-gray-900">
+        <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+              aria-label="Back to dashboard"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <GitCompare className="flex-shrink-0 text-indigo-500" size={20} />
+            <h1 className="truncate text-base font-bold text-white sm:text-lg">Code Diff</h1>
+            {totalChanges > 0 && (
+              <div className="hidden items-center gap-1.5 lg:flex">
+                <span className="rounded-full bg-yellow-900 px-2 py-0.5 text-xs text-yellow-400">{changed}~</span>
+                <span className="rounded-full bg-green-900 px-2 py-0.5 text-xs text-green-400">+{added}</span>
+                <span className="rounded-full bg-red-900 px-2 py-0.5 text-xs text-red-400">-{removed}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 lg:hidden">
+            <button
+              onClick={loadSample}
+              className="flex h-9 items-center rounded-lg border border-gray-700 bg-gray-800 px-3 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+            >
+              Sample
+            </button>
+            <button
+              onClick={() => setFullscreen(current => !current)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+              aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {fullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+            </button>
+          </div>
+
+          <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-1.5 lg:flex">
+            <div className="flex rounded-lg bg-gray-800 p-0.5">
+              {(["split", "unified"] as ViewMode[]).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`rounded-md px-3 py-1 text-xs capitalize transition-colors ${
+                    viewMode === mode ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
-          )}
+
+            {totalChanges > 0 && (
+              <div className="flex items-center gap-1">
+                <button onClick={goToPrevChange} className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white"><ChevronUp size={14} /></button>
+                <span className="text-xs text-gray-500">{activeChangeIndex + 1}/{totalChanges}</span>
+                <button onClick={goToNextChange} className="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white"><ChevronDown size={14} /></button>
+              </div>
+            )}
+
+            <div className="relative hidden lg:block">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" size={12} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value)
+                  if (event.target.value) setViewMode("unified")
+                }}
+                placeholder="Search diff..."
+                className="w-32 rounded-lg border border-gray-700 bg-gray-800 py-1 pl-7 pr-3 text-xs text-white focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <button onClick={loadSample} className="flex-shrink-0 rounded-lg border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-700 hover:text-white">
+              Sample
+            </button>
+            <button onClick={swapCode} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-indigo-400" title="Swap panels">
+              <RefreshCw size={15} />
+            </button>
+            <button
+              onClick={explainWithAI}
+              disabled={aiExplaining}
+              className="flex items-center gap-1.5 rounded-lg border border-indigo-800 bg-indigo-950 px-3 py-1.5 text-xs text-indigo-400 transition-colors hover:bg-indigo-900 hover:text-white"
+            >
+              <Bot size={13} /><span>{aiExplaining ? "Analyzing..." : "AI Explain"}</span>
+            </button>
+            {totalChanges > 0 && (
+              <>
+                <button onClick={copyDiff} className="flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-700 hover:text-white">
+                  {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                </button>
+                <button onClick={copyPatch} className="rounded-lg border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-700 hover:text-white" title="Copy as patch">
+                  Patch
+                </button>
+                <button onClick={exportHTML} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-green-400" title="Export HTML report">
+                  <Download size={15} />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setFullscreen(current => !current)}
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+              title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </button>
+            <button onClick={resetDiff} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-red-400" title="Reset diff">
+              <RotateCcw size={15} />
+            </button>
+          </div>
         </div>
 
-        <div className="flex w-full min-w-0 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto pb-1 sm:w-auto sm:justify-end sm:overflow-visible sm:pb-0">
-          {/* View mode */}
-          <div className="flex bg-gray-800 rounded-lg p-0.5">
-            {(["split", "unified"] as ViewMode[]).map(m => (
-              <button key={m} onClick={() => setViewMode(m)}
-                className={`text-xs px-3 py-1 rounded-md transition-colors capitalize ${viewMode === m ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                {m}
+        <div className="flex items-center gap-2 border-t border-gray-800/80 px-3 py-2 lg:hidden">
+          <div className="flex min-w-0 flex-1 rounded-lg bg-gray-800 p-1">
+            {(["split", "unified"] as ViewMode[]).map(mode => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                  viewMode === mode ? "bg-indigo-600 text-white shadow-sm" : "text-gray-400"
+                }`}
+              >
+                {mode}
               </button>
             ))}
           </div>
-
-          {/* Navigation */}
-          {totalChanges > 0 && (
-            <div className="flex items-center gap-1">
-              <button onClick={goToPrevChange} className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded"><ChevronUp size={14} /></button>
-              <span className="text-gray-500 text-xs">{activeChangeIndex + 1}/{totalChanges}</span>
-              <button onClick={goToNextChange} className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded"><ChevronDown size={14} /></button>
-            </div>
-          )}
-
-          {/* Search */}
-          <div className="relative hidden lg:block">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" size={12} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value)
-                if (event.target.value) setViewMode("unified")
-              }}
-              placeholder="Search diff..."
-              className="bg-gray-800 border border-gray-700 text-white rounded-lg pl-7 pr-3 py-1 text-xs focus:outline-none focus:border-indigo-500 w-32" />
-          </div>
-
-          {/* Action buttons */}
-          <button onClick={loadSample} className="flex-shrink-0 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-2 py-1.5 rounded-lg transition-colors border border-gray-700">
-            Sample
-          </button>
-          <button onClick={swapCode} className="p-1.5 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors" title="Swap panels">
-            <RefreshCw size={15} />
-          </button>
-          <button onClick={explainWithAI} disabled={aiExplaining}
-            className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-white bg-indigo-950 hover:bg-indigo-900 px-3 py-1.5 rounded-lg transition-colors border border-indigo-800">
-            <Bot size={13} /><span className="hidden sm:inline">{aiExplaining ? "Analyzing..." : "AI Explain"}</span>
-          </button>
-          {totalChanges > 0 && (
-            <>
-              <button onClick={copyDiff} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-2 py-1.5 rounded-lg transition-colors border border-gray-700">
-                {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-              </button>
-              <button onClick={copyPatch} className="text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-2 py-1.5 rounded-lg transition-colors border border-gray-700" title="Copy as patch">
-                Patch
-              </button>
-              <button onClick={exportHTML} className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-lg transition-colors" title="Export HTML report">
-                <Download size={15} />
-              </button>
-            </>
-          )}
           <button
-            onClick={() => setFullscreen(current => !current)}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            type="button"
+            onClick={swapCode}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-gray-400 transition-colors hover:text-indigo-300"
+            aria-label="Swap original and modified code"
           >
-            {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            <RefreshCw size={16} />
           </button>
-          <button onClick={resetDiff} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors" title="Reset diff">
-            <RotateCcw size={15} />
+          <button
+            type="button"
+            onClick={explainWithAI}
+            disabled={aiExplaining}
+            className="flex h-9 flex-shrink-0 items-center gap-1.5 rounded-lg border border-indigo-800 bg-indigo-950 px-3 text-xs font-medium text-indigo-300 transition-colors disabled:opacity-60"
+          >
+            <Bot size={15} />
+            <span>Explain</span>
           </button>
         </div>
       </div>
 
       {/* Options bar */}
-      <div className="border-b border-gray-800 bg-gray-900 px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+      <div className="hidden border-b border-gray-800 bg-gray-900 px-4 py-2 lg:flex lg:items-center lg:gap-4">
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide">
           <span className="text-gray-600 text-xs font-medium flex-shrink-0">Options:</span>
           {[
@@ -609,77 +671,245 @@ function greet(name) {
             </button>
           ))}
         </div>
-        <div className="flex w-full sm:w-auto sm:ml-auto items-center gap-2 sm:gap-3 flex-shrink-0">
-          <span className="text-gray-600 text-xs sm:hidden">Language:</span>
+        <div className="ml-auto flex flex-shrink-0 items-center gap-3">
           <select value={leftLang} onChange={(e) => setLeftLang(e.target.value)}
             aria-label="Original language"
-            className="min-w-0 flex-1 sm:flex-none bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
+            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:outline-none">
             {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
           <span className="text-gray-600 text-xs">vs</span>
           <select value={rightLang} onChange={(e) => setRightLang(e.target.value)}
             aria-label="Modified language"
-            className="min-w-0 flex-1 sm:flex-none bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
+            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:outline-none">
             {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
       </div>
 
-      {/* Stats bar */}
-      {showStats && totalChanges > 0 && (
-        <div className="border-b border-gray-800 bg-gray-900 px-3 sm:px-4 py-2 flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-2">
-            <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden flex">
-              <div className="h-full bg-green-500" style={{ width: `${(added / totalChanges) * 100}%` }} />
-              <div className="h-full bg-red-500" style={{ width: `${(removed / totalChanges) * 100}%` }} />
-              <div className="h-full bg-yellow-500" style={{ width: `${(changed / totalChanges) * 100}%` }} />
-            </div>
-            <span className="text-gray-500 text-xs">{totalChanges} total changes</span>
-          </div>
-          <span className="text-green-400 text-xs">+{added} added</span>
-          <span className="text-red-400 text-xs">-{removed} removed</span>
-          <span className="text-yellow-400 text-xs">~{changed} modified</span>
-          <span className="text-gray-500 text-xs">{diff.filter(d => d.status === "same").length} unchanged</span>
-          <span className="text-gray-600 text-xs ml-auto whitespace-nowrap">
-            Detected: {detectedLeftLang} vs {detectedRightLang}
+      <div className="border-b border-gray-800 bg-gray-900 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileSettingsOpen(current => !current)}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
+          aria-expanded={mobileSettingsOpen}
+          aria-controls="mobile-diff-settings"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <SlidersHorizontal size={15} className="flex-shrink-0 text-indigo-400" />
+            <span className="text-xs font-medium text-gray-300">Comparison settings</span>
           </span>
-        </div>
+          <span className="flex min-w-0 items-center gap-2 text-[11px] text-gray-500">
+            <span className="max-w-40 truncate">{leftLang} vs {rightLang}</span>
+            <ChevronDown
+              size={15}
+              className={`flex-shrink-0 transition-transform ${mobileSettingsOpen ? "rotate-180" : ""}`}
+            />
+          </span>
+        </button>
+
+        {mobileSettingsOpen && (
+          <div id="mobile-diff-settings" className="max-h-[55dvh] space-y-3 overflow-y-auto border-t border-gray-800 px-3 py-3">
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Ignore case", value: ignoreCase, set: setIgnoreCase },
+                { label: "Ignore spaces", value: ignoreWhitespace, set: setIgnoreWhitespace },
+                { label: "Line numbers", value: showLineNumbers, set: setShowLineNumbers },
+                { label: "Show whitespace", value: showWhitespace, set: setShowWhitespace },
+                { label: "Show statistics", value: showStats, set: setShowStats },
+              ].map(option => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => option.set(!option.value)}
+                  className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                    option.value
+                      ? "border-indigo-500/60 bg-indigo-500/15 text-indigo-200"
+                      : "border-gray-700 bg-gray-800 text-gray-400"
+                  } ${option.label === "Show statistics" ? "col-span-2" : ""}`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    {option.label}
+                    <span className={`h-2 w-2 rounded-full ${option.value ? "bg-indigo-400" : "bg-gray-600"}`} />
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="space-y-1">
+                <span className="text-[11px] font-medium text-red-300">Original language</span>
+                <select
+                  value={leftLang}
+                  onChange={(event) => setLeftLang(event.target.value)}
+                  className="h-10 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 text-xs text-gray-200 focus:border-indigo-500 focus:outline-none"
+                >
+                  {LANGUAGES.map(language => <option key={language} value={language}>{language}</option>)}
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="text-[11px] font-medium text-green-300">Modified language</span>
+                <select
+                  value={rightLang}
+                  onChange={(event) => setRightLang(event.target.value)}
+                  className="h-10 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 text-xs text-gray-200 focus:border-indigo-500 focus:outline-none"
+                >
+                  {LANGUAGES.map(language => <option key={language} value={language}>{language}</option>)}
+                </select>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={resetDiff}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-900/70 bg-red-950/40 px-3 py-2 text-xs font-medium text-red-300"
+            >
+              <RotateCcw size={14} />
+              Reset comparison
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Stats bar */}
+      {totalChanges > 0 && (
+        <>
+          <div className="space-y-2 border-b border-gray-800 bg-gray-900 px-3 py-2.5 lg:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-200">{totalChanges} changes</p>
+                <p className="truncate text-[10px] text-gray-500">
+                  {detectedLeftLang} vs {detectedRightLang}
+                </p>
+              </div>
+              <div className="flex items-center rounded-lg border border-gray-700 bg-gray-800">
+                <button
+                  type="button"
+                  onClick={goToPrevChange}
+                  className="flex h-8 w-8 items-center justify-center text-gray-400"
+                  aria-label="Previous change"
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <span className="min-w-10 text-center text-[11px] text-gray-400">
+                  {activeChangeIndex + 1}/{totalChanges}
+                </span>
+                <button
+                  type="button"
+                  onClick={goToNextChange}
+                  className="flex h-8 w-8 items-center justify-center text-gray-400"
+                  aria-label="Next change"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+            </div>
+
+            {showStats && (
+              <div className="grid grid-cols-3 gap-1.5">
+                <span className="rounded-md bg-green-950/70 px-2 py-1 text-center text-[10px] text-green-300">+{added} added</span>
+                <span className="rounded-md bg-red-950/70 px-2 py-1 text-center text-[10px] text-red-300">-{removed} removed</span>
+                <span className="rounded-md bg-yellow-950/70 px-2 py-1 text-center text-[10px] text-yellow-300">~{changed} changed</span>
+              </div>
+            )}
+
+            {viewMode === "unified" && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={13} />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search changed code"
+                  className="h-9 w-full rounded-lg border border-gray-700 bg-gray-800 pl-8 pr-3 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={copyDiff}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 text-[11px] text-gray-300"
+              >
+                {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={copyPatch}
+                className="flex h-9 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[11px] text-gray-300"
+              >
+                Patch
+              </button>
+              <button
+                type="button"
+                onClick={exportHTML}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 text-[11px] text-gray-300"
+              >
+                <Download size={13} />
+                Export
+              </button>
+            </div>
+          </div>
+
+          {showStats && (
+            <div className="hidden items-center gap-4 overflow-x-auto border-b border-gray-800 bg-gray-900 px-4 py-2 lg:flex lg:gap-6 scrollbar-hide">
+              <div className="flex items-center gap-2">
+                <div className="flex h-2 w-24 overflow-hidden rounded-full bg-gray-800">
+                  <div className="h-full bg-green-500" style={{ width: `${(added / totalChanges) * 100}%` }} />
+                  <div className="h-full bg-red-500" style={{ width: `${(removed / totalChanges) * 100}%` }} />
+                  <div className="h-full bg-yellow-500" style={{ width: `${(changed / totalChanges) * 100}%` }} />
+                </div>
+                <span className="text-xs text-gray-500">{totalChanges} total changes</span>
+              </div>
+              <span className="text-xs text-green-400">+{added} added</span>
+              <span className="text-xs text-red-400">-{removed} removed</span>
+              <span className="text-xs text-yellow-400">~{changed} modified</span>
+              <span className="text-xs text-gray-500">{diff.filter(d => d.status === "same").length} unchanged</span>
+              <span className="ml-auto whitespace-nowrap text-xs text-gray-600">
+                Detected: {detectedLeftLang} vs {detectedRightLang}
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {viewMode === "split" ? (
-          <div className="flex flex-col md:flex-row flex-1 min-h-0">
-            <div className="flex md:hidden border-b border-gray-800 bg-gray-900 p-1.5 gap-1.5">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
+            <div className="flex gap-1 border-b border-gray-800 bg-gray-950 p-2 md:hidden">
               <button
                 type="button"
                 onClick={() => setMobilePane("left")}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  mobilePane === "left" ? "bg-red-950 text-red-300 border border-red-800" : "text-gray-500 border border-transparent"
+                className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-left transition-colors ${
+                  mobilePane === "left" ? "border-red-700/70 bg-red-950/70 text-red-200" : "border-transparent text-gray-500"
                 }`}
               >
-                Original · {getLines(leftCode).length} lines
+                <span className="block text-xs font-semibold">Original</span>
+                <span className="mt-0.5 block text-[10px] opacity-70">{getLines(leftCode).length} lines</span>
               </button>
               <button
                 type="button"
                 onClick={() => setMobilePane("right")}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  mobilePane === "right" ? "bg-green-950 text-green-300 border border-green-800" : "text-gray-500 border border-transparent"
+                className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-left transition-colors ${
+                  mobilePane === "right" ? "border-green-700/70 bg-green-950/70 text-green-200" : "border-transparent text-gray-500"
                 }`}
               >
-                Modified · {getLines(rightCode).length} lines
+                <span className="block text-xs font-semibold">Modified</span>
+                <span className="mt-0.5 block text-[10px] opacity-70">{getLines(rightCode).length} lines</span>
               </button>
             </div>
 
             {/* Left Panel */}
-            <div className={`${mobilePane === "left" ? "flex" : "hidden"} md:flex flex-col w-full h-full md:h-auto md:w-1/2 md:border-r border-gray-800`}>
+            <div className={`${mobilePane === "left" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 flex-col md:flex md:w-1/2 md:border-r border-gray-800`}>
               <div className="hidden md:flex px-4 py-2 bg-gray-900 border-b border-gray-800 items-center justify-between">
                 <span className="text-red-400 text-xs font-medium flex items-center gap-2">
                   <FileCode size={12} />Original
                 </span>
                 <span className="text-gray-600 text-xs">{getLines(leftCode).length} lines</span>
               </div>
-              <div className="flex-1 relative">
+              <div className="relative min-h-0 min-w-0 flex-1">
                 {!leftCode && (
                   <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
                     <div className="text-center">
@@ -701,6 +931,12 @@ function greet(name) {
                     minimap: { enabled: false },
                     fontSize: 13,
                     lineNumbers: showLineNumbers ? "on" : "off",
+                    lineNumbersMinChars: 3,
+                    glyphMargin: false,
+                    folding: false,
+                    lineDecorationsWidth: 8,
+                    overviewRulerLanes: 0,
+                    hideCursorInOverviewRuler: true,
                     renderWhitespace: showWhitespace ? "all" : "none",
                     scrollBeyondLastLine: false,
                     wordWrap: "on",
@@ -713,14 +949,14 @@ function greet(name) {
             </div>
 
             {/* Right Panel */}
-            <div className={`${mobilePane === "right" ? "flex" : "hidden"} md:flex flex-col w-full h-full md:h-auto md:w-1/2`}>
+            <div className={`${mobilePane === "right" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 flex-col md:flex md:w-1/2`}>
               <div className="hidden md:flex px-4 py-2 bg-gray-900 border-b border-gray-800 items-center justify-between">
                 <span className="text-green-400 text-xs font-medium flex items-center gap-2">
                   <FileCode size={12} />Modified
                 </span>
                 <span className="text-gray-600 text-xs">{getLines(rightCode).length} lines</span>
               </div>
-              <div className="flex-1 relative">
+              <div className="relative min-h-0 min-w-0 flex-1">
                 {!rightCode && (
                   <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
                     <div className="text-center">
@@ -742,6 +978,12 @@ function greet(name) {
                     minimap: { enabled: false },
                     fontSize: 13,
                     lineNumbers: showLineNumbers ? "on" : "off",
+                    lineNumbersMinChars: 3,
+                    glyphMargin: false,
+                    folding: false,
+                    lineDecorationsWidth: 8,
+                    overviewRulerLanes: 0,
+                    hideCursorInOverviewRuler: true,
                     renderWhitespace: showWhitespace ? "all" : "none",
                     scrollBeyondLastLine: false,
                     wordWrap: "on",
@@ -755,7 +997,7 @@ function greet(name) {
           </div>
         ) : (
           /* Unified View */
-          <div className="flex-1 overflow-auto font-mono text-xs">
+          <div className="min-w-0 flex-1 overflow-auto font-mono text-xs">
             {filteredDiff.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -782,7 +1024,7 @@ function greet(name) {
                     {line.status === "removed" && <span className="text-red-400">-</span>}
                     {line.status === "changed" && <span className="text-yellow-400">~</span>}
                   </div>
-                  <div className="flex-1 px-3 py-1 min-w-0">
+                  <div className="min-w-0 flex-1 whitespace-pre-wrap break-words px-3 py-1">
                     {line.status === "changed" ? (
                       <div>
                         <div className="text-red-300 line-through opacity-70">
@@ -812,7 +1054,7 @@ function greet(name) {
 
         {/* AI Explanation Panel */}
         {showAiPanel && (
-          <div className="fixed inset-x-3 top-20 bottom-3 z-30 w-auto md:static md:inset-auto md:w-80 border border-gray-700 md:border-y-0 md:border-r-0 md:border-l border-gray-800 bg-gray-900 flex flex-col flex-shrink-0 rounded-xl md:rounded-none shadow-2xl md:shadow-none">
+          <div className="fixed inset-x-3 bottom-3 top-3 z-30 flex w-auto flex-shrink-0 flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl md:static md:inset-auto md:w-80 md:rounded-none md:border-y-0 md:border-r-0 md:border-l md:border-gray-800 md:shadow-none">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bot size={14} className="text-indigo-400" />
