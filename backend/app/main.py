@@ -89,7 +89,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 if not settings.DEBUG:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["flowdesk.app", "*.flowdesk.app", "localhost"],
+        allowed_hosts=settings.ALLOWED_HOSTS,
     )
 
 

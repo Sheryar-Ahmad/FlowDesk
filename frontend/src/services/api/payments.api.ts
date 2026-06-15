@@ -1,6 +1,5 @@
 import axios from "axios"
-
-const API_URL = "http://localhost:8000/api/v1"
+import { API_BASE_URL } from "./config"
 
 interface CheckoutResponse {
   success: boolean
@@ -9,7 +8,7 @@ interface CheckoutResponse {
 
 export const createProCheckout = async (accessToken: string): Promise<CheckoutResponse> => {
   const response = await axios.post<CheckoutResponse>(
-    `${API_URL}/payments/checkout`,
+    `${API_BASE_URL}/payments/checkout`,
     undefined,
     {
       headers: { Authorization: `Bearer ${accessToken}` },

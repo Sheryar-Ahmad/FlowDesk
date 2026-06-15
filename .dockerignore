@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+.vscode
+**/.env
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/dist
+**/*.py[cod]
+backups

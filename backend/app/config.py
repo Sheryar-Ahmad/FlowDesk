@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -49,7 +49,14 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
 
 
-    ALLOWED_ORIGINS: list = ["http://localhost:5173", "https://flowdesk.vercel.app"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "https://flowdesk.vercel.app"]
+    ALLOWED_HOSTS: list[str] = [
+        "localhost",
+        "127.0.0.1",
+        "flowdesk.app",
+        "*.flowdesk.app",
+        "*.onrender.com",
+    ]
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -63,6 +70,20 @@ class Settings(BaseSettings):
             if normalized in {"0", "false", "no", "off", "release", "production"}:
                 return False
         return value
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if not self.DEBUG:
+            secret = self.SECRET_KEY.strip()
+            if secret == "change-this-to-a-random-secret-key" or len(secret) < 32:
+                raise ValueError("SECRET_KEY must contain at least 32 random characters in production.")
+            if not self.ALLOWED_ORIGINS:
+                raise ValueError("ALLOWED_ORIGINS must contain at least one frontend origin in production.")
+            if "*" in self.ALLOWED_ORIGINS:
+                raise ValueError("Wildcard CORS origins are not allowed in production.")
+            if not self.ALLOWED_HOSTS:
+                raise ValueError("ALLOWED_HOSTS must contain at least one API hostname in production.")
+        return self
 
     model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 

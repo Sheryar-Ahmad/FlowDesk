@@ -3,21 +3,15 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text, event
+from sqlalchemy import text
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 import asyncio
 import structlog
 from app.config import get_settings
+from app.models.base import Base
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
-
-
-class Base(DeclarativeBase):
-    """Base class for all database models."""
-    pass
-
 
 def build_database_url() -> str:
     """Builds the correct database URL for async SQLAlchemy."""
