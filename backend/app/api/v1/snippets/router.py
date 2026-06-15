@@ -1,11 +1,3 @@
-"""
-snippets/router.py - Snippet API Endpoints
---------------------------------------------
-All snippet CRUD endpoints with full security.
-Every endpoint requires authentication.
-Rate limited to prevent abuse.
-"""
-
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -32,11 +24,7 @@ async def create(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Creates a new code snippet.
-    Free tier: max 50 snippets.
-    Pro tier: unlimited.
-    """
+    """Creates a new code snippet."""
     try:
         snippet = await create_snippet(
             db=db,
@@ -69,10 +57,7 @@ async def list_snippets(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Returns paginated list of user snippets.
-    Supports search and language filter.
-    """
+    """Returns paginated list of user snippets."""
     result = await get_snippets(
         db=db,
         user_id=current_user["id"],
@@ -143,10 +128,7 @@ async def copy_snippet(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Tracks when user copies a snippet.
-    Increments use_count for ranking.
-    """
+    """Tracks when user copies a snippet."""
     await increment_use_count(db, snippet_id, current_user["id"])
     return {"success": True, "message": "Usage tracked."}
 

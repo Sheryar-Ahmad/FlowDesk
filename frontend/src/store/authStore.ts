@@ -1,20 +1,3 @@
-/**
- * authStore.ts - Authentication State Management
- * ------------------------------------------------
- * Zustand store that manages user authentication state.
- * 
- * Why Zustand over localStorage?
- * - localStorage can be read by XSS attacks
- * - Zustand keeps state in memory only
- * - Much more secure
- * - Automatically clears on page refresh (forces re-auth)
- * 
- * Token storage strategy:
- * - Access token: memory only (Zustand state)
- * - User data: memory only (Zustand state)
- * - On refresh: check /auth/me endpoint to restore session
- */
-
 import { create } from "zustand"
 import {
   getAuthErrorMessage,
@@ -40,7 +23,7 @@ interface AuthState {
   isLoading: boolean
   error: string | null
 
-  // Actions
+
   register: (data: RegisterData) => Promise<void>
   login: (data: LoginData) => Promise<void>
   logout: () => Promise<void>

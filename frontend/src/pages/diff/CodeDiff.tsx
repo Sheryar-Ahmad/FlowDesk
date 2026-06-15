@@ -51,7 +51,7 @@ const detectLanguage = (code: string): string => {
     JSON.parse(trimmed)
     return "json"
   } catch {
-    // Continue with syntax heuristics.
+    // Invalid JSON may still match another language heuristic.
   }
   if (/[.#]?[A-Za-z][\w-]*\s*\{[^}]*:[^}]*\}/s.test(code)) return "css"
   return "plaintext"
@@ -505,7 +505,7 @@ function greet(name) {
   return (
     <div className={`relative bg-gray-950 flex flex-col overflow-hidden ${fullscreen ? "fixed inset-0 z-50" : "min-h-screen h-[100dvh]"}`}>
 
-      {/* Header */}
+
       <div className="sticky top-0 z-20 border-b border-gray-800 bg-gray-900">
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -654,7 +654,7 @@ function greet(name) {
         </div>
       </div>
 
-      {/* Options bar */}
+
       <div className="hidden border-b border-gray-800 bg-gray-900 px-4 py-2 lg:flex lg:items-center lg:gap-4">
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto scrollbar-hide">
           <span className="text-gray-600 text-xs font-medium flex-shrink-0">Options:</span>
@@ -770,7 +770,7 @@ function greet(name) {
         )}
       </div>
 
-      {/* Stats bar */}
+
       {totalChanges > 0 && (
         <>
           <div className="space-y-2 border-b border-gray-800 bg-gray-900 px-3 py-2.5 lg:hidden">
@@ -901,7 +901,7 @@ function greet(name) {
               </button>
             </div>
 
-            {/* Left Panel */}
+
             <div className={`${mobilePane === "left" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 flex-col md:flex md:w-1/2 md:border-r border-gray-800`}>
               <div className="hidden md:flex px-4 py-2 bg-gray-900 border-b border-gray-800 items-center justify-between">
                 <span className="text-red-400 text-xs font-medium flex items-center gap-2">
@@ -948,7 +948,7 @@ function greet(name) {
               </div>
             </div>
 
-            {/* Right Panel */}
+
             <div className={`${mobilePane === "right" ? "flex" : "hidden"} min-h-0 min-w-0 flex-1 flex-col md:flex md:w-1/2`}>
               <div className="hidden md:flex px-4 py-2 bg-gray-900 border-b border-gray-800 items-center justify-between">
                 <span className="text-green-400 text-xs font-medium flex items-center gap-2">
@@ -996,7 +996,7 @@ function greet(name) {
             </div>
           </div>
         ) : (
-          /* Unified View */
+
           <div className="min-w-0 flex-1 overflow-auto font-mono text-xs">
             {filteredDiff.length === 0 ? (
               <div className="flex items-center justify-center h-full">
@@ -1052,7 +1052,7 @@ function greet(name) {
           </div>
         )}
 
-        {/* AI Explanation Panel */}
+
         {showAiPanel && (
           <div className="fixed inset-x-3 bottom-3 top-3 z-30 flex w-auto flex-shrink-0 flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl md:static md:inset-auto md:w-80 md:rounded-none md:border-y-0 md:border-r-0 md:border-l md:border-gray-800 md:shadow-none">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">

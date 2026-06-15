@@ -1,4 +1,4 @@
-﻿// ─── Register.tsx ─────────────────────────────────────────────────────────────
+
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
@@ -176,7 +176,7 @@ export default function Register() {
     if (error) setError("")
   }
 
-  /* ── Success state ─────────────────────────────────────────────── */
+
   if (success) return (
     <div style={{
       minHeight: "100dvh", background: S.bg,
@@ -202,7 +202,7 @@ export default function Register() {
     </div>
   )
 
-  /* ── Main form ─────────────────────────────────────────────────── */
+
   return (
     <div style={{
       minHeight: "100dvh", background: S.bg,
@@ -211,7 +211,7 @@ export default function Register() {
     }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
 
-        {/* Logo */}
+
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             <div style={{
@@ -226,13 +226,13 @@ export default function Register() {
           <p style={{ fontSize: 13, color: S.muted, marginTop: 8 }}>Create your free developer workspace.</p>
         </div>
 
-        {/* Card */}
+
         <div className="auth-card" style={{
           background: S.surface, border: `1px solid ${S.border}`,
           borderRadius: 16, padding: "28px 28px 24px",
         }}>
 
-          {/* Error banner */}
+
           {error && (
             <div role="alert" aria-live="assertive" style={{
               background: "rgba(244,63,94,0.08)", border: `1px solid rgba(244,63,94,0.25)`,
@@ -245,7 +245,7 @@ export default function Register() {
 
           <form onSubmit={handleRegister} aria-busy={isLoading} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-            {/* Name + Email row */}
+
             <div className="auth-identity-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Field id="register-name" name="name" label="Full name" type="text" value={name}
                 onChange={updateField(setName)} placeholder="Sheryar Ahmad" disabled={isLoading}
@@ -255,7 +255,7 @@ export default function Register() {
                 autoComplete="email" inputMode="email" maxLength={255} />
             </div>
 
-            {/* Password */}
+
             <Field id="register-password" name="password" label="Password" type={showPw ? "text" : "password"} value={password}
               disabled={isLoading} placeholder="Min. 8 characters"
               autoComplete="new-password" maxLength={128}
@@ -276,7 +276,7 @@ export default function Register() {
               }
               hint={pwTouched && password.length > 0 ? (
                 <div style={{ marginTop: 10 }}>
-                  {/* Strength bar */}
+
                   <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
                     {[...Array(5)].map((_, i) => (
                       <div key={i} style={{
@@ -289,7 +289,7 @@ export default function Register() {
                       {strengthLabel(validCnt)}
                     </span>
                   </div>
-                  {/* Checklist */}
+
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 12px" }}>
                     {PW_RULES.map((r, i) => (
                       <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -315,7 +315,7 @@ export default function Register() {
               ) : undefined}
             />
 
-            {/* Confirm password */}
+
             <Field id="register-confirm-password" name="confirmPassword" label="Confirm password" type={showCPw ? "text" : "password"} value={confirmPassword}
               disabled={isLoading} placeholder="Repeat your password"
               onChange={updateField(setConfirmPassword)}
@@ -344,7 +344,7 @@ export default function Register() {
               ) : undefined}
             />
 
-            {/* Submit */}
+
             <button type="submit" disabled={isLoading} style={{
               width: "100%",
               background: isLoading ? "rgba(99,102,241,0.5)" : S.indigo,

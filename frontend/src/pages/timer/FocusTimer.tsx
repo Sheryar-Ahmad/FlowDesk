@@ -1,31 +1,4 @@
-/**
- * FocusTimer.tsx — Beast Mode Enterprise Pomodoro Timer
- * FRONTEND FILE: src/pages/timer/FocusTimer.tsx
- *
- * NEW FEATURES ADDED (20+):
- * 1.  Ambient focus music / white noise player (rain, forest, café, none)
- * 2.  Task queue — add tasks, complete them during focus sessions
- * 3.  Focus score (0–100) updated in real-time based on session consistency
- * 4.  Keyboard shortcuts panel (Space, R, S, N, M, T, ?)
- * 5.  Weekly heatmap calendar (GitHub-style)
- * 6.  Goal setting — daily focus minutes goal with progress ring
- * 7.  Pomodoro labels / tags (Deep Work, Reading, Coding, Meetings, etc.)
- * 8.  Session notes — write a note after each session
- * 9.  Distraction log — click "I got distracted" to log and resume
- * 10. Focus flow state indicator (builds up after unbroken sessions)
- * 11. Theme switcher (Midnight, Forest, Sunset, Ocean)
- * 12. Full-screen focus mode (hides all UI chrome)
- * 13. Motivational quote carousel (rotates between sessions)
- * 14. Timer pulse animation that syncs to countdown urgency
- * 15. Mini floating widget mode (collapses to a corner badge)
- * 16. Export session data as CSV
- * 17. Session timeline log (all sessions visible in sidebar)
- * 18. Notification permission request + browser notifications
- * 19. Tab visibility detection — auto-pause when tab is hidden
- * 20. Custom label colors for task tags
- * 21. Per-session rating (1–5 stars) after completion
- * 22. Long-break activity suggestions
- */
+
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
@@ -44,7 +17,7 @@ import { useAuthStore } from "../../store/authStore"
 import axios from "axios"
 import toast from "react-hot-toast"
 
-/* ─── API ─────────────────────────────────────────────────────────────── */
+
 const api = axios.create({ baseURL: "http://localhost:8000/api/v1", timeout: 10000 })
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
@@ -52,7 +25,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-/* ─── TYPES ───────────────────────────────────────────────────────────── */
+
 type TimerMode = "focus" | "short_break" | "long_break"
 type Theme = "midnight" | "forest" | "sunset" | "ocean"
 type AmbientSound =
@@ -107,7 +80,7 @@ interface DayStats {
   streak: number
   distractions: number
   focusScore: number
-  weeklyData: number[] // last 7 days, minutes per day
+  weeklyData: number[]
 }
 
 interface WeeklyHeatmapDay {
@@ -115,7 +88,7 @@ interface WeeklyHeatmapDay {
   minutes: number
 }
 
-/* ─── CONSTANTS ───────────────────────────────────────────────────────── */
+
 const DEFAULT_SETTINGS: TimerSettings = {
   focusDuration: 25,
   shortBreakDuration: 5,
@@ -215,8 +188,8 @@ const AMBIENT_SOUNDS: Record<AmbientSound, { label: string; emoji: string }> = {
   wind: { label: "Gentle Wind", emoji: "🍃" },
 }
 
-/* ─── AUDIO UTILS ─────────────────────────────────────────────────────── */
-/* ─── HELPERS ─────────────────────────────────────────────────────────── */
+
+
 const AMBIENT_AUDIO: Record<Exclude<AmbientSound, "none">, { src: string; volume: number }> = {
   rain: { src: "/audio/rain.mp3", volume: 0.32 },
   forest: { src: "/audio/forest.mp3", volume: 0.4 },
@@ -274,17 +247,17 @@ function exportSessionsCSV(sessions: SessionLog[]) {
   URL.revokeObjectURL(url)
 }
 
-/* ─── COMPONENT ───────────────────────────────────────────────────────── */
+
 export default function FocusTimer() {
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
-  /* Core timer state */
+
   const [mode, setMode] = useState<TimerMode>("focus")
   const [isRunning, setIsRunning] = useState(false)
   const [sessionsCompleted, setSessionsCompleted] = useState(0)
 
-  /* UI state */
+
   const [activePanel, setActivePanel] = useState<
     "stats" | "tasks" | "log" | "heatmap" | "settings" | "shortcuts" | null
   >(null)
@@ -302,7 +275,7 @@ export default function FocusTimer() {
     BREAK_SUGGESTIONS[Math.floor(Math.random() * BREAK_SUGGESTIONS.length)]
   )
 
-  /* Settings */
+
   const loadSettings = (): TimerSettings => {
     try {
       const s = localStorage.getItem("flowdesk_timer_settings_v2")
@@ -312,10 +285,10 @@ export default function FocusTimer() {
   const [settings, setSettings] = useState<TimerSettings>(loadSettings)
   const [tempSettings, setTempSettings] = useState<TimerSettings>(loadSettings)
 
-  /* Timer */
+
   const [timeLeft, setTimeLeft] = useState(() => loadSettings().focusDuration * 60)
 
-  /* Stats */
+
   const loadDayStats = (): DayStats => {
     try {
       const saved = localStorage.getItem("flowdesk_timer_stats_v2")
@@ -330,7 +303,7 @@ export default function FocusTimer() {
   }
   const [dayStats, setDayStats] = useState<DayStats>(loadDayStats)
 
-  /* Tasks */
+
   const loadTasks = (): Task[] => {
     try { return JSON.parse(localStorage.getItem("flowdesk_tasks") || "[]") } catch { return [] }
   }
@@ -338,13 +311,13 @@ export default function FocusTimer() {
   const [newTaskText, setNewTaskText] = useState("")
   const [newTaskLabel, setNewTaskLabel] = useState<FocusLabel>("Deep Work")
 
-  /* Session log */
+
   const loadSessionLog = (): SessionLog[] => {
     try { return JSON.parse(localStorage.getItem("flowdesk_session_log") || "[]") } catch { return [] }
   }
   const [sessionLog, setSessionLog] = useState<SessionLog[]>(loadSessionLog)
 
-  /* Refs */
+
   const intervalRef = useRef<number | null>(null)
   const audioRef = useRef<AudioContext | null>(null)
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -352,10 +325,10 @@ export default function FocusTimer() {
   const theme = THEMES[currentTheme]
   const flowLevel = Math.min(5, Math.floor(sessionsCompleted / 2))
 
-  /* ─── AUTH GUARD ──────────────────────────────────────────────────── */
+
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
 
-  /* ─── PAGE TITLE ──────────────────────────────────────────────────── */
+
   useEffect(() => {
     document.title = isRunning
       ? `${formatTime(timeLeft)} · ${MODE_CONFIG[mode].shortLabel} — FlowDesk`
@@ -363,7 +336,7 @@ export default function FocusTimer() {
     return () => { document.title = "FlowDesk" }
   }, [timeLeft, isRunning, mode])
 
-  /* ─── TAB VISIBILITY AUTO-PAUSE ──────────────────────────────────── */
+
   useEffect(() => {
     if (!settings.autoPauseOnHide) return
     const handler = () => {
@@ -373,8 +346,8 @@ export default function FocusTimer() {
     return () => document.removeEventListener("visibilitychange", handler)
   }, [isRunning, settings.autoPauseOnHide])
 
-  /* ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────── */
-  /* ─── SOUND UTILS ─────────────────────────────────────────────────── */
+
+
   const getAudioCtx = useCallback((): AudioContext => {
     if (!audioRef.current) audioRef.current = new AudioContext()
     return audioRef.current
@@ -463,7 +436,7 @@ export default function FocusTimer() {
     }
   }, [settings.soundEnabled, getAudioCtx])
 
-  /* ─── BROWSER NOTIFICATIONS ───────────────────────────────────────── */
+
   const sendNotification = useCallback((title: string, body: string) => {
     if (!settings.notificationsEnabled) return
     if (Notification.permission === "granted") {
@@ -471,18 +444,18 @@ export default function FocusTimer() {
     }
   }, [settings.notificationsEnabled])
 
-  /* ─── PERSIST TASKS ───────────────────────────────────────────────── */
+
   useEffect(() => {
     localStorage.setItem("flowdesk_tasks", JSON.stringify(tasks))
   }, [tasks])
 
-  /* ─── PERSIST SESSION LOG ─────────────────────────────────────────── */
+
   useEffect(() => {
     localStorage.setItem("flowdesk_session_log", JSON.stringify(sessionLog.slice(-200)))
   }, [sessionLog])
 
-  /* ─── FLOW LEVEL ──────────────────────────────────────────────────── */
-  /* ─── SAVE SESSION ────────────────────────────────────────────────── */
+
+
   const saveSession = useCallback(async (minutes: number) => {
     try {
       await api.post("/timer/sessions", {
@@ -509,7 +482,7 @@ export default function FocusTimer() {
     }
     setDayStats(newStats)
     localStorage.setItem("flowdesk_timer_stats_v2", JSON.stringify({ date: today, stats: newStats }))
-    // Save daily minutes for heatmap
+
     const prev = parseInt(localStorage.getItem(`flowdesk_day_${today}`) || "0")
     localStorage.setItem(`flowdesk_day_${today}`, String(prev + minutes))
 
@@ -527,7 +500,7 @@ export default function FocusTimer() {
     setQuoteIndex(i => (i + 1) % MOTIVATIONAL_QUOTES.length)
   }, [dayStats, distractionCount, activeLabel])
 
-  /* ─── COMPLETE SESSION AFTER RATING ──────────────────────────────── */
+
   const finalizeSession = useCallback((rating?: number, note?: string) => {
     if (!pendingSession) return
     const full: SessionLog = {
@@ -546,7 +519,7 @@ export default function FocusTimer() {
     setShowNoteModal(false)
   }, [pendingSession])
 
-  /* ─── TIMER COMPLETE ──────────────────────────────────────────────── */
+
   const handleTimerComplete = useCallback(async () => {
     setIsRunning(false)
     playSound("complete")
@@ -578,7 +551,7 @@ export default function FocusTimer() {
     }
   }, [mode, settings, sessionsCompleted, playSound, saveSession, sendNotification])
 
-  /* ─── TIMER TICK ──────────────────────────────────────────────────── */
+
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = window.setInterval(() => {
@@ -588,7 +561,7 @@ export default function FocusTimer() {
             handleTimerComplete()
             return 0
           }
-          // Tick sound in last 10 seconds
+
           if (prev <= 11 && settings.soundEnabled) playSound("tick")
           return prev - 1
         })
@@ -599,7 +572,7 @@ export default function FocusTimer() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [isRunning, handleTimerComplete, playSound, settings.soundEnabled])
 
-  /* ─── CONTROLS ────────────────────────────────────────────────────── */
+
   const handleStart = () => {
     if (!isRunning) playSound("start")
     setIsRunning(r => !r)
@@ -648,7 +621,7 @@ export default function FocusTimer() {
     toast("📝 Distraction logged — back to it!", { duration: 2000 })
   }
 
-  /* ─── SETTINGS SAVE ───────────────────────────────────────────────── */
+
   const toggleSoundEnabled = () => {
     const enabled = !settings.soundEnabled
     const updated = { ...settings, soundEnabled: enabled }
@@ -680,7 +653,7 @@ export default function FocusTimer() {
     toast.success("Settings saved!")
   }
 
-  /* ─── NOTIFICATIONS PERMISSION ────────────────────────────────────── */
+
   const requestNotifications = async () => {
     const perm = await Notification.requestPermission()
     if (perm === "granted") {
@@ -691,7 +664,7 @@ export default function FocusTimer() {
     }
   }
 
-  /* ─── FULLSCREEN ──────────────────────────────────────────────────── */
+
   const toggleFullscreen = () => {
     if (!isFullscreen) {
       document.documentElement.requestFullscreen?.().catch(() => { })
@@ -701,7 +674,7 @@ export default function FocusTimer() {
     setIsFullscreen(f => !f)
   }
 
-  /* ─── TASK MANAGEMENT ─────────────────────────────────────────────── */
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target
@@ -753,7 +726,7 @@ export default function FocusTimer() {
     setTasks(t => t.filter(task => task.id !== id))
   }
 
-  /* ─── DERIVED VALUES ──────────────────────────────────────────────── */
+
   const totalSeconds = mode === "focus"
     ? settings.focusDuration * 60
     : mode === "short_break"
@@ -770,10 +743,10 @@ export default function FocusTimer() {
   const activeTasks = tasks.filter(t => !t.completed)
   const quote = MOTIVATIONAL_QUOTES[quoteIndex]
 
-  /* Urgency pulse: red glow in last 5 min */
+
   const isUrgent = timeLeft <= 300 && mode === "focus" && isRunning
 
-  /* ─── MINI MODE ───────────────────────────────────────────────────── */
+
   if (isMini) {
     return (
       <div
@@ -809,11 +782,11 @@ export default function FocusTimer() {
     )
   }
 
-  /* ─── PANEL HELPERS ───────────────────────────────────────────────── */
+
   const togglePanel = (p: typeof activePanel) =>
     setActivePanel(prev => (prev === p ? null : p))
 
-  /* ─── RENDER ──────────────────────────────────────────────────────── */
+
   return (
     <div
       className="focus-timer-page"
@@ -826,7 +799,7 @@ export default function FocusTimer() {
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* ── HEADER ─────────────────────────────────────────────────── */}
+
       {!isFullscreen && (
         <header className="focus-header" style={{
           borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -851,7 +824,7 @@ export default function FocusTimer() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Timer size={20} style={{ color: theme.primary }} />
               <span style={{ fontWeight: 600, fontSize: 16, color: "#f9fafb" }}>Focus Timer</span>
-              {/* Flow level badge */}
+
               {flowLevel > 0 && (
                 <span style={{
                   background: theme.primary, color: "#fff",
@@ -864,9 +837,9 @@ export default function FocusTimer() {
             </div>
           </div>
 
-          {/* Right header controls */}
+
           <div className="focus-header-controls scrollbar-hide" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {/* Ambient sound */}
+
             <div style={{ position: "relative" }}>
               <select
                 className="focus-ambient"
@@ -884,7 +857,7 @@ export default function FocusTimer() {
               </select>
             </div>
 
-            {/* Theme switcher */}
+
             <div className="focus-themes" style={{ display: "flex", gap: 4, marginLeft: 4 }}>
               {(Object.keys(THEMES) as Theme[]).map(t => (
                 <button
@@ -968,7 +941,7 @@ export default function FocusTimer() {
         </header>
       )}
 
-      {/* ── STATS BAR ──────────────────────────────────────────────── */}
+
       {activePanel === "stats" && (
         <div className="focus-panel focus-stats-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -994,7 +967,7 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── TASK PANEL ─────────────────────────────────────────────── */}
+
       {activePanel === "tasks" && (
         <div className="focus-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -1080,7 +1053,7 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── SESSION LOG PANEL ──────────────────────────────────────── */}
+
       {activePanel === "log" && (
         <div className="focus-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -1135,7 +1108,7 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── HEATMAP PANEL ──────────────────────────────────────────── */}
+
       {activePanel === "heatmap" && (
         <div className="focus-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -1167,7 +1140,7 @@ export default function FocusTimer() {
               )
             })}
           </div>
-          {/* Goal progress */}
+
           <div style={{ marginTop: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#6b7280" }}>
               <span><Target size={12} style={{ display: "inline", marginRight: 4 }} />Daily goal</span>
@@ -1184,7 +1157,7 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── SHORTCUTS PANEL ────────────────────────────────────────── */}
+
       {activePanel === "shortcuts" && (
         <div className="focus-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
@@ -1215,14 +1188,14 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── SETTINGS PANEL (inline, not modal) ─────────────────────── */}
+
       {activePanel === "settings" && (
         <div className="focus-panel focus-settings-panel" style={{
           background: theme.surface, borderBottom: `1px solid rgba(255,255,255,0.07)`,
           padding: "20px", maxHeight: 400, overflowY: "auto",
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
-            {/* Durations */}
+
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
                 Durations
@@ -1250,7 +1223,7 @@ export default function FocusTimer() {
               ))}
             </div>
 
-            {/* Toggles */}
+
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
                 Behaviour
@@ -1281,7 +1254,7 @@ export default function FocusTimer() {
                 </div>
               ))}
 
-              {/* Browser notifications */}
+
               <button
                 onClick={requestNotifications}
                 style={{
@@ -1320,12 +1293,12 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── MAIN TIMER AREA ────────────────────────────────────────── */}
+
       <main className="focus-main" style={{
         flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
         justifyContent: "center", padding: "32px 20px",
       }}>
-        {/* Mode selector */}
+
         <div className="focus-modes" style={{ display: "flex", gap: 8, marginBottom: 36 }}>
           {(["focus", "short_break", "long_break"] as TimerMode[]).map(m => (
             <button
@@ -1344,7 +1317,7 @@ export default function FocusTimer() {
           ))}
         </div>
 
-        {/* Label selector (focus mode) */}
+
         {mode === "focus" && (
           <div style={{ display: "flex", gap: 6, marginBottom: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {FOCUS_LABELS.map(l => (
@@ -1365,18 +1338,18 @@ export default function FocusTimer() {
           </div>
         )}
 
-        {/* Circular timer */}
+
         <div style={{ position: "relative", marginBottom: 24 }}>
           <svg className="focus-ring" width="320" height="320" viewBox="0 0 320 320" style={{ transform: "rotate(-90deg)" }}>
-            {/* Track */}
+
             <circle cx="160" cy="160" r={radius} fill="none"
               stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
-            {/* Urgency glow */}
+
             {isUrgent && (
               <circle cx="160" cy="160" r={radius} fill="none"
                 stroke="#ef444422" strokeWidth="20" />
             )}
-            {/* Progress */}
+
             <circle cx="160" cy="160" r={radius} fill="none"
               stroke={isUrgent ? "#ef4444" : theme.primary}
               strokeWidth="10" strokeLinecap="round"
@@ -1386,7 +1359,7 @@ export default function FocusTimer() {
             />
           </svg>
 
-          {/* Center content */}
+
           <div style={{
             position: "absolute", inset: 0,
             display: "flex", flexDirection: "column",
@@ -1406,7 +1379,7 @@ export default function FocusTimer() {
               {MODE_CONFIG[mode].label}
             </span>
 
-            {/* Bounce dots */}
+
             {isRunning && (
               <div style={{ display: "flex", gap: 5, marginTop: 10 }}>
                 {[0, 150, 300].map(d => (
@@ -1419,7 +1392,7 @@ export default function FocusTimer() {
               </div>
             )}
 
-            {/* Distraction counter */}
+
             {distractionCount > 0 && (
               <div style={{
                 marginTop: 8, fontSize: 11, color: "#ef4444",
@@ -1431,7 +1404,7 @@ export default function FocusTimer() {
           </div>
         </div>
 
-        {/* Motivational quote */}
+
         <p style={{
           fontSize: 13, color: "#4b5563", marginBottom: 28, textAlign: "center",
           maxWidth: 360, lineHeight: 1.5,
@@ -1442,7 +1415,7 @@ export default function FocusTimer() {
           </span>
         </p>
 
-        {/* Controls */}
+
         <div className="focus-controls" style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
           <button
             onClick={handleReset}
@@ -1486,7 +1459,7 @@ export default function FocusTimer() {
           </button>
         </div>
 
-        {/* Distraction button (focus mode only) */}
+
         {mode === "focus" && isRunning && (
           <button
             onClick={handleDistraction}
@@ -1501,7 +1474,7 @@ export default function FocusTimer() {
           </button>
         )}
 
-        {/* Long break suggestion */}
+
         {mode === "long_break" && (
           <div style={{
             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
@@ -1512,7 +1485,7 @@ export default function FocusTimer() {
           </div>
         )}
 
-        {/* Session dots */}
+
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 11, color: "#374151" }}>Session</span>
           <div style={{ display: "flex", gap: 8 }}>
@@ -1529,7 +1502,7 @@ export default function FocusTimer() {
           <span style={{ fontSize: 11, color: "#374151" }}>Long break</span>
         </div>
 
-        {/* Active tasks summary */}
+
         {activeTasks.length > 0 && (
           <div style={{ marginTop: 20, textAlign: "center" }}>
             <div style={{ fontSize: 11, color: "#4b5563", marginBottom: 6 }}>Active tasks</div>
@@ -1551,7 +1524,7 @@ export default function FocusTimer() {
           </div>
         )}
 
-        {/* Flow level bar */}
+
         {flowLevel > 0 && (
           <div style={{ marginTop: 20, textAlign: "center" }}>
             <div style={{ fontSize: 11, color: "#4b5563", marginBottom: 6 }}>
@@ -1570,7 +1543,7 @@ export default function FocusTimer() {
         )}
       </main>
 
-      {/* ── RATING MODAL ───────────────────────────────────────────── */}
+
       {showRatingModal && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
@@ -1590,7 +1563,7 @@ export default function FocusTimer() {
               {pendingSession?.minutes}m focused · {pendingSession?.distractions || 0} distractions
             </p>
 
-            {/* Star rating */}
+
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>How was your focus?</div>
               <RatingStars
@@ -1616,7 +1589,7 @@ export default function FocusTimer() {
         </div>
       )}
 
-      {/* ── NOTE MODAL ─────────────────────────────────────────────── */}
+
       {showNoteModal && (
         <NoteModal
           onSave={(note) => finalizeSession(pendingSession?.rating, note)}
@@ -1625,7 +1598,7 @@ export default function FocusTimer() {
         />
       )}
 
-      {/* ── CSS animations ─────────────────────────────────────────── */}
+
       <style>{`
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
@@ -1733,7 +1706,7 @@ export default function FocusTimer() {
   )
 }
 
-/* ─── RATING STARS SUBCOMPONENT ──────────────────────────────────────── */
+
 function RatingStars({ onRate, color }: { onRate: (r: number) => void; color: string }) {
   const [hovered, setHovered] = useState(0)
   return (
@@ -1756,7 +1729,7 @@ function RatingStars({ onRate, color }: { onRate: (r: number) => void; color: st
   )
 }
 
-/* ─── NOTE MODAL SUBCOMPONENT ────────────────────────────────────────── */
+
 function NoteModal({
   onSave, onSkip, theme,
 }: {

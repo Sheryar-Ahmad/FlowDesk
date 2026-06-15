@@ -1,4 +1,4 @@
-// ─── Login.tsx ───────────────────────────────────────────────────────────────
+
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Code2, Eye, EyeOff, Loader2, ArrowRight, Terminal } from "lucide-react"
@@ -96,7 +96,7 @@ export default function Login() {
     }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
 
-        {/* Logo */}
+
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             <div style={{
@@ -111,14 +111,14 @@ export default function Login() {
           <p style={{ fontSize: 13, color: S.muted, marginTop: 8 }}>Welcome back. Sign in to your workspace.</p>
         </div>
 
-        {/* Card */}
+
         <div style={{
           background: S.surface, border: `1px solid ${S.border}`,
           borderRadius: 16, padding: "28px 28px 24px",
           boxShadow: "0 0 0 1px rgba(255,255,255,0.02)",
         }}>
 
-          {/* Error */}
+
           {error && (
             <div role="alert" aria-live="assertive" style={{
               background: "rgba(244,63,94,0.08)", border: `1px solid rgba(244,63,94,0.25)`,
@@ -188,7 +188,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Bottom note */}
+
         <p style={{ textAlign: "center", fontSize: 11, color: S.faint, marginTop: 20 }}>
           By signing in you agree to our{" "}
           <Link to="/?legal=terms" style={{ color: "#475569", textDecoration: "none" }}>Terms</Link> and{" "}

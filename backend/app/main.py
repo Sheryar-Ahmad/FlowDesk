@@ -1,11 +1,3 @@
-"""
-main.py - FlowDesk Backend Entry Point
-----------------------------------------
-Heart of the entire backend.
-Starts server, connects database, adds all
-security layers, and routes all requests.
-"""
-
 import sentry_sdk
 import structlog
 from fastapi import FastAPI
@@ -39,14 +31,14 @@ logger = structlog.get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
 
-    # --- STARTUP ---
+
     logger.info(
         "Starting FlowDesk",
         version=settings.APP_VERSION,
         debug=settings.DEBUG,
     )
 
-    # Verify database connection
+
     db_healthy = await check_db_connection()
     if not db_healthy:
         logger.error("Database connection failed on startup")
@@ -57,7 +49,7 @@ async def lifespan(app: FastAPI):
         except Exception as error:
             logger.error("Database schema upgrade failed", error=str(error))
 
-    # Initialize Sentry error monitoring
+
     if settings.SENTRY_DSN:
         sentry_sdk.init(
             dsn=settings.SENTRY_DSN,
@@ -69,13 +61,12 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # --- SHUTDOWN ---
+
     logger.info("Shutting down FlowDesk")
     await close_db_connection()
     logger.info("FlowDesk shutdown complete")
 
 
-# Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -85,23 +76,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# --- Attach rate limiter to app ---
+
 app.state.limiter = limiter
 
-# --- Exception Handlers ---
+
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
-# --- Security Middleware ---
+
 if not settings.DEBUG:
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=["flowdesk.app", "*.flowdesk.app", "localhost"],
     )
 
-# --- CORS Middleware ---
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -111,17 +102,13 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-# --- Connect All Routes ---
+
 app.include_router(api_router, prefix="/api")
 
 
-# --- Health Check ---
 @app.get("/health", tags=["System"])
 async def health_check():
-    """
-    Health check endpoint.
-    UptimeRobot pings this every 5 minutes.
-    """
+    """Health check endpoint."""
     db_healthy = await check_db_connection()
     return {
         "status": "healthy" if db_healthy else "degraded",
@@ -131,7 +118,6 @@ async def health_check():
     }
 
 
-# --- Root ---
 @app.get("/", tags=["System"])
 async def root():
     """API root endpoint."""

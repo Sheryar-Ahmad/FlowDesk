@@ -1,17 +1,3 @@
-"""
-auth_service.py - Authentication Business Logic
--------------------------------------------------
-This file contains all the logic for:
-- Registering new users
-- Logging in users
-- Refreshing tokens
-- Logging out users
-- Password reset
-
-This is the most security-critical file in FlowDesk.
-Every function has multiple security checks.
-"""
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone, timedelta
@@ -34,22 +20,9 @@ async def register_user(
     display_name: str,
     ip_address: str = None,
 ) -> dict:
-    """
-    Creates a new user account.
+    """Creates a new user account."""
 
-    Steps:
-    1. Check email not already registered
-    2. Hash password with Argon2id
-    3. Save user to database
-    4. Create JWT tokens
-    5. Save refresh token hash to database
-    6. Log action in audit log
-    7. Return tokens and user data
 
-    Raises exception if email already exists.
-    """
-
-    # Step 1: Check email not already taken
     existing = await db.execute(
         text("SELECT id FROM users WHERE email = :email AND deleted_at IS NULL"),
         {"email": email.lower().strip()}
@@ -58,10 +31,10 @@ async def register_user(
         logger.warning("Registration attempt with existing email", email=email)
         raise ValueError("An account with this email already exists.")
 
-    # Step 2: Hash password
+
     password_hashed = hash_password(password)
 
-    # Step 3: Save user to database
+
     result = await db.execute(
         text("""
             INSERT INTO users (email, password_hash, display_name, email_verified, plan)
@@ -85,7 +58,7 @@ async def register_user(
         email=email,
     )
 
-    # Step 4: Create tokens
+
     access_token = create_access_token(
         user_id=str(user.id),
         email=user.email,
@@ -93,7 +66,7 @@ async def register_user(
     )
     raw_refresh_token, refresh_token_hash = create_refresh_token()
 
-    # Step 5: Save refresh token to database
+
     expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     await db.execute(
         text("""
@@ -109,7 +82,7 @@ async def register_user(
     )
     await db.commit()
 
-    # Step 6: Log in audit log
+
     await db.execute(
         text("""
             INSERT INTO audit_logs (user_id, action, resource_type, ip_address, metadata)
@@ -125,7 +98,7 @@ async def register_user(
     )
     await db.commit()
 
-    # Step 7: Return response
+
     return {
         "access_token": access_token,
         "refresh_token": raw_refresh_token,
@@ -146,21 +119,9 @@ async def login_user(
     password: str,
     ip_address: str = None,
 ) -> dict:
-    """
-    Authenticates a user and returns tokens.
+    """Authenticates a user and returns tokens."""
 
-    Steps:
-    1. Find user by email
-    2. Check account not locked
-    3. Verify password
-    4. Reset failed login count
-    5. Create new tokens
-    6. Save refresh token
-    7. Log action
-    8. Return tokens
-    """
 
-    # Step 1: Find user
     result = await db.execute(
         text("""
             SELECT id, email, display_name, password_hash, plan,
@@ -177,16 +138,16 @@ async def login_user(
         logger.warning("Login attempt for non-existent email", email=email)
         raise ValueError("Invalid email or password.")
 
-    # Step 2: Check account not locked
+
     now = datetime.now(timezone.utc)
     if user.locked_until and user.locked_until > now:
         minutes_left = int((user.locked_until - now).total_seconds() / 60) + 1
         logger.warning("Login attempt on locked account", user_id=str(user.id))
         raise ValueError(f"Account locked. Try again in {minutes_left} minutes.")
 
-    # Step 3: Verify password
+
     if not verify_password(password, user.password_hash):
-        # Increment failed login count
+
         new_count = (user.failed_login_count or 0) + 1
         locked_until = None
 
@@ -212,7 +173,7 @@ async def login_user(
         )
         await db.commit()
 
-        # Log failed attempt
+
         await db.execute(
             text("""
                 INSERT INTO audit_logs (user_id, action, ip_address, metadata)
@@ -229,7 +190,7 @@ async def login_user(
 
         raise ValueError("Invalid email or password.")
 
-    # Step 4: Reset failed login count on success
+
     await db.execute(
         text("""
             UPDATE users
@@ -247,7 +208,7 @@ async def login_user(
     )
     await db.commit()
 
-    # Step 5: Create tokens
+
     access_token = create_access_token(
         user_id=str(user.id),
         email=user.email,
@@ -255,7 +216,7 @@ async def login_user(
     )
     raw_refresh_token, refresh_token_hash = create_refresh_token()
 
-    # Step 6: Save refresh token
+
     expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     await db.execute(
         text("""
@@ -271,7 +232,7 @@ async def login_user(
     )
     await db.commit()
 
-    # Step 7: Log successful login
+
     await db.execute(
         text("""
             INSERT INTO audit_logs (user_id, action, ip_address, metadata)
@@ -288,7 +249,7 @@ async def login_user(
 
     logger.info("User logged in successfully", user_id=str(user.id))
 
-    # Step 8: Return tokens
+
     return {
         "access_token": access_token,
         "refresh_token": raw_refresh_token,
@@ -309,10 +270,7 @@ async def logout_user(
     refresh_token: str,
     ip_address: str = None,
 ) -> bool:
-    """
-    Logs out user by revoking refresh token.
-    Access token expires naturally after 15 minutes.
-    """
+    """Logs out user by revoking refresh token."""
     token_hash = hash_token(refresh_token)
 
     await db.execute(

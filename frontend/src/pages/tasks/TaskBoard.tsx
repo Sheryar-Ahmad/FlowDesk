@@ -25,7 +25,7 @@ import { DeleteButton } from "../../components/DeleteButton"
 import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
 
-/* ─── CONSTANTS ────────────────────────────────────────────────────────────── */
+
 const C = {
   bg: "#070B12", surface: "#0C1018", surface2: "#111827",
   border: "rgba(255,255,255,0.06)", border2: "rgba(255,255,255,0.1)",
@@ -60,7 +60,7 @@ const PROJECT_COLORS = [
 
 const TASK_EMOJIS = ["🚀","⚡","🎯","🔥","💎","🛠️","📦","🎨","🔍","✅","⚠️","🐛","📋","💡","🔐"]
 
-/* ─── LOCAL STORAGE HELPERS ────────────────────────────────────────────────── */
+
 interface TaskMeta {
   pinned?: boolean
   starred?: boolean
@@ -68,7 +68,7 @@ interface TaskMeta {
   emoji?: string
   subtasks?: { id: string; text: string; done: boolean }[]
   comments?: { id: string; text: string; ts: string }[]
-  timeTracked?: number // minutes
+  timeTracked?: number
   timeStart?: number | null
   estimatedTime?: number
   watchers?: string[]
@@ -86,7 +86,7 @@ interface BoardMeta {
   theme?: "dark" | "darker" | "midnight"
   sprintName?: string
   sprintGoal?: string
-  wip?: Record<string, number> // WIP limits per column
+  wip?: Record<string, number>
   collapsed?: string[]
 }
 
@@ -119,7 +119,7 @@ function setBoardMeta(projectId: string, patch: Partial<BoardMeta>) {
   }
 }
 
-/* ─── HELPERS ──────────────────────────────────────────────────────────────── */
+
 function timeAgo(ts: string) {
   const diff = Date.now() - new Date(ts).getTime()
   const m = Math.floor(diff / 60000)
@@ -178,7 +178,7 @@ function statusForColumn(column: Column | string) {
   return STATUS_MAP[name] || name.toLowerCase().trim().replace(/\s+/g, "_")
 }
 
-/* ─── MINI COMPONENTS ──────────────────────────────────────────────────────── */
+
 function Btn({ onClick, children, variant = "ghost", title, active, disabled, style: extraStyle, className }: {
   onClick?: () => void; children: React.ReactNode; variant?: "ghost"|"primary"|"danger"|"outline"
   title?: string; active?: boolean; disabled?: boolean; style?: React.CSSProperties; className?: string
@@ -202,7 +202,7 @@ function Btn({ onClick, children, variant = "ghost", title, active, disabled, st
   )
 }
 
-/* ─── TASK DETAIL DRAWER ───────────────────────────────────────────────────── */
+
 function TaskDetailDrawer({ task, onClose, onDelete }: {
   task: Task; onClose: () => void
   onDelete: (id: string) => Promise<boolean>
@@ -222,7 +222,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
     setTaskMeta(task.id, patch)
   }
 
-  // Timer
+
   useEffect(() => {
     if (!meta.timeStart) return
     const updateTimer = () => setTimerNow(Date.now())
@@ -306,7 +306,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
       }}>
         <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
-        {/* Header */}
+
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, background: C.surface2 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -342,7 +342,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
             </div>
           </div>
 
-          {/* Priority + Status badges */}
+
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <span style={{
               fontSize: 11, padding: "3px 10px", borderRadius: 99,
@@ -373,7 +373,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
           </div>
         </div>
 
-        {/* Time Tracker */}
+
         <div style={{
           padding: "10px 20px", borderBottom: `1px solid ${C.border}`,
           display: "flex", alignItems: "center", gap: 12, background: "rgba(99,102,241,0.04)",
@@ -407,7 +407,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
           </button>
         </div>
 
-        {/* Tabs */}
+
         <div className="task-detail-tabs" style={{ display: "flex", borderBottom: `1px solid ${C.border}`, padding: "0 12px" }}>
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)} style={{
@@ -423,10 +423,10 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
           ))}
         </div>
 
-        {/* Tab Content */}
+
         <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
 
-          {/* DETAILS TAB */}
+
           {activeTab === "details" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {task.description && (
@@ -435,7 +435,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                   <p style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{task.description}</p>
                 </div>
               )}
-              {/* Story points */}
+
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Story Points</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -448,7 +448,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                   ))}
                 </div>
               </div>
-              {/* Est. time */}
+
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Estimated Time</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -461,7 +461,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                   ))}
                 </div>
               </div>
-              {/* Sprint */}
+
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Sprint</div>
                 <input value={meta.sprint || ""} onChange={e => patchMeta({ sprint: e.target.value })}
@@ -472,7 +472,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                     boxSizing: "border-box",
                   }} />
               </div>
-              {/* Color accent */}
+
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Card Color</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -486,7 +486,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                   ))}
                 </div>
               </div>
-              {/* Labels */}
+
               {(task.labels || []).length > 0 && (
                 <div>
                   <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Labels</div>
@@ -497,7 +497,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
                   </div>
                 </div>
               )}
-              {/* Reminder */}
+
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Reminder</div>
                 <input type="datetime-local" value={meta.reminder || ""}
@@ -511,7 +511,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
             </div>
           )}
 
-          {/* SUBTASKS TAB */}
+
           {activeTab === "subtasks" && (
             <div>
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -569,7 +569,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
             </div>
           )}
 
-          {/* COMMENTS TAB */}
+
           {activeTab === "comments" && (
             <div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
@@ -602,7 +602,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
             </div>
           )}
 
-          {/* LINKS TAB */}
+
           {activeTab === "links" && (
             <div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -667,7 +667,7 @@ function TaskDetailDrawer({ task, onClose, onDelete }: {
   )
 }
 
-/* ─── TASK FORM MODAL ──────────────────────────────────────────────────────── */
+
 interface TaskFormType {
   title: string
   description: string
@@ -732,7 +732,7 @@ function TaskFormModal({ isEdit, taskForm, setTaskForm, onSave, onClose, saving 
                 style={{ width: "100%", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, outline: "none", colorScheme: "dark" }} />
             </div>
           </div>
-          {/* Labels */}
+
           <div>
             <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Labels</label>
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>
@@ -767,7 +767,7 @@ function TaskFormModal({ isEdit, taskForm, setTaskForm, onSave, onClose, saving 
   )
 }
 
-/* ─── ANALYTICS PANEL ──────────────────────────────────────────────────────── */
+
 function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void }) {
   const total = tasks.length
   const done = tasks.filter(t => t.status === "done").length
@@ -796,7 +796,7 @@ function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void
         <Btn onClick={onClose}><X size={14} /></Btn>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* KPIs */}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {[
             { label: "Total Tasks", value: total, color: C.indigo },
@@ -813,7 +813,7 @@ function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void
           ))}
         </div>
 
-        {/* Progress bar */}
+
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: C.muted }}>Overall Progress</span>
@@ -824,7 +824,7 @@ function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void
           </div>
         </div>
 
-        {/* By Priority */}
+
         <div>
           <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.8 }}>By Priority</div>
           {byPriority.map(p => (
@@ -840,7 +840,7 @@ function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void
           ))}
         </div>
 
-        {/* Time & Story Points */}
+
         {(totalTime > 0 || totalPoints > 0) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {totalTime > 0 && (
@@ -862,7 +862,7 @@ function AnalyticsPanel({ tasks, onClose }: { tasks: Task[]; onClose: () => void
   )
 }
 
-/* ─── TASK CARD ────────────────────────────────────────────────────────────── */
+
 function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selectionMode, selected, onToggleSelected }: {
   task: Task; onUpdate: (id: string, data: UpdateTaskData) => void
   onDelete: (id: string) => Promise<boolean>; onEdit: (task: Task) => void
@@ -903,13 +903,13 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selecti
         element.style.borderLeftColor = accentColor || `${p.dot}30`
       }}
     >
-      {/* Timer indicator */}
+
       {hasTimer && (
         <div style={{ position: "absolute", top: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: C.emerald, animation: "pulse 2s infinite" }} />
       )}
 
       <div style={{ padding: compact ? "8px 10px" : "10px 12px" }}>
-        {/* Top row */}
+
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
           {selectionMode ? (
             <input
@@ -942,7 +942,7 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selecti
               WebkitBoxOrient: "vertical",
             }}>{task.title}</p>
           </div>
-          {/* Actions */}
+
           <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
             {!selectionMode && (
               <button
@@ -958,14 +958,14 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selecti
           </div>
         </div>
 
-        {/* Description */}
+
         {!compact && task.description && (
           <p style={{ fontSize: 11, color: C.muted, marginBottom: 7, paddingLeft: 22, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {task.description}
           </p>
         )}
 
-        {/* Subtask progress */}
+
         {subtasksTotal > 0 && (
           <div style={{ paddingLeft: 22, marginBottom: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -977,7 +977,7 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selecti
           </div>
         )}
 
-        {/* Footer row */}
+
         <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", paddingLeft: 22 }}>
           <span style={{
             fontSize: 9, padding: "2px 6px", borderRadius: 99,
@@ -1054,7 +1054,7 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onDetail, compact, selecti
   )
 }
 
-/* ─── KANBAN COLUMN ────────────────────────────────────────────────────────── */
+
 function KanbanColumn({ column, tasks, onAddTask, onUpdateTask, onDeleteTask, onEditTask, onDetailTask, compact, collapsed, onToggleCollapse, wipLimit, selectionMode, selectedIds, onToggleSelected }: {
   column: Column; tasks: Task[]
   onAddTask: (col: string) => void
@@ -1102,7 +1102,7 @@ function KanbanColumn({ column, tasks, onAddTask, onUpdateTask, onDeleteTask, on
       border: `1px solid ${isOver ? C.indigo : isAtWipLimit ? "rgba(244,63,94,0.4)" : C.border}`,
       transition: "background 0.12s, border-color 0.12s",
     }}>
-      {/* Column header */}
+
       <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -1144,7 +1144,7 @@ function KanbanColumn({ column, tasks, onAddTask, onUpdateTask, onDeleteTask, on
         )}
       </div>
 
-      {/* Tasks */}
+
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
         <div style={{ flex: 1, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6, overflowY: "auto", minHeight: 48 }}>
           {tasks.length === 0 && (
@@ -1183,7 +1183,7 @@ function KanbanColumn({ column, tasks, onAddTask, onUpdateTask, onDeleteTask, on
   )
 }
 
-/* ─── LIST VIEW ────────────────────────────────────────────────────────────── */
+
 function ListView({ tasks, columns, onUpdate, onDelete, onEdit, onDetail, selectionMode, selectedIds, onToggleSelected }: {
   tasks: Task[]; columns: Column[]
   onUpdate: (id: string, data: UpdateTaskData) => void
@@ -1255,7 +1255,7 @@ function ListView({ tasks, columns, onUpdate, onDelete, onEdit, onDetail, select
   )
 }
 
-/* ─── SPRINT BANNER ────────────────────────────────────────────────────────── */
+
 function SprintBanner({ meta, onChange }: { meta: BoardMeta; onChange: (patch: Partial<BoardMeta>) => void }) {
   const [editing, setEditing] = useState(false)
   if (!meta.sprintName && !editing) return null
@@ -1287,7 +1287,7 @@ function SprintBanner({ meta, onChange }: { meta: BoardMeta; onChange: (patch: P
   )
 }
 
-/* ─── AI DAILY STANDUP ─────────────────────────────────────────────────────── */
+
 function StandupModal({ tasks, onClose }: { tasks: Task[]; onClose: () => void }) {
   const [loading, setLoading] = useState(true)
   const [suggestion, setSuggestion] = useState("")
@@ -1360,7 +1360,7 @@ function StandupModal({ tasks, onClose }: { tasks: Task[]; onClose: () => void }
   )
 }
 
-/* ─── MAIN COMPONENT ───────────────────────────────────────────────────────── */
+
 export default function TaskBoard() {
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
@@ -1368,7 +1368,7 @@ export default function TaskBoard() {
   const searchRef = useRef<HTMLInputElement>(null)
   const projectRequestRef = useRef(0)
 
-  /* Data */
+
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [columns, setColumns] = useState<Column[]>([])
@@ -1376,7 +1376,7 @@ export default function TaskBoard() {
   const [loading, setLoading] = useState(true)
   const [boardLoading, setBoardLoading] = useState(false)
 
-  /* UI State */
+
   const [search, setSearch] = useState("")
   const [filterPriority, setFilterPriority] = useState("all")
   const [filterLabel, setFilterLabel] = useState("")
@@ -1385,7 +1385,7 @@ export default function TaskBoard() {
   const [compactMode, setCompactMode] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
 
-  /* Panels */
+
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showStandup, setShowStandup] = useState(false)
   const [showNewProject, setShowNewProject] = useState(false)
@@ -1395,11 +1395,11 @@ export default function TaskBoard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [newTaskColumn, setNewTaskColumn] = useState("")
 
-  /* Board meta */
+
   const [boardMeta, setBoardMetaState] = useState<BoardMeta>({})
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set())
 
-  /* Form */
+
   const [projectName, setProjectName] = useState("")
   const [projectColor, setProjectColor] = useState("#6366F1")
   const [taskForm, setTaskForm] = useState<TaskFormType>({ title: "", description: "", priority: "medium", due_date: "", labels: [], labelInput: "" })
@@ -1481,7 +1481,7 @@ export default function TaskBoard() {
     "escape": () => { setShowNewProject(false); setShowNewTask(false); setShowEditTask(false); setShowStandup(false); setDetailTask(null) },
   })
 
-  /* Computed */
+
   const allLabels = useMemo(() => {
     const s = new Set<string>()
     tasks.forEach(t => (t.labels || []).forEach(l => s.add(l)))
@@ -1501,14 +1501,14 @@ export default function TaskBoard() {
     return filteredTasks.filter(t => t.status === status).sort((a, b) => a.position - b.position)
   }
 
-  /* Stats */
+
   const total = tasks.length
   const done = tasks.filter(t => t.status === "done").length
   const overdue = tasks.filter(isTaskOverdue).length
   const critical = tasks.filter(t => t.priority === "critical" && t.status !== "done").length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
 
-  /* Handlers */
+
   const handleCreateProject = async () => {
     if (!projectName.trim()) { toast.error("Name required"); return }
     setSaving(true)
@@ -1788,7 +1788,7 @@ export default function TaskBoard() {
         }
       `}</style>
 
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+
       <div className="task-header" style={{ borderBottom: `1px solid ${C.border}`, background: C.surface, padding: "0 14px", height: 52, display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}>
           <ArrowLeft size={18} />
@@ -1820,7 +1820,7 @@ export default function TaskBoard() {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: selectedProject.color }} />
             <span className="task-project-name" style={{ fontSize: 14, fontWeight: 600, color: C.text, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedProject.name}</span>
 
-            {/* Progress */}
+
             {total > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="desktop-only">
                 <div style={{ width: 80, height: 4, background: C.faint, borderRadius: 99, overflow: "hidden" }}>
@@ -1830,7 +1830,7 @@ export default function TaskBoard() {
               </div>
             )}
 
-            {/* Quick stats */}
+
             <div style={{ display: "flex", gap: 8, marginLeft: 4 }} className="desktop-only">
               {STAT_ITEMS.map(s => (
                 <span key={s.label} style={{ fontSize: 11, color: s.value > 0 && (s.label === "Overdue" || s.label === "Critical") ? s.color : C.muted, fontFamily: "monospace", display: "flex", alignItems: "center", gap: 3 }}>
@@ -1844,23 +1844,23 @@ export default function TaskBoard() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Header actions */}
+
         <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          {/* Sprint toggle */}
+
           {selectedProject && (
             <Btn onClick={() => patchBoardMeta({ sprintName: boardMeta.sprintName ? undefined : "Sprint 1" })} title="Toggle Sprint" active={!!boardMeta.sprintName} className="desktop-only">
               <Zap size={14} />
             </Btn>
           )}
 
-          {/* Standup */}
+
           {selectedProject && (
             <Btn onClick={() => setShowStandup(true)} title="Daily Standup" className="desktop-only">
               <Coffee size={14} /><span className="desktop-only" style={{ fontSize: 12, marginLeft: 2 }}>Standup</span>
             </Btn>
           )}
 
-          {/* View toggle */}
+
           {selectedProject && (
             <div className="desktop-only" style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden" }}>
               <button onClick={() => setView("kanban")} title="Kanban view" style={{
@@ -1874,35 +1874,35 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* Compact */}
+
           {selectedProject && view === "kanban" && (
             <Btn onClick={() => setCompactMode(c => !c)} active={compactMode} title="Compact mode" className="desktop-only">
               <Minimize2 size={14} />
             </Btn>
           )}
 
-          {/* Analytics */}
+
           {selectedProject && (
             <Btn onClick={() => setShowAnalytics(a => !a)} active={showAnalytics} title="Analytics" className="desktop-only">
               <BarChart2 size={14} />
             </Btn>
           )}
 
-          {/* Export */}
+
           {selectedProject && (
             <Btn onClick={handleExport} title="Export JSON" className="desktop-only">
               <Download size={14} />
             </Btn>
           )}
 
-          {/* Bulk mode */}
+
           {selectedProject && (
             <Btn onClick={toggleBulkMode} active={showBulk} title="Bulk select" className="desktop-only">
               <Layers size={14} />
             </Btn>
           )}
 
-          {/* New project */}
+
           <button onClick={() => setShowNewProject(true)} style={{
             display: "flex", alignItems: "center", gap: 6,
             background: C.indigo, border: "none", borderRadius: 8,
@@ -1915,12 +1915,12 @@ export default function TaskBoard() {
         </div>
       </div>
 
-      {/* Sprint Banner */}
+
       {selectedProject && boardMeta.sprintName && (
         <SprintBanner meta={boardMeta} onChange={patchBoardMeta} />
       )}
 
-      {/* Bulk action bar */}
+
       {showBulk && (
         <div style={{ background: "rgba(99,102,241,0.1)", borderBottom: `1px solid rgba(99,102,241,0.2)`, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.indigo, fontWeight: 700 }}>
@@ -1933,7 +1933,7 @@ export default function TaskBoard() {
         </div>
       )}
 
-      {/* Search & Filter bar */}
+
       {selectedProject && (
         <div className="task-filter-bar" style={{ borderBottom: `1px solid ${C.border}`, background: C.surface, padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
           <div style={{ position: "relative", flex: "1 1 180px", minWidth: 120, maxWidth: 320 }}>
@@ -1944,7 +1944,7 @@ export default function TaskBoard() {
             {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.muted, display: "flex" }}><X size={11} /></button>}
           </div>
 
-          {/* Priority filter */}
+
           <div className="task-priority-filter" style={{ display: "flex", gap: 3 }}>
             {["all","critical","high","medium","low"].map(p => {
               const pr = PRIORITY[p as keyof typeof PRIORITY]
@@ -1958,7 +1958,7 @@ export default function TaskBoard() {
             })}
           </div>
 
-          {/* Label filter */}
+
           {allLabels.length > 0 && (
             <div style={{ display: "flex", gap: 3, overflowX: "auto" }}>
               {allLabels.slice(0, 4).map(l => (
@@ -1971,12 +1971,12 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* Show done toggle */}
+
           <Btn onClick={() => setShowDone(s => !s)} active={!showDone} title={showDone ? "Hide done" : "Show done"}>
             {showDone ? <Eye size={13} /> : <EyeOff size={13} />}
           </Btn>
 
-          {/* Quick add */}
+
           <Btn onClick={() => { setTaskForm({ title: "", description: "", priority: "medium", due_date: "", labels: [], labelInput: "" }); setNewTaskColumn(columns[0]?.name || "To Do"); setShowNewTask(true) }} variant="primary" title="Ctrl+N">
             <Plus size={13} />Quick Add
           </Btn>
@@ -2001,7 +2001,7 @@ export default function TaskBoard() {
         </div>
       )}
 
-      {/* Body */}
+
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, position: "relative" }}>
         {showSidebar && (
           <button
@@ -2010,7 +2010,7 @@ export default function TaskBoard() {
             onClick={() => setShowSidebar(false)}
           />
         )}
-        {/* Sidebar */}
+
         {showSidebar && (
           <div className="task-sidebar" style={{
             width: 210, flexShrink: 0, borderRight: `1px solid ${C.border}`,
@@ -2066,7 +2066,7 @@ export default function TaskBoard() {
               )}
             </div>
 
-            {/* Sprint WIP settings */}
+
             {selectedProject && boardMeta.sprintName && (
               <div style={{ borderTop: `1px solid ${C.border}`, padding: 12 }}>
                 <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>WIP Limits</div>
@@ -2098,7 +2098,7 @@ export default function TaskBoard() {
           </div>
         )}
 
-        {/* Board Area */}
+
         <div className="task-board-area" style={{ flex: 1, overflow: "auto", padding: 14, minHeight: 0 }}>
           {!selectedProject ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 16 }}>
@@ -2158,7 +2158,7 @@ export default function TaskBoard() {
                     onToggleSelected={toggleBulkSelection}
                   />
                 ))}
-                {/* Add column */}
+
                 <button onClick={async () => {
                   const name = prompt("Column name:")
                   if (!name?.trim() || !selectedProject) return
@@ -2185,9 +2185,9 @@ export default function TaskBoard() {
         </div>
       </div>
 
-      {/* MODALS & PANELS */}
 
-      {/* New Project */}
+
+
       {showNewProject && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 16 }}>
           <div style={{ background: C.surface, borderRadius: 16, width: "100%", maxWidth: 400, border: `1px solid ${C.border}` }}>
@@ -2222,11 +2222,11 @@ export default function TaskBoard() {
         </div>
       )}
 
-      {/* Task form modals */}
+
       {showNewTask && <TaskFormModal isEdit={false} taskForm={taskForm} setTaskForm={setTaskForm} onSave={handleCreateTask} onClose={() => setShowNewTask(false)} saving={saving} />}
       {showEditTask && <TaskFormModal isEdit={true} taskForm={taskForm} setTaskForm={setTaskForm} onSave={handleUpdateTaskForm} onClose={() => setShowEditTask(false)} saving={saving} />}
 
-      {/* Task Detail Drawer */}
+
       {detailTask && (
         <TaskDetailDrawer
           task={detailTask}
@@ -2235,10 +2235,10 @@ export default function TaskBoard() {
         />
       )}
 
-      {/* Analytics Panel */}
+
       {showAnalytics && <AnalyticsPanel tasks={tasks} onClose={() => setShowAnalytics(false)} />}
 
-      {/* Standup Modal */}
+
       {showStandup && <StandupModal tasks={tasks} onClose={() => setShowStandup(false)} />}
     </div>
   )

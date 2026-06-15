@@ -124,7 +124,7 @@ const TESTIMONIALS = [
   { text: "I finally stay in flow. The focus timer + tasks combo is unreal.", author: "Indie dev, Toronto" },
 ]
 
-// Animated counter
+
 function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
   const [count, setCount] = useState(0)
   const ref = useRef<HTMLSpanElement>(null)
@@ -157,7 +157,7 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
   return <span ref={ref}>{count}{suffix}</span>
 }
 
-// Floating code particles background
+
 function CodeRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -320,7 +320,7 @@ export default function Landing() {
     setSearchParams({}, { replace: true })
   }, [setSearchParams])
 
-  // Auto-rotate active feature
+
   useEffect(() => {
     if (legalDocument) return
     const t = setInterval(() => setActiveFeature(i => (i + 1) % FEATURES.length), 3000)
@@ -338,7 +338,7 @@ export default function Landing() {
       overflowX: "hidden",
     }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────── */}
+
       <nav style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 clamp(16px, 5vw, 48px)", height: 60,
@@ -386,7 +386,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────────────────── */}
+
       <section style={{
         position: "relative", overflow: "hidden",
         padding: "clamp(64px, 10vw, 120px) clamp(16px, 5vw, 48px) clamp(48px, 8vw, 80px)",
@@ -394,7 +394,7 @@ export default function Landing() {
       }}>
         <CodeRain />
 
-        {/* Radial vignette */}
+
         <div style={{
           position: "absolute", inset: 0,
           background: "radial-gradient(ellipse 80% 100% at 50% 100%, #080B14 40%, transparent 100%)",
@@ -402,7 +402,7 @@ export default function Landing() {
         }} />
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto" }}>
-          {/* Eyebrow */}
+
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 8,
             background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
@@ -414,7 +414,7 @@ export default function Landing() {
             <ChevronRight size={11} />
           </div>
 
-          {/* Headline */}
+
           <h1 style={{
             fontSize: "clamp(36px, 7vw, 72px)",
             fontWeight: 700, lineHeight: 1.08,
@@ -440,7 +440,7 @@ export default function Landing() {
             beautiful workspace.
           </p>
 
-          {/* CTAs */}
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
             <Link to="/register" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -470,7 +470,7 @@ export default function Landing() {
             </Link>
           </div>
 
-          {/* Trust strip */}
+
           <div style={{ marginTop: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
             {["No credit card", "Free forever plan", "Open source friendly"].map(t => (
               <span key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#334155" }}>
@@ -481,7 +481,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── STATS STRIP ─────────────────────────────────────────────── */}
+
       <div style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -512,10 +512,10 @@ export default function Landing() {
         ))}
       </div>
 
-      {/* ── INTERACTIVE FEATURES ────────────────────────────────────── */}
+
       <section style={{ padding: "clamp(48px, 8vw, 96px) clamp(16px, 5vw, 48px)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          {/* Section header */}
+
           <div style={{ textAlign: "center", marginBottom: "clamp(32px, 5vw, 56px)" }}>
             <div style={{
               fontSize: 11, color: "#6366F1", textTransform: "uppercase",
@@ -532,14 +532,14 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Feature selector + preview */}
+
           <div style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
             gap: 24,
             alignItems: "start",
           }} className="feature-grid">
-            {/* Left: tab list */}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {FEATURES.map((feat, i) => {
                 const Icon = feat.icon
@@ -587,7 +587,7 @@ export default function Landing() {
               })}
             </div>
 
-            {/* Right: feature detail card */}
+
             <div style={{
               background: "rgba(255,255,255,0.025)",
               border: `1px solid ${f.color}30`,
@@ -595,7 +595,7 @@ export default function Landing() {
               position: "sticky", top: 80,
               transition: "border-color 0.3s",
             }}>
-              {/* Top bar */}
+
               <div style={{
                 background: "#080B14", borderRadius: 8,
                 padding: "8px 12px", marginBottom: 20,
@@ -610,7 +610,7 @@ export default function Landing() {
                 </span>
               </div>
 
-              {/* Feature content */}
+
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 12,
@@ -648,7 +648,7 @@ export default function Landing() {
                 ))}
               </div>
 
-              {/* Progress dots */}
+
               <div style={{ display: "flex", gap: 5, marginTop: 24 }}>
                 {FEATURES.map((_, i) => (
                   <button
@@ -676,7 +676,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FEATURES GRID ───────────────────────────────────────────── */}
+
       <section style={{
         padding: "0 clamp(16px, 5vw, 48px) clamp(48px, 8vw, 96px)",
         background: "rgba(255,255,255,0.01)",
@@ -709,7 +709,7 @@ export default function Landing() {
                     transform: hovered ? "translateY(-2px)" : "translateY(0)",
                   }}
                 >
-                  {/* Left accent */}
+
                   <div style={{
                     position: "absolute", left: 0,
                     top: hovered ? "8%" : "20%", bottom: hovered ? "8%" : "20%",
@@ -719,7 +719,7 @@ export default function Landing() {
                     transition: "all 0.2s",
                   }} />
 
-                  {/* Glow on hover */}
+
                   {hovered && (
                     <div style={{
                       position: "absolute", top: -40, right: -40,
@@ -761,7 +761,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ────────────────────────────────────────────── */}
+
       <section style={{
         padding: "clamp(48px, 8vw, 96px) clamp(16px, 5vw, 48px)",
         borderTop: "1px solid rgba(255,255,255,0.05)",
@@ -807,7 +807,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA ─────────────────────────────────────────────────────── */}
+
       <section style={{ padding: "clamp(48px, 8vw, 96px) clamp(16px, 5vw, 48px)" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           <div style={{
@@ -816,7 +816,7 @@ export default function Landing() {
             borderRadius: 20, padding: "clamp(32px, 5vw, 56px)",
             textAlign: "center", position: "relative", overflow: "hidden",
           }}>
-            {/* Subtle glow */}
+
             <div style={{
               position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)",
               width: 300, height: 200, borderRadius: "50%",
@@ -868,7 +868,7 @@ export default function Landing() {
                 </Link>
               </div>
 
-              {/* Bottom trust row */}
+
               <div style={{ marginTop: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
                 {[
                   { icon: <Shield size={12} />, text: "No credit card" },
@@ -886,7 +886,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────── */}
+
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
         padding: "24px clamp(16px, 5vw, 48px)",

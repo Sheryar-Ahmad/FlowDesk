@@ -1,16 +1,4 @@
-/**
- * Dashboard.tsx — FlowDesk Enterprise Dashboard
- * FRONTEND FILE: src/pages/dashboard/Dashboard.tsx
- *
- * Design direction:
- * - Near-black #080B14 base, not generic gray-950
- * - Indigo #6366F1 primary, with a single electric-cyan #22D3EE accent
- * - Monospace for all data/numbers, Inter-style sans for UI
- * - Signature: animated code-particle hero that drifts in the background
- * - Feature cards: icon-led, with a thin left-accent rule that lights up on hover
- * - Sidebar quick-stats column on large screens
- * - Keyboard shortcut hints on cards (G then key)
- */
+
 
 import { useNavigate } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -26,7 +14,7 @@ import type { DashboardStats } from "../../services/api/dashboard.api"
 import axios from "axios"
 import toast from "react-hot-toast"
 
-/* ─── FEATURE REGISTRY ───────────────────────────────────────────────── */
+
 const features = [
   {
     icon: FileCode,
@@ -131,7 +119,7 @@ function getFeatureStat(feature: typeof features[number], stats: DashboardStats)
   }
 }
 
-/* ─── ANIMATED CODE CANVAS ───────────────────────────────────────────── */
+
 function CodeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -163,7 +151,7 @@ function CodeCanvas() {
         const x = i * 18
         const y = drops[i] * 18
 
-        // Lead character brighter
+
         ctx.fillStyle = `rgba(99,102,241,${Math.random() * 0.3 + 0.05})`
         ctx.fillText(char, x, y)
 
@@ -194,7 +182,7 @@ function CodeCanvas() {
   )
 }
 
-/* ─── FEATURE CARD ───────────────────────────────────────────────────── */
+
 function FeatureCard({
   feature,
   stat,
@@ -231,7 +219,7 @@ function FeatureCard({
         gap: 0,
       }}
     >
-      {/* Left accent rule */}
+
       <div style={{
         position: "absolute", left: 0, top: "20%", bottom: "20%",
         width: 3, borderRadius: "0 3px 3px 0",
@@ -241,7 +229,7 @@ function FeatureCard({
         ...(hovered ? { top: "10%", bottom: "10%" } : {}),
       }} />
 
-      {/* Corner glow */}
+
       {hovered && (
         <div style={{
           position: "absolute", top: -30, right: -30,
@@ -252,7 +240,7 @@ function FeatureCard({
         }} />
       )}
 
-      {/* Icon + shortcut */}
+
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{
           width: 42, height: 42, borderRadius: 10,
@@ -274,7 +262,7 @@ function FeatureCard({
         </span>
       </div>
 
-      {/* Title + badge */}
+
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 15, fontWeight: 600, color: "#f1f5f9" }}>
           {feature.title}
@@ -287,12 +275,12 @@ function FeatureCard({
         }}>live</span>
       </div>
 
-      {/* Description */}
+
       <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.55, margin: 0, marginBottom: 16, flex: 1 }}>
         {feature.desc}
       </p>
 
-      {/* Footer: stat + arrow */}
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{
           fontSize: 11, color: feature.accentColor,
@@ -314,7 +302,7 @@ function FeatureCard({
   )
 }
 
-/* ─── QUICK STAT ─────────────────────────────────────────────────────── */
+
 function QuickStat({
   icon: Icon,
   label,
@@ -347,7 +335,7 @@ function QuickStat({
   )
 }
 
-/* ─── DASHBOARD ──────────────────────────────────────────────────────── */
+
 export default function Dashboard() {
   const { user, accessToken, isAuthenticated, logout, refreshUser } = useAuthStore()
   const navigate = useNavigate()
@@ -360,7 +348,7 @@ export default function Dashboard() {
 
   useEffect(() => { if (!isAuthenticated) navigate("/login") }, [isAuthenticated, navigate])
 
-  // Live clock
+
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(t)
@@ -391,7 +379,7 @@ export default function Dashboard() {
     }
   }, [loadDashboardStats])
 
-  // Global keyboard shortcuts (G + key)
+
   useEffect(() => {
     let gPressed = false
     let gTimer: number
@@ -518,7 +506,7 @@ export default function Dashboard() {
       flexDirection: "column",
     }}>
 
-      {/* ── TOPNAV ─────────────────────────────────────────────────── */}
+
       <nav className="dashboard-nav" style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 28px", height: 56,
@@ -527,7 +515,7 @@ export default function Dashboard() {
         backdropFilter: "blur(12px)",
         position: "sticky", top: 0, zIndex: 100,
       }}>
-        {/* Logo */}
+
         <div className="dashboard-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 8,
@@ -548,7 +536,7 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* Right: clock + user + logout */}
+
         <div className="dashboard-nav-actions" style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <span className="dashboard-clock" style={{
             fontSize: 13, fontFamily: "monospace", color: "#334155",
@@ -560,7 +548,7 @@ export default function Dashboard() {
           <div className="dashboard-divider" style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)" }} />
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Avatar */}
+
             <div style={{
               width: 30, height: 30, borderRadius: "50%",
               background: "linear-gradient(135deg, #6366f1 0%, #22d3ee 100%)",
@@ -606,7 +594,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* ── HERO ───────────────────────────────────────────────────── */}
+
       <div className="dashboard-hero" style={{
         position: "relative",
         padding: "52px 28px 44px",
@@ -614,19 +602,19 @@ export default function Dashboard() {
         overflow: "hidden",
         background: "#080b14",
       }}>
-        {/* Animated code rain */}
+
         <CodeCanvas />
 
-        {/* Radial vignette over the canvas */}
+
         <div style={{
           position: "absolute", inset: 0,
           background: "radial-gradient(ellipse 70% 100% at 50% 100%, #080b14 60%, transparent 100%)",
           pointerEvents: "none",
         }} />
 
-        {/* Content */}
+
         <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
-          {/* Eyebrow */}
+
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
             fontSize: 11, color: "#22d3ee",
@@ -665,7 +653,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── BODY: GRID + SIDEBAR ───────────────────────────────────── */}
+
       <div className="dashboard-body" style={{
         flex: 1,
         maxWidth: 1100, width: "100%", margin: "0 auto",
@@ -676,7 +664,7 @@ export default function Dashboard() {
         alignItems: "start",
       }}>
 
-        {/* ── FEATURE GRID ─────────────────────────────────────────── */}
+
         <div>
           <div className="dashboard-feature-grid" style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -706,10 +694,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── SIDEBAR ──────────────────────────────────────────────── */}
+
         <aside className="dashboard-sidebar">
 
-          {/* Quick stats */}
+
           <div className="dashboard-quick-stats" style={{
             background: "rgba(255,255,255,0.025)",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -767,7 +755,7 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Keyboard shortcuts reference */}
+
           <div className="dashboard-shortcuts" style={{
             background: "rgba(255,255,255,0.025)",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -799,7 +787,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Plan card */}
+
           <div style={{
             background: "rgba(99,102,241,0.08)",
             border: "1px solid rgba(99,102,241,0.2)",

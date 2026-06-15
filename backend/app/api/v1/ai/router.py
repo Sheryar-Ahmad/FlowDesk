@@ -1,8 +1,3 @@
-"""
-ai/router.py - Ultimate AI API with Memory & History
-BACKEND FILE
-"""
-
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -84,7 +79,7 @@ async def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data)
     messages_used = user_data.ai_messages_used_today or 0
     reset_at = user_data.ai_messages_reset_at
 
-    # Auto reset every 24 hours
+
     if reset_at:
         if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
             reset_at = reset_at.replace(tzinfo=timezone.utc)
@@ -97,7 +92,7 @@ async def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data)
             await db.commit()
             logger.info("AI daily limit auto-reset", user_id=user_id)
     else:
-        # First time — set reset timestamp
+
         await db.execute(
             text("UPDATE users SET ai_messages_reset_at=NOW() WHERE id=:uid AND ai_messages_reset_at IS NULL"),
             {"uid": user_id}
@@ -174,13 +169,13 @@ async def chat(
         user_data = await get_user_ai_data(db, current_user["id"])
         messages_used = await reset_daily_limit_if_needed(db, current_user["id"], user_data)
 
-        # Get or create session
+
         session_id = body.session_id
         session_messages = []
         session_data = None
 
         if session_id:
-            # Load existing session messages for memory
+
             result = await db.execute(
                 text("SELECT id, title, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
                 {"sid": session_id, "uid": current_user["id"]}
@@ -203,7 +198,7 @@ async def chat(
                 and message["content"].strip()
             ] if isinstance(stored, list) else []
 
-        # Get past sessions for context building
+
         past_result = await db.execute(
             text("SELECT messages FROM ai_sessions WHERE user_id=:uid ORDER BY updated_at DESC LIMIT 5"),
             {"uid": current_user["id"]}
@@ -218,16 +213,16 @@ async def chat(
                     msgs = []
             past_sessions.append({"messages": msgs})
 
-        # Build user context from history
+
         context = build_context_from_history(past_sessions)
         context["name"] = user_data.display_name or current_user.get("display_name", "Developer")
 
-        # Prepare messages
+
         new_messages = [{"role": m.role, "content": m.content} for m in body.messages]
 
-        # For memory: combine session history with new messages
+
         if session_messages:
-            all_messages = session_messages + [new_messages[-1]]  # Add only latest message
+            all_messages = session_messages + [new_messages[-1]]
         else:
             all_messages = new_messages
 
@@ -248,7 +243,7 @@ async def chat(
             else:
                 raise groq_err
 
-        # Update session with new messages
+
         ai_msg = {"role": "assistant", "content": result_ai["response"]}
         user_msg = new_messages[-1]
 
@@ -256,7 +251,7 @@ async def chat(
 
         session_title = session_data.title if session_data else None
         if session_id and session_data:
-            # Update existing session
+
             await db.execute(
                 text("""
                     UPDATE ai_sessions
@@ -271,7 +266,7 @@ async def chat(
                 }
             )
         else:
-            # Create new session
+
             session_title = await generate_session_title(new_messages)
             result_insert = await db.execute(
                 text("""
@@ -290,7 +285,7 @@ async def chat(
             new_session = result_insert.fetchone()
             session_id = str(new_session.id)
 
-        # Increment usage
+
         await db.execute(
             text("UPDATE users SET ai_messages_used_today=ai_messages_used_today+1 WHERE id=:uid"),
             {"uid": current_user["id"]}
@@ -557,7 +552,7 @@ async def get_usage(
     user = result.fetchone()
     used = user.ai_messages_used_today or 0
 
-    # Auto reset check
+
     if user.ai_messages_reset_at:
         reset_at = user.ai_messages_reset_at
         if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:

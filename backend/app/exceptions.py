@@ -1,11 +1,6 @@
-"""
-exceptions.py - Custom Error Messages for FlowDesk
-"""
-
 from fastapi import HTTPException, status
 
 
-# --- Authentication Errors ---
 class InvalidCredentialsError(HTTPException):
     """Raised when email or password is wrong during login."""
     def __init__(self):
@@ -54,7 +49,6 @@ class EmailNotVerifiedError(HTTPException):
         )
 
 
-# --- User Errors ---
 class UserNotFoundError(HTTPException):
     """Raised when a user cannot be found in the database."""
     def __init__(self):
@@ -73,7 +67,6 @@ class EmailAlreadyExistsError(HTTPException):
         )
 
 
-# --- Resource Errors ---
 class SnippetNotFoundError(HTTPException):
     """Raised when a snippet cannot be found."""
     def __init__(self):
@@ -101,7 +94,6 @@ class TaskNotFoundError(HTTPException):
         )
 
 
-# --- Permission Errors ---
 class ForbiddenError(HTTPException):
     """Raised when user tries to access something that belongs to another user."""
     def __init__(self):
@@ -111,7 +103,6 @@ class ForbiddenError(HTTPException):
         )
 
 
-# --- Free Tier Limit Errors ---
 class FreeTierLimitError(HTTPException):
     """Raised when free user hits their usage limit."""
     def __init__(self, resource: str, limit: int):
@@ -121,7 +112,6 @@ class FreeTierLimitError(HTTPException):
         )
 
 
-# --- Validation Errors ---
 class InvalidInputError(HTTPException):
     """Raised when user sends invalid data."""
     def __init__(self, message: str):
@@ -131,7 +121,6 @@ class InvalidInputError(HTTPException):
         )
 
 
-# --- Server Errors ---
 class DatabaseError(HTTPException):
     """Raised when database operation fails."""
     def __init__(self):

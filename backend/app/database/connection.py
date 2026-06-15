@@ -1,15 +1,3 @@
-"""
-connection.py -  Database Connection
-------------------------------------------------
-Handles all database connections for FlowDesk.
-Features:
-- Connection pooling for high performance
-- Automatic retry on connection failure
-- Health checks
-- Structured logging
-- Graceful shutdown
-"""
-
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
@@ -27,20 +15,12 @@ settings = get_settings()
 
 
 class Base(DeclarativeBase):
-    """
-    Base class for all database models.
-    Every table model inherits from this.
-    Provides common functionality to all models.
-    """
+    """Base class for all database models."""
     pass
 
 
 def build_database_url() -> str:
-    """
-    Builds the correct database URL for async SQLAlchemy.
-    SQLAlchemy needs asyncpg driver for async operations.
-    Changes postgresql:// to postgresql+asyncpg://
-    """
+    """Builds the correct database URL for async SQLAlchemy."""
     url = settings.DATABASE_URL
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -49,14 +29,12 @@ def build_database_url() -> str:
     return url
 
 
-# --- Create async engine with enterprise settings ---
 engine = create_async_engine(
     build_database_url(),
 
-    # Show SQL queries in debug mode only
+    # Avoid leaking query details outside debug environments.
     echo=settings.DEBUG,
 
-    # Connection pool settings for high performance
     poolclass=AsyncAdaptedQueuePool,
     pool_size=10,
     max_overflow=20,
@@ -64,7 +42,7 @@ engine = create_async_engine(
     pool_recycle=3600,
     pool_timeout=30,
 
-    # Connection arguments for PostgreSQL
+
     connect_args={
         "command_timeout": 60,
         "server_settings": {
@@ -75,7 +53,6 @@ engine = create_async_engine(
 )
 
 
-# --- Session factory ---
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -86,17 +63,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncSession:
-    """
-    FastAPI dependency that provides a database session.
-    
-    Usage in endpoints:
-        async def my_endpoint(db: AsyncSession = Depends(get_db)):
-    
-    - Automatically opens session before request
-    - Commits if everything succeeds
-    - Rolls back if any error occurs
-    - Always closes session when done
-    """
+    """FastAPI dependency that provides a database session."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -114,11 +81,7 @@ async def get_db() -> AsyncSession:
 
 
 async def check_db_connection() -> bool:
-    """
-    Verifies database is reachable and responding.
-    Called on app startup.
-    Retries 3 times before giving up.
-    """
+    """Verifies database is reachable and responding."""
     max_retries = 3
     retry_delay = 2
 
@@ -187,10 +150,7 @@ async def ensure_database_schema() -> None:
 
 
 async def get_db_stats() -> dict:
-    """
-    Returns database connection pool statistics.
-    Used for monitoring and health dashboard.
-    """
+    """Returns database connection pool statistics."""
     pool = engine.pool
     return {
         "pool_size": pool.size(),
@@ -202,9 +162,6 @@ async def get_db_stats() -> dict:
 
 
 async def close_db_connection() -> None:
-    """
-    Gracefully closes all database connections.
-    Called on app shutdown to prevent connection leaks.
-    """
+    """Gracefully closes all database connections."""
     await engine.dispose()
     logger.info("Database connections closed gracefully")

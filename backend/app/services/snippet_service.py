@@ -1,14 +1,3 @@
-"""
-snippet_service.py - Snippet Business Logic
----------------------------------------------
-Handles all snippet operations:
-- Create, Read, Update, Delete (CRUD)
-- Search with full text search
-- Tag management
-- Usage tracking
-- Free tier limit enforcement
-"""
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone
@@ -42,20 +31,15 @@ async def create_snippet(
     is_public: bool = False,
     collection_id: Optional[str] = None,
 ) -> dict:
-    """
-    Creates a new snippet.
-    Enforces free tier limit of 50 snippets.
-    Saves tags to snippet_tags table.
-    Logs action to audit log.
-    """
+    """Creates a new snippet."""
 
-    # Check free tier limit
+
     if plan == "free":
         count = await get_user_snippet_count(db, user_id)
         if count >= FREE_TIER_SNIPPET_LIMIT:
             raise ValueError(f"Free tier limit reached: {FREE_TIER_SNIPPET_LIMIT} snippets maximum. Upgrade to Pro for unlimited snippets.")
 
-    # Create snippet
+
     result = await db.execute(
         text("""
             INSERT INTO snippets (user_id, title, code, language, description, is_public, collection_id)
@@ -76,11 +60,11 @@ async def create_snippet(
     snippet = result.fetchone()
     await db.commit()
 
-    # Handle tags
+
     saved_tags = []
     if tags:
         for tag_name in tags:
-            # Get or create tag
+
             tag_result = await db.execute(
                 text("""
                     INSERT INTO tags (user_id, name)
@@ -93,7 +77,7 @@ async def create_snippet(
             tag = tag_result.fetchone()
             await db.commit()
 
-            # Link tag to snippet
+
             await db.execute(
                 text("""
                     INSERT INTO snippet_tags (snippet_id, tag_id)
@@ -105,7 +89,7 @@ async def create_snippet(
             await db.commit()
             saved_tags.append(tag.name)
 
-    # Audit log
+
     await db.execute(
         text("""
             INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
@@ -147,15 +131,11 @@ async def get_snippets(
     language: Optional[str] = None,
     search: Optional[str] = None,
 ) -> dict:
-    """
-    Returns paginated list of user snippets.
-    Supports filtering by language and search query.
-    Uses PostgreSQL full text search for fast results.
-    """
+    """Returns paginated list of user snippets."""
     start_time = time.time()
     offset = (page - 1) * page_size
 
-    # Build query based on filters
+
     if search:
         # Full text search using PostgreSQL GIN index
         query = text("""
@@ -263,10 +243,7 @@ async def get_snippet_by_id(
     snippet_id: str,
     user_id: str,
 ) -> Optional[dict]:
-    """
-    Returns a single snippet by ID.
-    Verifies ownership before returning.
-    """
+    """Returns a single snippet by ID."""
     result = await db.execute(
         text("""
             SELECT s.id, s.user_id, s.title, s.code, s.language,
@@ -307,17 +284,13 @@ async def update_snippet(
     user_id: str,
     updates: dict,
 ) -> Optional[dict]:
-    """
-    Updates a snippet.
-    Only updates fields that are provided.
-    Verifies ownership.
-    """
-    # Verify ownership
+    """Updates a snippet."""
+
     existing = await get_snippet_by_id(db, snippet_id, user_id)
     if not existing:
         return None
 
-    # Build update query dynamically
+
     update_fields = []
     params = {"snippet_id": snippet_id, "user_id": user_id}
 
@@ -347,11 +320,7 @@ async def delete_snippet(
     snippet_id: str,
     user_id: str,
 ) -> bool:
-    """
-    Soft deletes a snippet.
-    Sets deleted_at timestamp instead of removing from database.
-    Recoverable for 30 days.
-    """
+    """Soft deletes a snippet."""
     result = await db.execute(
         text("""
             UPDATE snippets
@@ -388,10 +357,7 @@ async def increment_use_count(
     snippet_id: str,
     user_id: str,
 ) -> None:
-    """
-    Increments use_count when snippet is copied.
-    Used for ranking most used snippets.
-    """
+    """Increments use_count when snippet is copied."""
     await db.execute(
         text("""
             UPDATE snippets

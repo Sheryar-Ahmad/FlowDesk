@@ -1,20 +1,3 @@
-"""
-error_handler.py - Global Error Handler
------------------------------------------
-Catches ALL errors in the application and returns
-clean, safe error messages to users.
-
-Why this matters:
-- Without this, Python errors show stack traces
-- Stack traces reveal our code structure to attackers
-- This hides internal details while logging everything
-
-Security rule:
-- Users see: clean, helpful error message
-- We see: full error details in logs
-- Attackers see: nothing useful
-"""
-
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -29,12 +12,7 @@ async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
-    """
-    Handles validation errors from Pydantic.
-    When user sends wrong data format.
-    
-    Example: sending text where number expected.
-    """
+    """Handles validation errors from Pydantic."""
     errors = []
     for error in exc.errors():
         field = " -> ".join(str(loc) for loc in error["loc"])
@@ -64,10 +42,7 @@ async def sqlalchemy_exception_handler(
     request: Request,
     exc: SQLAlchemyError,
 ) -> JSONResponse:
-    """
-    Handles database errors.
-    Never exposes database details to users.
-    """
+    """Handles database errors."""
     logger.error(
         "Database error",
         path=str(request.url),
@@ -88,11 +63,7 @@ async def general_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
-    """
-    Catches any unhandled exception.
-    Last line of defense.
-    Logs full details, returns safe message to user.
-    """
+    """Catches any unhandled exception."""
     logger.error(
         "Unhandled exception",
         path=str(request.url),

@@ -1,14 +1,3 @@
-"""
-schemas.py - Authentication Data Schemas
-------------------------------------------
-Schemas define exactly what data is accepted
-and what data is returned by each endpoint.
-
-Pydantic validates every field automatically.
-If data does not match schema - request rejected.
-This prevents bad data from ever reaching database.
-"""
-
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 import re

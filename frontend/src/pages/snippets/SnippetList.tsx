@@ -1,33 +1,4 @@
-/**
- * SnippetList.tsx
- * FRONTEND FILE: src/pages/snippets/SnippetList.tsx
- *
- * NEW FEATURES :
- *  1.  3-pane layout: filter rail | snippet list | detail (collapses responsively)
- *  2.  Code minimap preview on hover (blurred code thumbnail in list)
- *  3.  Bulk select + bulk delete / bulk export
- *  4.  Multi-language filter (select multiple langs at once)
- *  5.  Snippet version history sidebar (local)
- *  6.  Duplicate snippet
- *  7.  Favorite (star) separate from pin
- *  8.  Inline rename (double-click title)
- *  9.  Snippet templates gallery (Quick-start presets)
- * 10.  Full-screen editor mode
- * 11.  Word-wrap toggle in viewer
- * 12.  Font size control in viewer
- * 13.  Diff view: compare any two snippets side by side
- * 14.  Export ALL snippets as ZIP (JSON bundle)
- * 15.  Import from JSON bundle
- * 16.  Snippet collections / folders
- * 17.  Recently viewed ring (last 5 snippets)
- * 18.  Usage sparkline (copy count trend per snippet)
- * 19.  Read time / complexity badge (lines, tokens, cyclomatic hint)
- * 20.  Quick-action command palette (Cmd+K)
- * 21.  Keyboard navigation in snippet list (↑ ↓ Enter)
- * 22.  Mobile swipe-to-copy gesture hint
- * 23.  Drag-to-reorder pinned snippets (visual only, persisted locally)
- * 24.  Custom snippet color labels (6 accent colors)
- */
+
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react"
@@ -54,7 +25,7 @@ import type { Snippet, CreateSnippetData } from "../../services/api/snippets.api
 import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
 
-/* ─── CONSTANTS ───────────────────────────────────────────────────────── */
+
 const C = {
   bg: "#0A0D14",
   surface: "#0F1320",
@@ -121,7 +92,7 @@ interface LocalMeta {
   order?: number
 }
 
-/* ─── MINI LANGUAGE DOT ──────────────────────────────────────────────── */
+
 function LangBadge({ lang, size = "md" }: { lang: string; size?: "sm" | "md" }) {
   const l = getLang(lang)
   const p = size === "sm" ? "1px 5px" : "2px 7px"
@@ -179,7 +150,7 @@ function DetailActionButton({
   )
 }
 
-/* ─── COMPLEXITY BADGE ────────────────────────────────────────────────── */
+
 function ComplexityBadge({ code }: { code: string }) {
   const lines = code.split("\n").length
   const tokens = code.split(/\s+/).length
@@ -192,8 +163,8 @@ function ComplexityBadge({ code }: { code: string }) {
   )
 }
 
-/* ─── CODE PREVIEW THUMBNAIL ──────────────────────────────────────────── */
-/* ─── SNIPPET ROW ─────────────────────────────────────────────────────── */
+
+
 function SnippetRow({
   snippet, selected, onSelect, onCopy, copiedId, bulkSelected, onBulkToggle,
 }: {
@@ -228,7 +199,7 @@ function SnippetRow({
         gap: 10,
       }}
     >
-      {/* Bulk checkbox */}
+
       <div
         className={`snippet-bulk-check${bulkSelected ? " is-selected" : ""}`}
         onClick={e => { e.stopPropagation(); onBulkToggle() }}
@@ -244,14 +215,14 @@ function SnippetRow({
         {bulkSelected && <Check size={10} color="#fff" />}
       </div>
 
-      {/* Lang dot */}
+
       <div style={{
         width: 6, height: 6, borderRadius: "50%",
         background: l.color, marginTop: 7, flexShrink: 0,
         boxShadow: selected ? `0 0 6px ${l.color}` : "none",
       }} />
 
-      {/* Content */}
+
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
           {snippet.is_pinned && <Pin size={9} color={C.amber} />}
@@ -277,7 +248,7 @@ function SnippetRow({
         </div>
       </div>
 
-      {/* Copy button */}
+
       <button
         className="snippet-row-copy"
         onClick={e => { e.stopPropagation(); onCopy(snippet) }}
@@ -296,7 +267,7 @@ function SnippetRow({
         {copiedId === snippet.id ? <Check size={12} /> : <Copy size={12} />}
       </button>
 
-      {/* Code thumbnail on hover */}
+
       {hovered && (
         <div className="snippet-code-thumbnail" style={{
           position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
@@ -318,7 +289,7 @@ function SnippetRow({
   )
 }
 
-/* ─── COMMAND PALETTE ─────────────────────────────────────────────────── */
+
 function CommandPalette({
   onClose, snippets, onSelect, onNew,
 }: {
@@ -357,7 +328,7 @@ function CommandPalette({
           margin: "0 16px",
         }}
       >
-        {/* Search */}
+
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
           <Command size={16} color={C.indigo} />
           <input
@@ -373,9 +344,9 @@ function CommandPalette({
           <kbd style={{ fontSize: 10, color: C.textMuted, border: `1px solid ${C.border}`, borderRadius: 4, padding: "1px 5px" }}>Esc</kbd>
         </div>
 
-        {/* Results */}
+
         <div style={{ maxHeight: 320, overflowY: "auto" }}>
-          {/* Quick actions */}
+
           <div style={{ padding: "6px 8px 2px" }}>
             <div style={{ fontSize: 10, color: C.textMuted, padding: "4px 8px", textTransform: "uppercase", letterSpacing: 0.8 }}>Actions</div>
             {[
@@ -423,7 +394,7 @@ function CommandPalette({
   )
 }
 
-/* ─── TEMPLATES MODAL ─────────────────────────────────────────────────── */
+
 function TemplatesModal({
   onSelect, onClose,
 }: {
@@ -476,19 +447,19 @@ function TemplatesModal({
   )
 }
 
-/* ─── MAIN COMPONENT ──────────────────────────────────────────────────── */
+
 export default function SnippetList() {
   const { isAuthenticated, accessToken, logout } = useAuthStore()
   const navigate = useNavigate()
   const searchRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  /* Core data */
+
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  /* Filtering & sorting */
+
   const [search, setSearch] = useState("")
   const [selectedLangs, setSelectedLangs] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SortKey>("newest")
@@ -496,14 +467,14 @@ export default function SnippetList() {
   const [showStarredOnly, setShowStarredOnly] = useState(false)
   const [showPublicOnly, setShowPublicOnly] = useState(false)
 
-  /* Selection */
+
   const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
 
-  /* Bulk */
+
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set())
 
-  /* Modals & panels */
+
   const [showCreate, setShowCreate] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -514,12 +485,12 @@ export default function SnippetList() {
     typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
   )
 
-  /* Editor state */
+
   const [fullscreen, setFullscreen] = useState(false)
   const [wordWrap, setWordWrap] = useState<"on" | "off">("on")
   const [fontSize, setFontSize] = useState(14)
 
-  /* Form */
+
   const [form, setForm] = useState<CreateSnippetData>(emptyForm)
   const [tagInput, setTagInput] = useState("")
   const [saving, setSaving] = useState(false)
@@ -527,7 +498,7 @@ export default function SnippetList() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loadRequestId = useRef(0)
 
-  /* Recently viewed */
+
   const [recentIds, setRecentIds] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("fd_recent") || "[]") } catch { return [] }
   })
@@ -540,7 +511,7 @@ export default function SnippetList() {
     loadRequestId.current += 1
   }, [])
 
-  /* ─── KEYBOARD SHORTCUTS ────────────────────────────────────────── */
+
   useKeyboard({
     "ctrl+k": () => { setShowPalette(true) },
     "ctrl+m": () => { setForm(emptyForm); setShowCreate(true) },
@@ -552,7 +523,7 @@ export default function SnippetList() {
     },
   })
 
-  /* ─── LOAD ──────────────────────────────────────────────────────── */
+
   const loadSnippets = useCallback(async (
     sq?: string,
     sort: SortKey = "newest",
@@ -567,7 +538,7 @@ export default function SnippetList() {
 
       let list: Snippet[] = data.snippets || []
 
-      // Sort
+
       if (sort === "most_used") list = [...list].sort((a, b) => b.use_count - a.use_count)
       else if (sort === "alpha") list = [...list].sort((a, b) => a.title.localeCompare(b.title))
       else if (sort === "oldest") list = [...list].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -610,7 +581,7 @@ export default function SnippetList() {
 
   const refresh = () => loadSnippets(search, sortBy)
 
-  /* ─── DERIVED FILTERED LIST ─────────────────────────────────────── */
+
   const displaySnippets = (() => {
     let list = snippets
     if (selectedLangs.length > 0) list = list.filter(s => selectedLangs.includes(s.language))
@@ -622,7 +593,6 @@ export default function SnippetList() {
     return list
   })()
 
-  /* Arrow-key navigation follows the currently visible filtered list. */
   const handleListKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (displaySnippets.length === 0) return
 
@@ -641,7 +611,7 @@ export default function SnippetList() {
     }
   }
 
-  /* ─── HANDLERS ──────────────────────────────────────────────────── */
+
   const handleSearch = (v: string) => {
     setSearch(v)
     if (searchDebounce.current) clearTimeout(searchDebounce.current)
@@ -679,7 +649,7 @@ export default function SnippetList() {
     setSelectedSnippet(s)
     setSelectedIndex(idx)
     if (window.matchMedia("(max-width: 768px)").matches) setShowLibrary(false)
-    // Update recently viewed
+
     setRecentIds(prev => {
       const next = [s.id, ...prev.filter(id => id !== s.id)].slice(0, 5)
       localStorage.setItem("fd_recent", JSON.stringify(next))
@@ -907,7 +877,7 @@ export default function SnippetList() {
     setTagInput("")
   }
 
-  /* ─── STATS ─────────────────────────────────────────────────────── */
+
   const totalCopies = snippets.reduce((s, n) => s + n.use_count, 0)
   const langDist = snippets.reduce((acc: Record<string, number>, s) => {
     acc[s.language] = (acc[s.language] || 0) + 1; return acc
@@ -916,12 +886,12 @@ export default function SnippetList() {
   const publicCount = snippets.filter(s => s.is_public).length
   const pinnedCount = snippets.filter(s => s.is_pinned).length
 
-  /* ─── RECENT SNIPPETS ───────────────────────────────────────────── */
+
   const recentSnippets = recentIds
     .map(id => snippets.find(s => s.id === id))
     .filter(Boolean) as Snippet[]
 
-  /* ─── RENDER ─────────────────────────────────────────────────────── */
+
   const isMobileDetailOpen = !!selectedSnippet
 
   return (
@@ -932,7 +902,7 @@ export default function SnippetList() {
       overflow: "hidden",
     }}>
 
-      {/* ── HEADER ──────────────────────────────────────────────────── */}
+
       <header className="snippet-header" style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 16px", height: 52, flexShrink: 0,
@@ -993,7 +963,7 @@ export default function SnippetList() {
           }}>{total}</span>
         </div>
 
-        {/* Header actions */}
+
         <div className="snippet-header-actions" style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <button
             onClick={() => setShowPalette(true)}
@@ -1024,7 +994,7 @@ export default function SnippetList() {
             <BarChart2 size={15} />
           </button>
 
-          {/* Import */}
+
           <label className="snippet-import" title="Import JSON" style={{
             background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
             borderRadius: 8, padding: 7, color: C.textMuted,
@@ -1061,7 +1031,7 @@ export default function SnippetList() {
         </div>
       </header>
 
-      {/* ── STATS BAR ─────────────────────────────────────────────── */}
+
       {showStats && (
         <div className="snippet-stats-bar" style={{
           display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
@@ -1087,7 +1057,7 @@ export default function SnippetList() {
         </div>
       )}
 
-      {/* ── BULK ACTION BAR ───────────────────────────────────────── */}
+
       {bulkSelected.size > 0 && (
         <div style={{
           padding: "8px 16px", background: "rgba(99,102,241,0.1)",
@@ -1108,10 +1078,10 @@ export default function SnippetList() {
         </div>
       )}
 
-      {/* ── BODY ──────────────────────────────────────────────────── */}
+
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-        {/* ── LEFT FILTER RAIL (desktop only) ─────────────────────── */}
+
         {showFilters && (
           <button
             type="button"
@@ -1146,7 +1116,7 @@ export default function SnippetList() {
             </button>
           </div>
 
-          {/* Quick filters */}
+
           <div style={{ padding: "14px 12px 8px" }}>
             <div style={{ fontSize: 10, color: C.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Quick filters</div>
             {[
@@ -1170,7 +1140,7 @@ export default function SnippetList() {
 
           <div style={{ width: "100%", height: 1, background: C.border }} />
 
-          {/* Sort */}
+
           <div style={{ padding: "12px 12px 8px" }}>
             <div style={{ fontSize: 10, color: C.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Sort by</div>
             {SORT_OPTIONS.map(s => (
@@ -1190,7 +1160,7 @@ export default function SnippetList() {
 
           <div style={{ width: "100%", height: 1, background: C.border }} />
 
-          {/* Languages */}
+
           <div style={{ padding: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 10, color: C.textMuted, textTransform: "uppercase", letterSpacing: 0.8 }}>Language</span>
@@ -1221,7 +1191,7 @@ export default function SnippetList() {
             })}
           </div>
 
-          {/* Templates shortcut */}
+
           <div style={{ marginTop: "auto", padding: 12 }}>
             <button onClick={() => setShowTemplates(true)} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 8,
@@ -1235,14 +1205,13 @@ export default function SnippetList() {
           </div>
         )}
 
-        {/* ── SNIPPET LIST ─────────────────────────────────────────── */}
+
         <div style={{
           width: 300, flexShrink: 0,
           borderRight: `1px solid ${C.border}`,
           display: "flex",
           flexDirection: "column",
           background: "#0C0F1A",
-          // On mobile, take full width
         }}
         className={`snippet-list-pane${showLibrary ? "" : " library-closed"}${isMobileDetailOpen ? " mobile-detail-open" : ""}`}
         >
@@ -1270,7 +1239,7 @@ export default function SnippetList() {
             </button>
           </div>
 
-          {/* Search */}
+
           <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}` }}>
             <div style={{ position: "relative" }}>
               <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted }} />
@@ -1297,7 +1266,7 @@ export default function SnippetList() {
             </div>
           </div>
 
-          {/* Mobile: sort+filter row */}
+
           <div style={{
             padding: "6px 10px", borderBottom: `1px solid ${C.border}`,
             display: "flex", gap: 6, overflowX: "auto",
@@ -1316,7 +1285,7 @@ export default function SnippetList() {
             }}>Templates</button>
           </div>
 
-          {/* Recently viewed */}
+
           {recentSnippets.length > 0 && !search && (
             <div style={{ padding: "8px 12px 0", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 10, color: C.textMuted, marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}>
@@ -1338,7 +1307,7 @@ export default function SnippetList() {
             </div>
           )}
 
-          {/* List */}
+
           <div
             ref={listRef}
             style={{ flex: 1, overflowY: "auto" }}
@@ -1385,7 +1354,7 @@ export default function SnippetList() {
             )}
           </div>
 
-          {/* List footer */}
+
           <div style={{
             padding: "8px 14px", borderTop: `1px solid ${C.border}`,
             fontSize: 11, color: C.textMuted, display: "flex", justifyContent: "space-between",
@@ -1398,23 +1367,22 @@ export default function SnippetList() {
           </div>
         </div>
 
-        {/* ── DETAIL PANE ──────────────────────────────────────────── */}
+
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
           background: C.bg, overflow: "hidden",
           ...(fullscreen ? { position: "fixed", inset: 0, zIndex: 500 } : {}),
-          // On mobile show only when snippet selected
         }}
         className={`snippet-detail-pane${!isMobileDetailOpen && showLibrary ? " hide-mobile-detail" : ""}`}
         >
           {selectedSnippet ? (
             <>
-              {/* Detail header */}
+
               <div className="snippet-detail-header" style={{
                 padding: "10px 16px", borderBottom: `1px solid ${C.border}`,
                 background: C.surface, display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
               }}>
-                {/* Mobile back */}
+
                 <button
                   onClick={() => {
                     setSelectedSnippet(null)
@@ -1462,7 +1430,7 @@ export default function SnippetList() {
                   )}
                 </div>
 
-                {/* Action buttons */}
+
                 <div className="snippet-detail-actions" style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                   <DetailActionButton
                     icon={<Star size={14} />}
@@ -1524,14 +1492,14 @@ export default function SnippetList() {
                 </div>
               </div>
 
-              {/* Editor toolbar */}
+
               <div className="snippet-editor-toolbar" style={{
                 padding: "6px 16px", borderBottom: `1px solid ${C.border}`,
                 background: "#0a0d14", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
               }}>
                 <ComplexityBadge code={selectedSnippet.code} />
                 <div style={{ flex: 1 }} />
-                {/* Word wrap toggle */}
+
                 <button onClick={() => setWordWrap(w => w === "on" ? "off" : "on")}
                   title="Toggle word wrap"
                   style={{
@@ -1542,13 +1510,13 @@ export default function SnippetList() {
                   }}>
                   <WrapText size={12} /> Wrap
                 </button>
-                {/* Font size */}
+
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <button onClick={() => setFontSize(f => Math.max(10, f - 1))} style={{ background: "none", border: "none", color: C.textMuted, cursor: "pointer", display: "flex" }}><ZoomOut size={13} /></button>
                   <span style={{ fontSize: 11, fontFamily: "monospace", color: C.textMuted, minWidth: 22, textAlign: "center" }}>{fontSize}</span>
                   <button onClick={() => setFontSize(f => Math.min(22, f + 1))} style={{ background: "none", border: "none", color: C.textMuted, cursor: "pointer", display: "flex" }}><ZoomIn size={13} /></button>
                 </div>
-                {/* Fullscreen */}
+
                 <button onClick={() => setFullscreen(f => !f)} style={{
                   background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
                   borderRadius: 6, padding: 4, color: C.textMuted, cursor: "pointer", display: "flex",
@@ -1557,7 +1525,7 @@ export default function SnippetList() {
                 </button>
               </div>
 
-              {/* Monaco */}
+
               <div style={{ flex: 1, overflow: "hidden" }}>
                 <Editor
                   height="100%"
@@ -1583,7 +1551,7 @@ export default function SnippetList() {
                 />
               </div>
 
-              {/* Footer */}
+
               <div style={{
                 padding: "6px 16px", borderTop: `1px solid ${C.border}`,
                 background: C.surface, display: "flex", alignItems: "center",
@@ -1625,7 +1593,7 @@ export default function SnippetList() {
         </div>
       </div>
 
-      {/* ── CREATE / EDIT MODAL ──────────────────────────────────────── */}
+
       {(showCreate || showEdit) && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
@@ -1638,7 +1606,7 @@ export default function SnippetList() {
             maxHeight: "92dvh", display: "flex", flexDirection: "column",
             boxShadow: `0 0 60px rgba(0,0,0,0.6)`,
           }}>
-            {/* Modal header */}
+
             <div style={{
               padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
               display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
@@ -1666,7 +1634,7 @@ export default function SnippetList() {
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Title + language row */}
+
               <div className="snippet-form-heading-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 11, color: C.textMuted, display: "block", marginBottom: 5 }}>Title *</label>
@@ -1701,7 +1669,7 @@ export default function SnippetList() {
                 </div>
               </div>
 
-              {/* Code editor */}
+
               <div>
                 <label style={{ fontSize: 11, color: C.textMuted, display: "block", marginBottom: 5 }}>Code *</label>
                 <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
@@ -1725,7 +1693,7 @@ export default function SnippetList() {
                 </div>
               </div>
 
-              {/* Description */}
+
               <div>
                 <label style={{ fontSize: 11, color: C.textMuted, display: "block", marginBottom: 5 }}>Description</label>
                 <textarea
@@ -1743,7 +1711,7 @@ export default function SnippetList() {
                 />
               </div>
 
-              {/* Tags */}
+
               <div>
                 <label style={{ fontSize: 11, color: C.textMuted, display: "block", marginBottom: 5 }}>Tags <span style={{ opacity: 0.5 }}>(max 10)</span></label>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
@@ -1781,7 +1749,7 @@ export default function SnippetList() {
                 </div>
               </div>
 
-              {/* Visibility */}
+
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <button
                   onClick={() => setForm(f => ({ ...f, is_public: !f.is_public }))}
@@ -1806,7 +1774,7 @@ export default function SnippetList() {
               </div>
             </div>
 
-            {/* Modal footer */}
+
             <div style={{
               padding: "12px 20px", borderTop: `1px solid ${C.border}`,
               display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexShrink: 0,
@@ -1836,7 +1804,7 @@ export default function SnippetList() {
         </div>
       )}
 
-      {/* ── COMMAND PALETTE ──────────────────────────────────────────── */}
+
       {showPalette && (
         <CommandPalette
           onClose={() => setShowPalette(false)}
@@ -1846,7 +1814,7 @@ export default function SnippetList() {
         />
       )}
 
-      {/* ── TEMPLATES MODAL ──────────────────────────────────────────── */}
+
       {showTemplates && (
         <TemplatesModal
           onClose={() => setShowTemplates(false)}

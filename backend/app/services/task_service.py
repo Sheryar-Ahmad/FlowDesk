@@ -9,8 +9,6 @@ from app.constants import FREE_TIER_PROJECT_LIMIT
 logger = structlog.get_logger(__name__)
 
 
-# --- Projects ----------------------------------------------------------------
-
 async def create_project(db: AsyncSession, user_id: str, plan: str, name: str, description: str = None, color: str = "#6366f1") -> dict:
     if plan == "free":
         r = await db.execute(text("SELECT COUNT(*) FROM projects WHERE user_id=:u AND is_archived=FALSE"), {"u": user_id})
@@ -24,7 +22,7 @@ async def create_project(db: AsyncSession, user_id: str, plan: str, name: str, d
     p = r.fetchone()
     await db.commit()
 
-    # Create default columns
+
     for i, col in enumerate(["To Do", "In Progress", "Done"]):
         await db.execute(text("INSERT INTO kanban_columns (project_id, user_id, name, position) VALUES (:pid, :uid, :name, :pos)"),
             {"pid": str(p.id), "uid": user_id, "name": col, "pos": i})
@@ -62,8 +60,6 @@ async def delete_project(db: AsyncSession, project_id: str, user_id: str) -> boo
     return r.rowcount > 0
 
 
-# --- Columns -----------------------------------------------------------------
-
 async def get_columns(db: AsyncSession, project_id: str, user_id: str) -> list:
     r = await db.execute(text("SELECT id, project_id, user_id, name, position, color FROM kanban_columns WHERE project_id=:pid AND user_id=:u ORDER BY position ASC"), {"pid": project_id, "u": user_id})
     return [{"id": str(c.id), "project_id": str(c.project_id), "name": c.name, "position": c.position, "color": c.color} for c in r.fetchall()]
@@ -89,8 +85,6 @@ async def create_column(db: AsyncSession, project_id: str, user_id: str, name: s
     await db.commit()
     return {"id": str(c.id), "project_id": str(c.project_id), "name": c.name, "position": c.position, "color": c.color}
 
-
-# --- Tasks -------------------------------------------------------------------
 
 async def create_task(db: AsyncSession, project_id: str, user_id: str, title: str, status: str = "todo", priority: str = "medium", description: str = None, due_date=None, labels: Optional[List[str]] = None) -> dict:
     owned = await db.execute(
@@ -148,8 +142,6 @@ async def delete_task(db: AsyncSession, task_id: str, user_id: str) -> bool:
     await db.commit()
     return r.rowcount > 0
 
-
-# --- Formatters --------------------------------------------------------------
 
 def _fmt_project(p) -> dict:
     return {"id": str(p.id), "user_id": str(p.user_id), "name": p.name, "description": p.description, "color": p.color, "is_archived": p.is_archived, "created_at": p.created_at, "updated_at": p.updated_at}

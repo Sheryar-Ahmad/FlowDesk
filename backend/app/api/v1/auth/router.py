@@ -1,16 +1,3 @@
-"""
-auth/router.py - Authentication API Endpoints
------------------------------------------------
-These are the actual URLs that frontend calls.
-
-Endpoints:
-POST /api/v1/auth/register  - Create new account
-POST /api/v1/auth/login     - Login to account
-POST /api/v1/auth/logout    - Logout
-POST /api/v1/auth/refresh   - Get new access token
-GET  /api/v1/auth/me        - Get current user info
-"""
-
 from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
@@ -37,13 +24,7 @@ async def register(
     body: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Creates a new FlowDesk account.
-
-    Rate limited: 10 requests per minute per IP.
-    Validates: email format, password strength.
-    Returns: access token + user data.
-    """
+    """Creates a new FlowDesk account."""
     try:
         ip_address = request.client.host if request.client else None
 
@@ -55,8 +36,6 @@ async def register(
             ip_address=ip_address,
         )
 
-        # Set refresh token in httpOnly cookie
-        # httpOnly = JavaScript cannot read it (XSS protection)
         response = Response()
         response = Response(
             content=str({
@@ -97,13 +76,7 @@ async def login(
     body: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Authenticates user and returns JWT tokens.
-
-    Rate limited: 10 requests per minute per IP.
-    Security: locks account after 5 failed attempts.
-    Returns: access token + user data.
-    """
+    """Authenticates user and returns JWT tokens."""
     try:
         ip_address = request.client.host if request.client else None
 
@@ -143,10 +116,7 @@ async def logout(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Logs out user by revoking refresh token.
-    Requires valid access token.
-    """
+    """Logs out user by revoking refresh token."""
     try:
         ip_address = request.client.host if request.client else None
 
@@ -171,11 +141,7 @@ async def logout(
 async def get_me(
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Returns current logged in user data.
-    Requires valid access token.
-    Used by frontend to check if user is logged in.
-    """
+    """Returns current logged in user data."""
     return {
         "success": True,
         "user": current_user,

@@ -1,15 +1,3 @@
-"""
-ai_service.py - Ultimate AI assistant for developers with persistent memory, multi-model routing, and context-aware responses.
-------------------------------------------------
-Features:
-- Persistent memory across all sessions
-- Chain of thought reasoning
-- Multi-model routing
-- Context aware responses
-- Learns user coding style
-- Auto-detects intent
-"""
-
 from groq import Groq
 from app.config import get_settings
 import structlog
@@ -52,7 +40,6 @@ def require_ai_text(content, provider: str) -> str:
     return text
 
 
-# --- Ultimate System Prompt ---------------------------------------------------
 def build_system_prompt(user_context: dict = {}) -> str:
     name = user_context.get("name", "Developer")
     stack = user_context.get("stack", "")
@@ -103,11 +90,10 @@ PERSONALITY:
 You have PHOTOGRAPHIC MEMORY - you remember everything discussed in this conversation and all previous sessions with this user."""
 
 
-# --- Intent Detection ---------------------------------------------------------
 def detect_intent(message: str) -> str:
     """Automatically detects what the user needs."""
     msg_lower = message.lower()
-    
+
     if any(w in msg_lower for w in ["explain", "what is", "what does", "how does", "tell me about"]):
         return "explain"
     elif any(w in msg_lower for w in ["fix", "bug", "error", "issue", "not working", "broken", "crash"]):
@@ -127,33 +113,31 @@ def detect_intent(message: str) -> str:
     return "general"
 
 
-# --- Context Builder ----------------------------------------------------------
 def build_context_from_history(sessions: list) -> dict:
     """Builds user context from all past sessions."""
     languages = {}
     topics = []
-    
-    for session in sessions[-10:]:  # Last 10 sessions
+
+    for session in sessions[-10:]:
         messages = session.get("messages", [])
         for msg in messages:
             content = msg.get("content", "").lower()
-            # Detect languages used
+
             for lang in ["python", "javascript", "typescript", "rust", "go", "java", "sql"]:
                 if lang in content:
                     languages[lang] = languages.get(lang, 0) + 1
-            # Extract topics (simple version)
+
             if len(content) > 20 and msg.get("role") == "user":
                 topics.append(content[:50])
 
     top_langs = sorted(languages, key=languages.get, reverse=True)[:3]
-    
+
     return {
         "stack": ", ".join(top_langs) if top_langs else "",
         "past_topics": "; ".join(topics[-5:]) if topics else "",
     }
 
 
-# --- Main Chat Function -------------------------------------------------------
 async def chat_with_ai(
     messages: list,
     user_plan: str,
@@ -161,14 +145,7 @@ async def chat_with_ai(
     user_context: dict = {},
     session_messages: list = [],
 ) -> dict:
-    """
-    Ultimate AI chat with memory and context awareness.
-    
-    - Detects intent automatically
-    - Uses full conversation history
-    - Applies user context for personalization
-    - Chain of thought reasoning for complex problems
-    """
+    """Ultimate AI chat with memory and context awareness."""
 
     if user_plan == "free" and ai_messages_used >= 20:
         raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for unlimited.")
@@ -179,14 +156,14 @@ async def chat_with_ai(
     try:
         client = Groq(api_key=settings.GROQ_API_KEY)
 
-        # Detect what user needs
+
         last_user_message = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
         intent = detect_intent(last_user_message)
 
-        # Build personalized system prompt
+
         system_prompt = build_system_prompt(user_context)
 
-        # Add intent-specific instructions
+
         intent_instructions = {
             "fix": "\n\nIMPORTANT: User has a bug. Be systematic: 1) Identify ALL bugs 2) Explain each bug 3) Provide COMPLETE fixed code 4) Explain the fix.",
             "security": "\n\nIMPORTANT: Security review requested. Check for: SQL injection, XSS, CSRF, authentication flaws, data exposure, insecure dependencies, race conditions.",
@@ -198,27 +175,27 @@ async def chat_with_ai(
         if intent in intent_instructions:
             system_prompt += intent_instructions[intent]
 
-        # Build full message history with session context
+
         full_messages = [{"role": "system", "content": system_prompt}]
-        
-        # Add session history for memory
+
+
         if session_messages:
-            full_messages.extend(session_messages[-20:])  # Last 20 messages for context
+            full_messages.extend(session_messages[-20:])
         else:
             full_messages.extend(messages)
 
-        # Select best model based on complexity
+
         message_length = len(last_user_message)
         if message_length > 500 or intent in ["security", "review", "optimize"]:
-            model = "llama-3.3-70b-versatile"  # Most powerful for complex tasks
+            model = "llama-3.3-70b-versatile"
         else:
-            model = "llama-3.3-70b-versatile"  # Always use best model
+            model = "llama-3.3-70b-versatile"
 
         response = client.chat.completions.create(
             model=model,
             messages=full_messages,
             max_tokens=4096,
-            temperature=0.3,  # Lower = more accurate, less hallucination
+            temperature=0.3,
             top_p=0.9,
             presence_penalty=0.1,
             frequency_penalty=0.1,
@@ -316,10 +293,7 @@ async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
 
 
 async def chat_with_mistral(messages: list, user_context: dict = {}) -> dict:
-    """
-    Mistral fallback - free tier available.
-    Uses Mistral Large for maximum intelligence.
-    """
+    """Mistral fallback - free tier available."""
     try:
         from mistralai import Client
     except ImportError:
@@ -364,18 +338,10 @@ async def smart_ai_router(
     user_context: dict = {},
     session_messages: list = [],
 ) -> dict:
-    """
-    Ultimate AI router — tries models in order:
-    1. Groq (Llama 3.3 70B) — fastest
-    2. Gemini (2.0 Flash) — fallback
-    3. Mistral (Large) — final fallback
-
-    Never fails. Always returns a response.
-    This is what makes FlowDesk feel like Claude.
-    """
+    """Routes requests through configured providers in fallback order."""
     errors = []
 
-    # Try Groq first
+
     try:
         result = await chat_with_ai(
             messages=messages,
@@ -391,7 +357,7 @@ async def smart_ai_router(
         errors.append(f"Groq: {str(e)[:100]}")
         logger.warning("Groq failed, trying Gemini", error=str(e)[:100])
 
-    # Try Gemini second
+
     try:
         result = await chat_with_gemini(messages, user_context)
         result["response"] = require_ai_text(result.get("response"), "Gemini")
@@ -401,7 +367,7 @@ async def smart_ai_router(
         errors.append(f"Gemini: {str(e)[:100]}")
         logger.warning("Gemini failed, trying Mistral", error=str(e)[:100])
 
-    # Try Mistral third
+
     try:
         result = await chat_with_mistral(messages, user_context)
         result["response"] = require_ai_text(result.get("response"), "Mistral")

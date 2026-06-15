@@ -1,31 +1,4 @@
-/**
- * NoteEditor.tsx — Beast Mode Enterprise Developer Notebook
- * FRONTEND FILE: src/pages/notes/NoteEditor.tsx
- *
- * 22 NEW FEATURES:
- *  1.  AI summarizer — one-click Claude-powered bullet summary injected at top
- *  2.  Smart floating TOC — auto-built from headings, click-to-jump
- *  3.  Focus / typewriter mode — dims UI, centers line, distraction-free
- *  4.  [[Wiki-links]] — type [[Note]] to link between notes, hover preview
- *  5.  Live reading time badge — updates as you type
- *  6.  Note templates gallery — Standup, Meeting, Bug report, ADR, RFC, Retrospective
- *  7.  Tag system — add color tags, filter sidebar by tag
- *  8.  Version history — local snapshots on every save, restore any version
- *  9.  Export PDF / HTML / Markdown — three real formats
- * 10.  Note statistics panel — top words, paragraphs, reading level, density
- * 11.  Find & replace panel — (Ctrl+H) highlight all matches, step through, replace
- * 12.  Note color accent — 8 accent colors reflected in sidebar + editor border
- * 13.  Pin + Archive — pin stays top, archive removes from main list
- * 14.  Checklist progress ring — live % complete for task items in footer
- * 15.  Slash command menu — / key opens insert palette (heading, code, table, divider…)
- * 16.  Inline image paste — paste screenshots directly, base64 embedded
- * 17.  Editor font switcher — Serif / Sans / Mono writing modes
- * 18.  Note lock — locally password-protect a note (AES-GCM via WebCrypto)
- * 19.  Word goal — set a target word count, progress bar fills in footer
- * 20.  Duplicate note
- * 21.  Note search with in-document match highlighting
- * 22.  Pomodoro quick-start — one-click "focus on this note for 25 min" timer badge
- */
+
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
@@ -65,14 +38,14 @@ import type { Note } from "../../services/api/notes.api"
 import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
 
-/* ─── SETUP ───────────────────────────────────────────────────────────── */
+
 const lowlight = createLowlight()
 lowlight.register("python", python)
 lowlight.register("javascript", javascript)
 lowlight.register("typescript", typescript)
 lowlight.register("rust", rust)
 
-/* ─── CONSTANTS ───────────────────────────────────────────────────────── */
+
 const C = {
   bg: "#0A0D14", surface: "#0F1320", border: "rgba(255,255,255,0.07)",
   text: "#E2E8F0", muted: "#475569", faint: "#1E293B",
@@ -144,7 +117,7 @@ const TEMPLATES: { title: string; emoji: string; content: string }[] = [
   },
 ]
 
-/* ─── SLASH COMMANDS ──────────────────────────────────────────────────── */
+
 interface SlashCommand {
   label: string
   icon: React.ReactNode
@@ -163,7 +136,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { label: "Blockquote", icon: <AlignLeft size={14} />, action: editor => editor.chain().focus().toggleBlockquote().run() },
 ]
 
-/* ─── HELPERS ─────────────────────────────────────────────────────────── */
+
 function readingTime(text: string) {
   const wpm = 200
   const words = text.trim().split(/\s+/).filter(Boolean).length
@@ -198,7 +171,7 @@ function getChecklistStats(html: string): { done: number; total: number } {
   return { done, total }
 }
 
-/* ─── LOCAL META ──────────────────────────────────────────────────────── */
+
 interface LocalNoteMeta {
   color?: string
   tags?: string[]
@@ -219,7 +192,7 @@ function setLocalMeta(id: string, patch: Partial<LocalNoteMeta>) {
   localStorage.setItem(`fd_note_${id}`, JSON.stringify({ ...prev, ...patch }))
 }
 
-/* ─── FIND/REPLACE PANEL ─────────────────────────────────────────────── */
+
 function FindReplacePanel({
   onClose, editor,
 }: {
@@ -286,7 +259,7 @@ function FindReplacePanel({
   )
 }
 
-/* ─── VERSION HISTORY PANEL ───────────────────────────────────────────── */
+
 function VersionHistory({
   noteId, onRestore, onClose,
 }: {
@@ -334,7 +307,7 @@ function VersionHistory({
   )
 }
 
-/* ─── STATS PANEL ─────────────────────────────────────────────────────── */
+
 function StatsPanel({ text, onClose }: { text: string; onClose: () => void }) {
   const words = text.trim().split(/\s+/).filter(Boolean)
   const sentences = text.split(/[.!?]+/).filter(s => s.trim()).length
@@ -389,7 +362,7 @@ function StatsPanel({ text, onClose }: { text: string; onClose: () => void }) {
   )
 }
 
-/* ─── SLASH COMMAND POPUP ─────────────────────────────────────────────── */
+
 function SlashMenu({
   pos, onSelect, onClose,
 }: {
@@ -434,7 +407,7 @@ function SlashMenu({
   )
 }
 
-/* ─── POMODORO BADGE ──────────────────────────────────────────────────── */
+
 function ShortcutAction({
   keys, label, onClick,
 }: {
@@ -508,7 +481,7 @@ function PomodoroBadge() {
   )
 }
 
-/* ─── TAG INPUT ───────────────────────────────────────────────────────── */
+
 function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
   const [val, setVal] = useState("")
   const add = () => {
@@ -553,7 +526,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
   )
 }
 
-/* ─── TOOLBAR BUTTON ──────────────────────────────────────────────────── */
+
 function ToolBtn({ onClick, active, title, children }: {
   onClick: () => void; active?: boolean; title: string; children: React.ReactNode
 }) {
@@ -573,12 +546,12 @@ function ToolBtn({ onClick, active, title, children }: {
   )
 }
 
-/* ─── DIVIDER ─────────────────────────────────────────────────────────── */
+
 function ToolDiv() {
   return <div className="tool-divider" style={{ width: 1, height: 18, background: C.border, margin: "0 4px" }} />
 }
 
-/* ─── MAIN COMPONENT ──────────────────────────────────────────────────── */
+
 export default function NoteEditor() {
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
@@ -590,7 +563,7 @@ export default function NoteEditor() {
   const editorWrapRef = useRef<HTMLDivElement>(null)
   const searchFocusPending = useRef(false)
 
-  /* Core */
+
   const [notes, setNotes] = useState<Note[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -600,7 +573,7 @@ export default function NoteEditor() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [title, setTitle] = useState("")
 
-  /* Local meta for selected note */
+
   const [localMeta, setLocalMetaState] = useState<LocalNoteMeta>({})
   const patchMeta = (patch: Partial<LocalNoteMeta>) => {
     if (!selectedNote) return
@@ -608,7 +581,7 @@ export default function NoteEditor() {
     setLocalMetaState(prev => ({ ...prev, ...patch }))
   }
 
-  /* UI panels */
+
   const [activePanel, setActivePanel] = useState<"history" | "stats" | "tags" | null>(null)
   const [showFindReplace, setShowFindReplace] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -616,19 +589,19 @@ export default function NoteEditor() {
   const [fullscreen, setFullscreen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  /* Slash menu */
+
   const [slashMenu, setSlashMenu] = useState<{ x: number; y: number } | null>(null)
 
-  /* AI */
+
   const [aiLoading, setAiLoading] = useState(false)
 
-  /* Editor options */
+
   const [font, setFont] = useState("sans")
   const fontSize = 15
   const [filterTag, setFilterTag] = useState<string | null>(null)
   const [wordGoalInput, setWordGoalInput] = useState("")
 
-  /* Lock */
+
   const [lockInput, setLockInput] = useState("")
   const [showLockModal, setShowLockModal] = useState(false)
   const [lockMode, setLockMode] = useState<"lock" | "unlock">("lock")
@@ -684,7 +657,7 @@ export default function NoteEditor() {
     }, 1200)
   }, [persistNote])
 
-  /* ─── EDITOR ────────────────────────────────────────────────────── */
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -703,7 +676,7 @@ export default function NoteEditor() {
       },
       handleKeyDown(_view, event) {
         if (event.key === "/") {
-          // Get caret position
+
           const sel = window.getSelection()
           if (sel && sel.rangeCount > 0) {
             const rect = sel.getRangeAt(0).getBoundingClientRect()
@@ -741,8 +714,8 @@ export default function NoteEditor() {
     },
   })
 
-  /* ─── KEYBOARD SHORTCUTS ────────────────────────────────────────── */
-  /* ─── LOAD ──────────────────────────────────────────────────────── */
+
+
   const loadNotes = useCallback(async (q?: string) => {
     setLoading(true)
     try {
@@ -764,7 +737,7 @@ export default function NoteEditor() {
     if (saveTimeout.current) clearTimeout(saveTimeout.current)
   }, [])
 
-  /* ─── DERIVED ───────────────────────────────────────────────────── */
+
   const wordCount = editor?.storage.characterCount.words() || 0
   const charCount = editor?.storage.characterCount.characters() || 0
   const editorText = editor?.getText() || ""
@@ -774,7 +747,7 @@ export default function NoteEditor() {
   const wordGoal = localMeta.wordGoal || 0
   const goalPct = wordGoal > 0 ? Math.min(100, (wordCount / wordGoal) * 100) : 0
 
-  /* Filter notes in sidebar */
+
   const displayNotes = useMemo(() => {
     let list = notes
     if (filterTag) {
@@ -783,7 +756,7 @@ export default function NoteEditor() {
         return m.tags?.includes(filterTag)
       })
     }
-    // Pinned first, archived last
+
     return [...list].sort((a, b) => {
       const ma = getLocalMeta(a.id), mb = getLocalMeta(b.id)
       if (ma.pinned && !mb.pinned) return -1
@@ -794,14 +767,14 @@ export default function NoteEditor() {
     })
   }, [notes, filterTag])
 
-  /* All tags from all notes */
+
   const allTags = useMemo(() => {
     const set = new Set<string>()
     notes.forEach(n => { getLocalMeta(n.id).tags?.forEach(t => set.add(t)) })
     return Array.from(set)
   }, [notes])
 
-  /* ─── NOTE SELECT ───────────────────────────────────────────────── */
+
   const flushCurrentNote = async () => {
     const currentNote = selectedNoteRef.current
     if (!currentNote || !editor || saved) return true
@@ -861,7 +834,7 @@ export default function NoteEditor() {
 
   const [pendingUnlockId, setPendingUnlockId] = useState<string | null>(null)
 
-  /* ─── SAVE ──────────────────────────────────────────────────────── */
+
   const handleSave = async () => {
     const note = selectedNoteRef.current
     if (!note || !editor) return
@@ -876,11 +849,11 @@ export default function NoteEditor() {
       await persistNote(note.id, titleRef.current, editor.getJSON(), editor.getText(), revision)
       toast.success("Saved!")
 
-      // Save version
+
       const existing = getLocalMeta(note.id)
       const versions = existing.versions || []
       versions.push({ ts: new Date().toLocaleString(), title: titleRef.current, content: editor.getJSON() })
-      setLocalMeta(note.id, { versions: versions.slice(-20) }) // keep last 20
+      setLocalMeta(note.id, { versions: versions.slice(-20) })
     } catch { toast.error("Failed to save") }
     finally { setSaving(false) }
   }
@@ -896,7 +869,7 @@ export default function NoteEditor() {
     queueAutoSave(editor, note, nextTitle)
   }
 
-  /* ─── NEW / DELETE / DUPLICATE ──────────────────────────────────── */
+
   const handleNewNote = async (template?: typeof TEMPLATES[0]) => {
     try {
       const note = await createNote({
@@ -949,7 +922,7 @@ export default function NoteEditor() {
     } catch { toast.error("Failed to duplicate") }
   }
 
-  /* ─── EXPORT ────────────────────────────────────────────────────── */
+
   const handleExport = (format: "md" | "html" | "txt") => {
     if (!selectedNote || !editor) return
     let content: string
@@ -971,7 +944,7 @@ export default function NoteEditor() {
     toast.success(`Exported as .${ext}`)
   }
 
-  /* ─── AI SUMMARIZE ──────────────────────────────────────────────── */
+
   const handleAiSummarize = async () => {
     if (!editor || !editorText.trim()) { toast.error("Note is empty"); return }
     setAiLoading(true)
@@ -980,7 +953,7 @@ export default function NoteEditor() {
       const summary = result.response.trim()
       if (!summary) throw new Error("The AI returned an empty summary")
 
-      // Prepend summary as a blockquote at the top
+
       const currentContent = editor.getJSON()
       const summaryNodes: JSONContent = {
         type: "doc",
@@ -1005,7 +978,7 @@ export default function NoteEditor() {
     }
   }
 
-  /* ─── LOCK ──────────────────────────────────────────────────────── */
+
   const handleLock = () => {
     if (!selectedNote) return
     const pw = lockInput.trim()
@@ -1051,11 +1024,11 @@ export default function NoteEditor() {
     setPendingUnlockId(null)
   }
 
-  /* ─── SLASH COMMAND ─────────────────────────────────────────────── */
+
   const handleSlashSelect = (cmd: SlashCommand) => {
     setSlashMenu(null)
     if (!editor) return
-    // Delete the "/" character first
+
     editor.chain().focus().deleteRange({
       from: editor.state.selection.from - 1,
       to: editor.state.selection.from,
@@ -1063,7 +1036,7 @@ export default function NoteEditor() {
     cmd.action(editor)
   }
 
-  /* ─── VERSION RESTORE ───────────────────────────────────────────── */
+
   const handleRestoreVersion = (content: JSONContent, restoredTitle: string) => {
     editor?.commands.setContent(content)
     titleRef.current = restoredTitle
@@ -1157,7 +1130,7 @@ export default function NoteEditor() {
     },
   }, { allowWhileTyping: ["ctrl+s", "ctrl+h", "ctrl+f"] })
 
-  /* ─── RENDER ─────────────────────────────────────────────────────── */
+
   return (
     <div className="note-editor-root" style={{
       height: "100dvh", display: "flex", flexDirection: "column",
@@ -1340,7 +1313,7 @@ export default function NoteEditor() {
         }
       `}</style>
 
-      {/* ── HEADER ──────────────────────────────────────────────────── */}
+
       {!focusMode && (
         <header className="note-header" style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1372,15 +1345,15 @@ export default function NoteEditor() {
           <div className="note-header-actions" style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {selectedNote && (
               <>
-                {/* Save status */}
+
                 <span className="note-save-status" style={{ fontSize: 11, color: saving ? C.amber : saved ? C.emerald : C.amber, display: "flex", alignItems: "center", gap: 4 }}>
                   {saving ? <><Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />Saving…</> : saved ? <>✓ Saved</> : <>● Unsaved</>}
                 </span>
 
-                {/* Pomodoro */}
+
                 <PomodoroBadge />
 
-                {/* Export dropdown */}
+
                 <div className="note-export" style={{ position: "relative" }}>
                   <select onChange={e => { if (e.target.value) { handleExport(e.target.value as "md"|"html"|"txt"); e.target.value="" } }}
                     defaultValue=""
@@ -1396,7 +1369,7 @@ export default function NoteEditor() {
                   </select>
                 </div>
 
-                {/* AI */}
+
                 <button className="note-header-button" onClick={handleAiSummarize} disabled={aiLoading} style={{
                   display: "flex", alignItems: "center", gap: 6,
                   background: aiLoading ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.12)",
@@ -1408,7 +1381,7 @@ export default function NoteEditor() {
                   <span className="hide-sm">AI Summary</span>
                 </button>
 
-                {/* Save */}
+
                 <button className="note-header-button" onClick={handleSave} style={{
                   display: "flex", alignItems: "center", gap: 6,
                   background: C.indigo, border: "none", borderRadius: 8,
@@ -1441,10 +1414,10 @@ export default function NoteEditor() {
         </header>
       )}
 
-      {/* ── BODY ────────────────────────────────────────────────────── */}
+
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-        {/* ── SIDEBAR ──────────────────────────────────────────────── */}
+
         {!focusMode && sidebarOpen && (
           <button
             type="button"
@@ -1458,7 +1431,7 @@ export default function NoteEditor() {
             flexDirection: "column",
           }} className={`note-sidebar${sidebarOpen ? " is-open" : ""}`}>
 
-            {/* Search */}
+
             <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ position: "relative" }}>
                 <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
@@ -1483,7 +1456,7 @@ export default function NoteEditor() {
               </div>
             </div>
 
-            {/* Tag filter strip */}
+
             {allTags.length > 0 && (
               <div style={{ padding: "6px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", gap: 5, overflowX: "auto" }}>
                 <button onClick={() => setFilterTag(null)} style={{
@@ -1502,7 +1475,7 @@ export default function NoteEditor() {
               </div>
             )}
 
-            {/* Note list */}
+
             <div style={{ flex: 1, overflowY: "auto" }}>
               {loading ? (
                 <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
@@ -1574,7 +1547,7 @@ export default function NoteEditor() {
           </div>
         )}
 
-        {/* ── EDITOR AREA ──────────────────────────────────────────── */}
+
         <div className="note-editor-main" style={{
           flex: 1, display: "flex", flexDirection: "column",
           position: "relative", overflow: "hidden",
@@ -1582,14 +1555,14 @@ export default function NoteEditor() {
         }}>
           {selectedNote ? (
             <>
-              {/* ── TOOLBAR ─────────────────────────────────────────── */}
+
               {!focusMode && (
                 <div className="note-toolbar" style={{
                   padding: "6px 12px", borderBottom: `1px solid ${C.border}`,
                   background: C.surface, display: "flex", alignItems: "center",
                   gap: 4, flexWrap: "wrap", flexShrink: 0,
                 }}>
-                  {/* Title (inline) */}
+
                   <div className="note-title-row">
                     <input className="note-title-input" value={title} onChange={e => handleTitleChange(e.target.value)}
                       placeholder="Note title…"
@@ -1604,7 +1577,7 @@ export default function NoteEditor() {
                   <div className="note-format-actions">
                     <ToolDiv />
 
-                  {/* Formatting */}
+
                   <ToolBtn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")} title="Bold"><Bold size={14} /></ToolBtn>
                   <ToolBtn onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive("italic")} title="Italic"><Italic size={14} /></ToolBtn>
                   <ToolBtn onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive("highlight")} title="Highlight"><Hash size={14} /></ToolBtn>
@@ -1621,7 +1594,7 @@ export default function NoteEditor() {
 
                   <ToolDiv />
 
-                  {/* Font picker */}
+
                   <select value={font} onChange={e => setFont(e.target.value)}
                     style={{
                       background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`,
@@ -1632,7 +1605,7 @@ export default function NoteEditor() {
 
                   <ToolDiv />
 
-                  {/* Panel toggles */}
+
                   <ToolBtn onClick={() => setActivePanel(p => p === "tags" ? null : "tags")} active={activePanel === "tags"} title="Tags"><Tag size={14} /></ToolBtn>
                   <ToolBtn onClick={() => setActivePanel(p => p === "stats" ? null : "stats")} active={activePanel === "stats"} title="Stats"><BarChart2 size={14} /></ToolBtn>
                   <ToolBtn onClick={() => setActivePanel(p => p === "history" ? null : "history")} active={activePanel === "history"} title="History"><History size={14} /></ToolBtn>
@@ -1640,7 +1613,7 @@ export default function NoteEditor() {
 
                   <ToolDiv />
 
-                  {/* Note color */}
+
                   <div className="note-color-controls" style={{ display: "flex", gap: 3, alignItems: "center" }}>
                     {NOTE_COLORS.slice(1).map(c => (
                       <button key={c.id} title={c.label} onClick={() => patchMeta({ color: c.id })}
@@ -1662,7 +1635,7 @@ export default function NoteEditor() {
 
                   <ToolDiv />
 
-                  {/* Pin / Archive / Duplicate / Lock / Focus / Fullscreen */}
+
                   <ToolBtn onClick={() => patchMeta({ pinned: !localMeta.pinned })} active={!!localMeta.pinned} title="Pin"><Pin size={14} /></ToolBtn>
                   <ToolBtn onClick={() => patchMeta({ archived: !localMeta.archived })} active={!!localMeta.archived} title="Archive"><Archive size={14} /></ToolBtn>
                   <ToolBtn onClick={handleDuplicate} active={false} title="Duplicate"><Copy size={14} /></ToolBtn>
@@ -1675,7 +1648,7 @@ export default function NoteEditor() {
                 </div>
               )}
 
-              {/* Focus mode exit bar */}
+
               {focusMode && (
                 <div style={{
                   position: "fixed", top: 12, right: 16, zIndex: 600,
@@ -1691,7 +1664,7 @@ export default function NoteEditor() {
                 </div>
               )}
 
-              {/* Tags panel */}
+
               {activePanel === "tags" && (
                 <div style={{
                   padding: "12px 16px", borderBottom: `1px solid ${C.border}`,
@@ -1701,7 +1674,7 @@ export default function NoteEditor() {
                     tags={localMeta.tags || []}
                     onChange={tags => patchMeta({ tags })}
                   />
-                  {/* Word goal */}
+
                   <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
                     <Target size={13} color={C.muted} />
                     <span style={{ fontSize: 12, color: C.muted }}>Word goal:</span>
@@ -1720,10 +1693,10 @@ export default function NoteEditor() {
                 </div>
               )}
 
-              {/* Editor + side panels */}
+
               <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
 
-                {/* TipTap content area */}
+
                 <div ref={editorWrapRef}
                   style={{
                     flex: 1, overflowY: "auto",
@@ -1768,7 +1741,7 @@ export default function NoteEditor() {
                   <EditorContent editor={editor} />
                 </div>
 
-                {/* Side panels */}
+
                 {(activePanel === "stats" || activePanel === "history") && (
                   <button
                     type="button"
@@ -1789,12 +1762,12 @@ export default function NoteEditor() {
                 )}
               </div>
 
-              {/* Find & replace floating */}
+
               {showFindReplace && (
                 <FindReplacePanel editor={editor} onClose={() => setShowFindReplace(false)} />
               )}
 
-              {/* ── FOOTER ─────────────────────────────────────────── */}
+
               {!focusMode && (
                 <div className="note-footer" style={{
                   padding: "5px 16px", borderTop: `1px solid ${C.border}`,
@@ -1805,7 +1778,7 @@ export default function NoteEditor() {
                   <span style={{ fontSize: 11, color: C.muted, fontFamily: "monospace" }}>{charCount}ch</span>
                   <span style={{ fontSize: 11, color: C.muted }}>{readingTime(editorText)} read</span>
 
-                  {/* Checklist progress */}
+
                   {checkStats.total > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <div style={{ width: 50, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
@@ -1821,7 +1794,7 @@ export default function NoteEditor() {
                     </div>
                   )}
 
-                  {/* Word goal progress */}
+
                   {wordGoal > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Target size={10} color={goalPct >= 100 ? C.emerald : C.amber} />
@@ -1846,7 +1819,7 @@ export default function NoteEditor() {
               )}
             </>
           ) : (
-            /* Empty state */
+
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
               <FileText size={56} color={C.faint} style={{ marginBottom: 16 }} />
               <h3 style={{ color: C.muted, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Developer notebook</h3>
@@ -1879,7 +1852,7 @@ export default function NoteEditor() {
         </div>
       </div>
 
-      {/* ── TEMPLATES MODAL ──────────────────────────────────────────── */}
+
       {showTemplates && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
@@ -1917,7 +1890,7 @@ export default function NoteEditor() {
         </div>
       )}
 
-      {/* ── LOCK MODAL ───────────────────────────────────────────────── */}
+
       {showLockModal && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
@@ -1964,7 +1937,7 @@ export default function NoteEditor() {
         </div>
       )}
 
-      {/* Slash command menu */}
+
       {slashMenu && (
         <SlashMenu
           pos={slashMenu}

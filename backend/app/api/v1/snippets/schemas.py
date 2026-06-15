@@ -1,18 +1,9 @@
-"""
-schemas.py - Snippet Data Schemas
------------------------------------
-Defines exact structure of data for snippet endpoints.
-Pydantic validates every field automatically.
-Invalid data never reaches database.
-"""
-
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 import re
 
 
-# Supported programming languages
 SUPPORTED_LANGUAGES = [
     "python", "javascript", "typescript", "rust", "go",
     "java", "cpp", "c", "csharp", "php", "ruby", "swift",
@@ -67,19 +58,19 @@ class SnippetCreate(BaseModel):
     def validate_tags(cls, v):
         if not v:
             return []
-        # Max 10 tags per snippet
+
         if len(v) > 10:
             raise ValueError("Maximum 10 tags allowed")
         cleaned = []
         for tag in v:
             tag = tag.strip().lower()
-            # Tags: letters, numbers, hyphens only
+
             if not re.match(r"^[\w\-]+$", tag):
                 continue
             if len(tag) > 50:
                 continue
             cleaned.append(tag)
-        return list(set(cleaned))  # Remove duplicates
+        return list(set(cleaned))
 
     @field_validator("description")
     @classmethod

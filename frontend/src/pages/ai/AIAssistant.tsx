@@ -20,7 +20,7 @@ import { API_BASE_URL } from "../../services/api/config"
 import axios from "axios"
 import toast from "react-hot-toast"
 
-/* ─── API ────────────────────────────────────────────────────────────────────── */
+
 const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 })
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
@@ -28,7 +28,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-/* ─── TYPES ──────────────────────────────────────────────────────────────────── */
+
 interface Message {
   id: string
   role: "user" | "assistant"
@@ -97,7 +97,7 @@ interface ChatResponse {
   messages_remaining?: number | string
 }
 
-/* ─── DESIGN TOKENS ───────────────────────────────────────────────────────────── */
+
 const THEMES = {
   dark: {
     bg: "#070B12", surface: "#0C1018", surface2: "#111827", surface3: "#162032",
@@ -129,7 +129,7 @@ const THEMES = {
 }
 type ThemeName = keyof typeof THEMES
 
-/* ─── CONSTANTS ───────────────────────────────────────────────────────────────── */
+
 const QUICK_ACTIONS = [
   { icon: Code,        label: "Explain",    prompt: "Explain this code in detail:\n\n",           color: "#60A5FA" },
   { icon: Zap,         label: "Fix Bug",    prompt: "Find and fix ALL bugs:\n\n",                 color: "#FBBF24" },
@@ -194,7 +194,7 @@ const THINKING_TIPS = [
   "Almost ready...",
 ]
 
-/* ─── LOCAL STORAGE HELPERS ──────────────────────────────────────────────────── */
+
 const LS = {
   get: (k: string, def: unknown = null) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? def } catch { return def } },
   set: (k: string, v: unknown) => {
@@ -239,7 +239,7 @@ function getStoredBoolean(key: string, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback
 }
 
-/* ─── MESSAGE RENDERER ───────────────────────────────────────────────────────── */
+
 function MessageContent({ content, fontSize, C: T }: { content: string; fontSize: number; C: typeof THEMES.dark }) {
   const parts = content.split(/(```[\s\S]*?```)/g)
   return (
@@ -317,7 +317,7 @@ function MessageContent({ content, fontSize, C: T }: { content: string; fontSize
   )
 }
 
-/* ─── THINKING ANIMATION ─────────────────────────────────────────────────────── */
+
 function ThinkingDots({ C: T }: { C: typeof THEMES.dark }) {
   const [elapsed, setElapsed] = useState(0)
   const [tip, setTip] = useState(0)
@@ -346,7 +346,7 @@ function ThinkingDots({ C: T }: { C: typeof THEMES.dark }) {
   )
 }
 
-/* ─── STATS MODAL ────────────────────────────────────────────────────────────── */
+
 function StatsModal({ messages, sessions, usage, onClose, C: T }: {
   messages: Message[]; sessions: Session[]
   usage: { used_today: number; remaining: number | string; limit: number | string }
@@ -396,7 +396,7 @@ function StatsModal({ messages, sessions, usage, onClose, C: T }: {
               </div>
             ))}
           </div>
-          {/* Intent breakdown */}
+
           {aiMsgs.some(m => m.intent) && (
             <div>
               <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Intent Breakdown</div>
@@ -420,7 +420,7 @@ function StatsModal({ messages, sessions, usage, onClose, C: T }: {
   )
 }
 
-/* ─── SNIPPET VAULT ──────────────────────────────────────────────────────────── */
+
 function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: {
   snippets: Snippet[]; onDelete: (id: string) => void
   onCopy: (code: string) => void; onClose: () => void
@@ -465,7 +465,7 @@ function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: {
   )
 }
 
-/* ─── SETTINGS PANEL ─────────────────────────────────────────────────────────── */
+
 function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C: T, compactMode, setCompactMode, soundEnabled, setSoundEnabled, autoScroll, setAutoScroll, showTimestamps, setShowTimestamps }: {
   themeName: ThemeName; fontSize: number
   setTheme: (t: ThemeName) => void; setFontSize: (n: number) => void
@@ -483,7 +483,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><X size={15} /></button>
         </div>
         <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 18 }}>
-          {/* Theme */}
+
           <div>
             <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Theme</div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -495,7 +495,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
               ))}
             </div>
           </div>
-          {/* Font size */}
+
           <div>
             <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>Font Size ({fontSize}px)</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -505,7 +505,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
               <span style={{ fontSize: 15, color: T.muted }}>Aa</span>
             </div>
           </div>
-          {/* Toggles */}
+
           {[
             { label: "Compact Mode", value: compactMode, set: setCompactMode, desc: "Tighter message spacing" },
             { label: "Sound Effects", value: soundEnabled, set: setSoundEnabled, desc: "Notification sounds" },
@@ -531,7 +531,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
   )
 }
 
-/* ─── KEYBOARD SHORTCUTS MODAL ───────────────────────────────────────────────── */
+
 function ShortcutsModal({ onClose, C: T }: { onClose: () => void; C: typeof THEMES.dark }) {
   const shortcuts = [
     ["Enter", "Send message"],
@@ -564,7 +564,7 @@ function ShortcutsModal({ onClose, C: T }: { onClose: () => void; C: typeof THEM
   )
 }
 
-/* ─── TAG PICKER ─────────────────────────────────────────────────────────────── */
+
 function TagPicker({ current, onSelect, onClose, C: T }: { current?: string; onSelect: (t: string | undefined) => void; onClose: () => void; C: typeof THEMES.dark }) {
   return (
     <div style={{ position: "absolute", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 8, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", top: "100%", right: 0, marginTop: 4, minWidth: 160 }}>
@@ -583,7 +583,7 @@ function TagPicker({ current, onSelect, onClose, C: T }: { current?: string; onS
   )
 }
 
-/* ─── MAIN COMPONENT ─────────────────────────────────────────────────────────── */
+
 export default function AIAssistant() {
   const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
@@ -594,7 +594,7 @@ export default function AIAssistant() {
   const chatRequestRef = useRef<AbortController | null>(null)
   const sendingRef = useRef(false)
 
-  /* Core */
+
   const [messages, setMessages]                   = useState<Message[]>([])
   const [sessions, setSessions]                   = useState<Session[]>([])
   const [currentSessionId, setCurrentSessionId]   = useState<string | null>(null)
@@ -605,7 +605,7 @@ export default function AIAssistant() {
   const [showSidebar, setShowSidebar]             = useState(false)
   const [loadingSession, setLoadingSession]       = useState(false)
 
-  /* Theme & display */
+
   const [themeName, setThemeName]                 = useState<ThemeName>(getStoredTheme)
   const [fontSize, setFontSize]                   = useState<number>(getStoredFontSize)
   const [compactMode, setCompactMode]             = useState<boolean>(() => getStoredBoolean("fd_ai_compact", false))
@@ -614,7 +614,7 @@ export default function AIAssistant() {
   const [showTimestamps, setShowTimestamps]       = useState<boolean>(() => getStoredBoolean("fd_ai_timestamps", true))
   const [fullscreen, setFullscreen]               = useState(false)
 
-  /* Panels / modals */
+
   const [showStats, setShowStats]                 = useState(false)
   const [showSettings, setShowSettings]           = useState(false)
   const [showShortcuts, setShowShortcuts]         = useState(false)
@@ -623,14 +623,14 @@ export default function AIAssistant() {
   const [showSearch, setShowSearch]               = useState(false)
   const [showPromptHistory, setShowPromptHistory] = useState(false)
 
-  /* Search / filter */
+
   const [searchQuery, setSearchQuery]             = useState("")
   const [sessionSearch, setSessionSearch]         = useState("")
   const [activeTagFilter, setActiveTagFilter]     = useState<string | null>(null)
   const [sidebarView, setSidebarView]             = useState<"history"|"pinned"|"bookmarks">("history")
   const [sortOrder, setSortOrder]                 = useState<"newest"|"oldest">("newest")
 
-  /* Message features */
+
   const [pinnedMsgIds, setPinnedMsgIds]           = useState<string[]>([])
   const [bookmarkedMsgIds, setBookmarkedMsgIds]   = useState<string[]>(() => getStoredArray<string>("fd_ai_bookmarks"))
   const [editingMsgId, setEditingMsgId]           = useState<string | null>(null)
@@ -642,16 +642,16 @@ export default function AIAssistant() {
   const [tagPickerFor, setTagPickerFor]           = useState<string | null>(null)
   const [msgTags, setMsgTags]                     = useState<Record<string, string>>({})
 
-  /* Input */
+
   const [charCount, setCharCount]                 = useState(0)
   const [isListening, setIsListening]             = useState(false)
   const [isDragOver, setIsDragOver]               = useState(false)
   const [promptHistory, setPromptHistory]         = useState<PromptHistory[]>(() => getStoredArray<PromptHistory>("fd_ai_prompts"))
 
-  /* Snippets */
+
   const [snippets, setSnippets]                   = useState<Snippet[]>(() => getStoredArray<Snippet>("fd_ai_snippets"))
 
-  /* Persist settings */
+
   useEffect(() => { LS.set("fd_ai_theme", themeName) }, [themeName])
   useEffect(() => { LS.set("fd_ai_fontsize", fontSize) }, [fontSize])
   useEffect(() => { LS.set("fd_ai_compact", compactMode) }, [compactMode])
@@ -669,7 +669,7 @@ export default function AIAssistant() {
     if (autoScroll) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, autoScroll])
 
-  /* Sound helper */
+
   const playPing = useCallback(() => {
     if (!soundEnabled) return
     try {
@@ -815,7 +815,7 @@ export default function AIAssistant() {
     }
   }
 
-  /* ── Send ──────────────────────────────────────────────────────────── */
+
   const sendMessage = useCallback(async (messageText?: string) => {
     const text = (messageText ?? input).trim()
     if (!text || sendingRef.current) return
@@ -827,7 +827,7 @@ export default function AIAssistant() {
     const controller = new AbortController()
     chatRequestRef.current = controller
 
-    // Save to prompt history
+
     setPromptHistory(prev => {
       const existing = prev.find(prompt => prompt.text === text)
       if (existing) {
@@ -926,7 +926,7 @@ export default function AIAssistant() {
     }
   }, [currentSessionId, input, loadSessions, messages, playPing])
 
-  /* ── Voice ─────────────────────────────────────────────────────────── */
+
   const toggleVoice = useCallback(() => {
     const speechWindow = window as SpeechRecognitionWindow
     const SpeechRecognitionApi = speechWindow.webkitSpeechRecognition ?? speechWindow.SpeechRecognition
@@ -950,7 +950,7 @@ export default function AIAssistant() {
     toast("Listening… 🎤", { duration: 3000 })
   }, [input, isListening])
 
-  /* ── Drag & Drop file ──────────────────────────────────────────────── */
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setIsDragOver(false)
     const file = e.dataTransfer.files[0]
@@ -969,7 +969,7 @@ export default function AIAssistant() {
     reader.readAsText(file)
   }
 
-  /* ── Export ────────────────────────────────────────────────────────── */
+
   const handleExportChat = useCallback((format: "md" | "json" | "txt" = "md") => {
     if (messages.length === 0) { toast.error("No messages to export"); return }
     const content = format === "md"
@@ -1022,14 +1022,14 @@ export default function AIAssistant() {
     return () => window.removeEventListener("keydown", handler)
   }, [handleExportChat, startNewChat])
 
-  /* ── Copy ──────────────────────────────────────────────────────────── */
+
   const handleCopy = (msg: Message) => {
     navigator.clipboard.writeText(msg.content)
     setCopiedId(msg.id); toast.success("Copied!")
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  /* ── Pin ───────────────────────────────────────────────────────────── */
+
   const togglePin = (msgId: string) => {
     const next = pinnedMsgIds.includes(msgId) ? pinnedMsgIds.filter(id => id !== msgId) : [...pinnedMsgIds, msgId]
     setPinnedMsgIds(next)
@@ -1037,18 +1037,18 @@ export default function AIAssistant() {
     toast(pinnedMsgIds.includes(msgId) ? "Unpinned" : "Pinned 📌")
   }
 
-  /* ── Bookmark ──────────────────────────────────────────────────────── */
+
   const toggleBookmark = (msgId: string) => {
     const next = bookmarkedMsgIds.includes(msgId) ? bookmarkedMsgIds.filter(id => id !== msgId) : [...bookmarkedMsgIds, msgId]
     setBookmarkedMsgIds(next); toast(bookmarkedMsgIds.includes(msgId) ? "Removed" : "Bookmarked ⭐")
   }
 
-  /* ── React ─────────────────────────────────────────────────────────── */
+
   const addReaction = (msgId: string, reaction: typeof REACTIONS[number]) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reaction: m.reaction === reaction ? null : reaction } : m))
   }
 
-  /* ── Share ─────────────────────────────────────────────────────────── */
+
   const shareMessage = (msg: Message) => {
     if (navigator.share) {
       navigator.share({ title: "FlowDesk AI", text: msg.content }).catch(error => {
@@ -1059,7 +1059,7 @@ export default function AIAssistant() {
     else { navigator.clipboard.writeText(msg.content); toast.success("Copied for sharing!") }
   }
 
-  /* ── TTS ───────────────────────────────────────────────────────────── */
+
   const readAloud = (text: string) => {
     if (!("speechSynthesis" in window)) { toast.error("TTS not supported"); return }
     window.speechSynthesis.cancel()
@@ -1070,14 +1070,14 @@ export default function AIAssistant() {
     toast("Reading aloud 🔊", { duration: 2000 })
   }
 
-  /* ── Edit message ──────────────────────────────────────────────────── */
+
   const startEdit = (msg: Message) => { setEditingMsgId(msg.id); setEditingText(msg.content) }
   const saveEdit = (msgId: string) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: editingText, edited: true } : m))
     setEditingMsgId(null); setEditingText(""); toast.success("Message edited")
   }
 
-  /* ── Save snippet ──────────────────────────────────────────────────── */
+
   const saveSnippet = (code: string, lang: string) => {
     const title = prompt("Snippet title:")?.trim()
     if (!title) return
@@ -1086,7 +1086,7 @@ export default function AIAssistant() {
     toast.success("Snippet saved to vault!")
   }
 
-  /* ── Collapse message ──────────────────────────────────────────────── */
+
   const toggleCollapse = (msgId: string) => {
     setCollapsedIds(prev => {
       const next = new Set(prev)
@@ -1096,12 +1096,12 @@ export default function AIAssistant() {
     })
   }
 
-  /* ── Tag message ───────────────────────────────────────────────────── */
+
   const setMsgTag = (msgId: string, tag: string | undefined) => {
     setMsgTags(prev => tag ? { ...prev, [msgId]: tag } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== msgId)))
   }
 
-  /* ── Computed ──────────────────────────────────────────────────────── */
+
   const isLimitReached = user?.plan === "free" && usage.remaining === 0
   const remainingNum = typeof usage.remaining === "number" ? usage.remaining : 999
   const limitNum = typeof usage.limit === "number" ? usage.limit : 20
@@ -1128,7 +1128,7 @@ export default function AIAssistant() {
   const bookmarkedMessages = useMemo(() => messages.filter(m => bookmarkedMsgIds.includes(m.id)), [messages, bookmarkedMsgIds])
   const usedTags = useMemo(() => [...new Set(Object.values(msgTags))], [msgTags])
 
-  /* ─── RENDER ────────────────────────────────────────────────────────── */
+
   return (
     <div style={{
       height: fullscreen ? "100vh" : "100dvh", display: "flex", flexDirection: "column",
@@ -1152,14 +1152,14 @@ export default function AIAssistant() {
         button:focus-visible { outline: 2px solid ${T.indigo}; outline-offset: 2px; }
       `}</style>
 
-      {/* Drag overlay */}
+
       {isDragOver && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(99,102,241,0.12)", border: `3px dashed ${T.indigo}`, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.indigo }}>📂 Drop file to attach</div>
         </div>
       )}
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+
       <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 12px", height: 52, display: "flex", alignItems: "center", gap: 6, flexShrink: 0, zIndex: 40 }}>
         <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", padding: 6, borderRadius: 7 }}>
           <ArrowLeft size={17} />
@@ -1168,7 +1168,7 @@ export default function AIAssistant() {
           {showSidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
         </button>
 
-        {/* Brand */}
+
         <div style={{ display: "flex", alignItems: "center", gap: 9, flex: 1, minWidth: 0 }}>
           <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Brain size={16} color="#fff" />
@@ -1191,9 +1191,9 @@ export default function AIAssistant() {
           </div>
         </div>
 
-        {/* Header right */}
+
         <div style={{ display: "flex", gap: 2, alignItems: "center", flexShrink: 0 }}>
-          {/* Usage */}
+
           {user?.plan === "free" && (
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginRight: 4 }}>
               <div style={{ width: 50, height: 3, background: T.faint, borderRadius: 99, overflow: "hidden" }}>
@@ -1208,7 +1208,7 @@ export default function AIAssistant() {
             </span>
           )}
 
-          {/* Icon buttons */}
+
           {[
             { icon: <Search size={14} />, title: "Search (Ctrl+F)", active: showSearch, action: () => setShowSearch(s => !s), show: messages.length > 0 },
             { icon: <Archive size={14} />, title: "Snippet Vault", active: showSnippets, action: () => setShowSnippets(true), show: true },
@@ -1231,14 +1231,14 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* Search bar */}
+
       {showSearch && (
         <div style={{ padding: "7px 14px", borderBottom: `1px solid ${T.border}`, background: T.surface, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <Search size={12} color={T.muted} />
           <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search in conversation…" autoFocus
             style={{ flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13 }} />
-          {/* Tag filter pills */}
+
           {usedTags.length > 0 && usedTags.map(tag => (
             <button key={tag} onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)} style={{
               fontSize: 10, padding: "2px 7px", borderRadius: 99, border: "none", cursor: "pointer",
@@ -1253,14 +1253,14 @@ export default function AIAssistant() {
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-        {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
+
         {showSidebar && (
           <button type="button" onClick={() => setShowSidebar(false)} style={{ position: "fixed", inset: 0, top: 52, background: "rgba(0,0,0,0.55)", zIndex: 20, border: "none", cursor: "pointer" }} className="md-overlay" />
         )}
         {showSidebar && (
           <div style={{ position: "fixed", left: 0, top: 52, bottom: 0, zIndex: 30, width: "min(80vw,272px)", background: T.surface, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", boxShadow: "4px 0 24px rgba(0,0,0,0.4)" }}>
 
-            {/* Session search */}
+
             <div style={{ padding: "9px 10px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 6 }}>
               <input value={sessionSearch} onChange={e => setSessionSearch(e.target.value)} placeholder="Search sessions…"
                 style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 9px", color: T.text, fontSize: 12, outline: "none" }} />
@@ -1270,7 +1270,7 @@ export default function AIAssistant() {
               <button onClick={() => setShowSidebar(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex" }}><PanelLeftClose size={14} /></button>
             </div>
 
-            {/* View tabs */}
+
             <div style={{ display: "flex", borderBottom: `1px solid ${T.border}`, padding: "0 8px" }}>
               {([["history","History"],["pinned","Pinned"],["bookmarks","Saved"]] as const).map(([v, l]) => (
                 <button key={v} onClick={() => setSidebarView(v)} style={{
@@ -1280,7 +1280,7 @@ export default function AIAssistant() {
               ))}
             </div>
 
-            {/* New chat btn */}
+
             <div style={{ padding: "8px 8px 4px" }}>
               <button onClick={startNewChat} style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 7, padding: "8px 11px", borderRadius: 8,
@@ -1292,7 +1292,7 @@ export default function AIAssistant() {
               </button>
             </div>
 
-            {/* List */}
+
             <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px 8px" }}>
               {sidebarView === "history" && (
                 filteredSessions.length === 0 ? (
@@ -1424,7 +1424,7 @@ export default function AIAssistant() {
               )}
             </div>
 
-            {/* Prompt history quick insert */}
+
             {promptHistory.length > 0 && (
               <div style={{ borderTop: `1px solid ${T.border}`, padding: 8 }}>
                 <button onClick={() => setShowPromptHistory(s => !s)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 11 }}>
@@ -1447,7 +1447,7 @@ export default function AIAssistant() {
               </div>
             )}
 
-            {/* Memory indicator */}
+
             {currentSessionId && (
               <div style={{ padding: 9, borderTop: `1px solid ${T.border}` }}>
                 <div style={{ background: "rgba(16,185,129,0.07)", border: `1px solid rgba(16,185,129,0.18)`, borderRadius: 8, padding: "7px 10px" }}>
@@ -1461,17 +1461,17 @@ export default function AIAssistant() {
           </div>
         )}
 
-        {/* ── CHAT AREA ────────────────────────────────────────────────── */}
+
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, fontSize }}>
 
-          {/* Messages */}
+
           <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
             {loadingSession ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
                 <Loader2 size={28} color={T.indigo} style={{ animation: "spin 1s linear infinite" }} />
               </div>
             ) : displayMessages.length === 0 && !loading ? (
-              /* Empty state */
+
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100%", padding: "28px 16px", textAlign: "center" }}>
                 <div style={{ width: 68, height: 68, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, boxShadow: "0 10px 36px rgba(99,102,241,0.3)" }}>
                   <Brain size={32} color="#fff" />
@@ -1512,7 +1512,7 @@ export default function AIAssistant() {
             ) : (
               <div style={{ maxWidth: 820, margin: "0 auto", padding: compactMode ? "16px 12px 8px" : "24px 14px 8px", display: "flex", flexDirection: "column", gap: compactMode ? 14 : 22 }}>
 
-                {/* Pinned banner */}
+
                 {pinnedMessages.length > 0 && !searchQuery && (
                   <div style={{ background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.18)`, borderRadius: 9, padding: "7px 12px", display: "flex", alignItems: "center", gap: 8 }}>
                     <Pin size={11} color="#FB923C" />
@@ -1539,7 +1539,7 @@ export default function AIAssistant() {
                         borderRadius: 12, padding: isHighlighted ? 4 : 0,
                       }}>
 
-                      {/* AI avatar */}
+
                       {message.role === "assistant" && (
                         <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
                           <Brain size={14} color="#fff" />
@@ -1547,7 +1547,7 @@ export default function AIAssistant() {
                       )}
 
                       <div style={{ maxWidth: "91%", display: "flex", flexDirection: "column", alignItems: message.role === "user" ? "flex-end" : "flex-start", gap: 3 }}>
-                        {/* Tag + pin indicators */}
+
                         {(isPinned || isBookmarked || tag) && (
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                             {isPinned && <span style={{ fontSize: 9, color: "#FB923C", display: "flex", alignItems: "center", gap: 2 }}><Pin size={7} />Pinned</span>}
@@ -1556,7 +1556,7 @@ export default function AIAssistant() {
                           </div>
                         )}
 
-                        {/* Bubble */}
+
                         <div style={{
                           padding: compactMode ? "8px 12px" : "11px 15px",
                           borderRadius: message.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
@@ -1564,7 +1564,7 @@ export default function AIAssistant() {
                           border: message.role === "assistant" ? `1px solid ${isPinned ? "rgba(249,115,22,0.25)" : T.border}` : "none",
                           maxWidth: "100%",
                         }}>
-                          {/* Collapse toggle for long AI messages */}
+
                           {message.role === "assistant" && message.content.length > 600 && (
                             <button onClick={() => toggleCollapse(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 11, display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
                               {isCollapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
@@ -1589,13 +1589,13 @@ export default function AIAssistant() {
                           )}
                         </div>
 
-                        {/* Reaction bubble */}
+
                         {message.reaction && <span style={{ fontSize: 15 }}>{message.reaction}</span>}
 
-                        {/* Edited badge */}
+
                         {message.edited && <span style={{ fontSize: 9, color: T.muted, fontStyle: "italic" }}>edited</span>}
 
-                        {/* Meta row */}
+
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           {showTimestamps && (
                             <span style={{ fontSize: 9, color: T.muted, fontFamily: "monospace" }}>
@@ -1607,21 +1607,21 @@ export default function AIAssistant() {
                           )}
                           {message.tokens && <span style={{ fontSize: 9, color: T.muted, fontFamily: "monospace" }}>{message.tokens.toLocaleString()}t</span>}
 
-                          {/* Actions — always visible on mobile, hover on desktop */}
+
                           <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
-                            {/* Copy */}
+
                             <button onClick={() => handleCopy(message)} style={{ background: "none", border: "none", cursor: "pointer", color: copiedId === message.id ? T.emerald : T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
                               {copiedId === message.id ? <><Check size={9} />Copied</> : <><Copy size={9} />Copy</>}
                             </button>
 
-                            {/* Edit (user only) */}
+
                             {message.role === "user" && (
                               <button onClick={() => startEdit(message)} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", fontSize: 10 }}>
                                 ✏️
                               </button>
                             )}
 
-                            {/* AI-only actions */}
+
                             {message.role === "assistant" && (
                               <>
                                 <button onClick={() => togglePin(message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: isPinned ? "#FB923C" : T.muted, display: "flex", fontSize: 10 }}>
@@ -1637,7 +1637,7 @@ export default function AIAssistant() {
                                   <Share2 size={9} />
                                 </button>
 
-                                {/* Tag picker */}
+
                                 <div style={{ position: "relative" }}>
                                   <button onClick={() => setTagPickerFor(tagPickerFor === message.id ? null : message.id)} style={{ background: "none", border: "none", cursor: "pointer", color: tag ? TAG_COLORS[tag] : T.muted, display: "flex", fontSize: 10 }}>
                                     <Tag size={9} />
@@ -1647,19 +1647,19 @@ export default function AIAssistant() {
                                   )}
                                 </div>
 
-                                {/* Reactions */}
+
                                 {REACTIONS.map(r => (
                                   <button key={r} onClick={() => addReaction(message.id, r)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, opacity: message.reaction === r ? 1 : 0.28, transition: "opacity 0.15s" }}>{r}</button>
                                 ))}
 
-                                {/* Retry */}
+
                                 {idx > 0 && (
                                   <button onClick={() => { const pu = messages.slice(0, idx).reverse().find(m => m.role === "user"); if (pu) sendMessage(pu.content) }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
                                     <RefreshCw size={9} />Retry
                                   </button>
                                 )}
 
-                                {/* Save to snippet vault */}
+
                                 {message.content.includes("```") && (
                                   <button onClick={() => {
                                     const match = message.content.match(/```(\w*)\n([\s\S]*?)```/)
@@ -1674,7 +1674,7 @@ export default function AIAssistant() {
                         </div>
                       </div>
 
-                      {/* User avatar */}
+
                       {message.role === "user" && (
                         <div style={{ width: 32, height: 32, background: T.surface2, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, border: `1px solid ${T.border}` }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{user?.display_name?.charAt(0).toUpperCase() || "U"}</span>
@@ -1690,7 +1690,7 @@ export default function AIAssistant() {
             )}
           </div>
 
-          {/* ── INPUT AREA ──────────────────────────────────────────────── */}
+
           <div style={{ borderTop: `1px solid ${T.border}`, background: T.surface, padding: "9px 13px 11px", flexShrink: 0 }}>
             <div style={{ maxWidth: 820, margin: "0 auto" }}>
 
@@ -1704,7 +1704,7 @@ export default function AIAssistant() {
                 </div>
               )}
 
-              {/* Quick actions bar */}
+
               <div style={{ display: "flex", gap: 4, marginBottom: 7, overflowX: "auto", paddingBottom: 2 }}>
                 {QUICK_ACTIONS.slice(0, 10).map(a => (
                   <button key={a.label} onClick={() => { setInput(a.prompt); inputRef.current?.focus() }} style={{
@@ -1727,7 +1727,7 @@ export default function AIAssistant() {
                 </button>
               </div>
 
-              {/* Templates panel */}
+
               {showTemplates && (
                 <div style={{ marginBottom: 8, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ padding: "8px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1751,9 +1751,9 @@ export default function AIAssistant() {
                 </div>
               )}
 
-              {/* Input row */}
+
               <div style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
-                {/* Left buttons */}
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                   <button onClick={toggleVoice} title="Voice input" style={{
                     background: isListening ? "rgba(244,63,94,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${isListening ? "rgba(244,63,94,0.3)" : T.border}`,
@@ -1762,7 +1762,7 @@ export default function AIAssistant() {
                   }}>
                     {isListening ? <MicOff size={13} /> : <Mic size={13} />}
                   </button>
-                  {/* Export button (mobile-friendly) */}
+
                   <div style={{ position: "relative" }}>
                     <button title="Export chat" onClick={() => handleExportChat("md")} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: T.muted, display: "flex" }}>
                       <Download size={13} />
@@ -1770,7 +1770,7 @@ export default function AIAssistant() {
                   </div>
                 </div>
 
-                {/* Textarea */}
+
                 <div style={{ flex: 1, position: "relative" }}>
                   <textarea ref={inputRef} value={input}
                     onChange={e => { setInput(e.target.value); setCharCount(e.target.value.length) }}
@@ -1793,7 +1793,7 @@ export default function AIAssistant() {
                   )}
                 </div>
 
-                {/* Send */}
+
                 <button onClick={() => sendMessage()} disabled={!input.trim() || loading || isLimitReached} style={{
                   flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                   background: "linear-gradient(135deg,#6366F1,#8B5CF6)", border: "none", borderRadius: 10,
@@ -1816,7 +1816,7 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* ── MODALS ────────────────────────────────────────────────────────── */}
+
       {showStats && <StatsModal messages={messages} sessions={sessions} usage={usage} onClose={() => setShowStats(false)} C={T} />}
       {showSnippets && <SnippetVault snippets={snippets} onDelete={id => setSnippets(prev => prev.filter(s => s.id !== id))} onCopy={code => { navigator.clipboard.writeText(code); toast.success("Copied!") }} onClose={() => setShowSnippets(false)} C={T} />}
       {showSettings && (

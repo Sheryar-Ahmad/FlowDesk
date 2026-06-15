@@ -1,18 +1,3 @@
-"""
-sanitizer.py - Input Validation and Sanitization
---------------------------------------------------
-Every piece of data coming from users is dangerous
-until proven safe. This file validates and cleans
-all user input before it touches our database.
-
-Security rules:
-- Allowlist only: reject anything not explicitly allowed
-- Strip dangerous characters
-- Validate length limits
-- Validate format (email, URL, etc.)
-- Never trust user input - ever
-"""
-
 import re
 import html
 from typing import Optional
@@ -20,7 +5,7 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-# --- Allowed characters for different field types ---
+
 SAFE_TEXT_PATTERN = re.compile(r"^[\w\s\-.,!?@#$%^&*()\[\]{}<>:;\"\'`~+=|/\\]+$")
 SAFE_NAME_PATTERN = re.compile(r"^[\w\s\-.,]+$")
 SAFE_TAG_PATTERN = re.compile(r"^[\w\-]+$")
@@ -35,7 +20,7 @@ URL_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# --- Dangerous SQL patterns to block ---
+
 SQL_INJECTION_PATTERNS = [
     r"(\bUNION\b.*\bSELECT\b)",
     r"(\bDROP\b.*\bTABLE\b)",
@@ -48,7 +33,6 @@ SQL_INJECTION_PATTERNS = [
     r"(xp_cmdshell|sp_executesql)",
 ]
 
-# --- Dangerous XSS patterns ---
 XSS_PATTERNS = [
     r"<script[^>]*>.*?</script>",
     r"javascript:",
@@ -62,14 +46,7 @@ XSS_PATTERNS = [
 
 
 def sanitize_string(value: str, max_length: int = 1000) -> str:
-    """
-    Cleans a string by:
-    1. Stripping leading/trailing whitespace
-    2. HTML encoding dangerous characters
-    3. Limiting length
-    
-    Use for: descriptions, notes, any free text
-    """
+    """Trims, escapes, and bounds free-form text."""
     if not value:
         return ""
     value = value.strip()
@@ -78,10 +55,7 @@ def sanitize_string(value: str, max_length: int = 1000) -> str:
 
 
 def validate_email(email: str) -> Optional[str]:
-    """
-    Validates email format.
-    Returns cleaned email or None if invalid.
-    """
+    """Validates email format."""
     if not email:
         return None
     email = email.strip().lower()
@@ -93,17 +67,7 @@ def validate_email(email: str) -> Optional[str]:
 
 
 def validate_password(password: str) -> tuple[bool, str]:
-    """
-    Validates password strength.
-    Returns (is_valid, error_message).
-    
-    Requirements:
-    - Minimum 8 characters
-    - At least 1 uppercase letter
-    - At least 1 lowercase letter
-    - At least 1 number
-    - At least 1 special character
-    """
+    """Validates password strength."""
     if len(password) < 8:
         return False, "Password must be at least 8 characters long."
     if len(password) > 128:
@@ -120,10 +84,7 @@ def validate_password(password: str) -> tuple[bool, str]:
 
 
 def validate_display_name(name: str) -> Optional[str]:
-    """
-    Validates display name.
-    Returns cleaned name or None if invalid.
-    """
+    """Validates display name."""
     if not name:
         return None
     name = name.strip()
@@ -137,10 +98,7 @@ def validate_display_name(name: str) -> Optional[str]:
 
 
 def validate_snippet_title(title: str) -> Optional[str]:
-    """
-    Validates snippet title.
-    Returns cleaned title or None if invalid.
-    """
+    """Validates snippet title."""
     if not title:
         return None
     title = title.strip()
@@ -152,11 +110,7 @@ def validate_snippet_title(title: str) -> Optional[str]:
 
 
 def validate_tag(tag: str) -> Optional[str]:
-    """
-    Validates tag name.
-    Tags can only contain letters, numbers, and hyphens.
-    Returns cleaned tag or None if invalid.
-    """
+    """Validates tag name."""
     if not tag:
         return None
     tag = tag.strip().lower()
@@ -168,14 +122,7 @@ def validate_tag(tag: str) -> Optional[str]:
 
 
 def check_sql_injection(value: str) -> bool:
-    """
-    Checks if value contains SQL injection patterns.
-    Returns True if suspicious (block the request).
-    Returns False if safe.
-    
-    Note: We use SQLAlchemy ORM which already prevents
-    SQL injection. This is an extra safety layer.
-    """
+    """Checks if value contains SQL injection patterns."""
     value_upper = value.upper()
     for pattern in SQL_INJECTION_PATTERNS:
         if re.search(pattern, value_upper, re.IGNORECASE):
@@ -189,11 +136,7 @@ def check_sql_injection(value: str) -> bool:
 
 
 def check_xss(value: str) -> bool:
-    """
-    Checks if value contains XSS attack patterns.
-    Returns True if suspicious (block the request).
-    Returns False if safe.
-    """
+    """Checks if value contains XSS attack patterns."""
     for pattern in XSS_PATTERNS:
         if re.search(pattern, value, re.IGNORECASE):
             logger.warning(
@@ -206,11 +149,7 @@ def check_xss(value: str) -> bool:
 
 
 def is_safe_input(value: str) -> bool:
-    """
-    Master safety check.
-    Returns True if input is safe to process.
-    Returns False if any attack pattern detected.
-    """
+    """Master safety check."""
     if check_sql_injection(value):
         return False
     if check_xss(value):

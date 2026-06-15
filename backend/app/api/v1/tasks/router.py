@@ -1,9 +1,3 @@
-"""
-tasks/router.py - Task Board API Endpoints
-Projects, Columns, Tasks - Full Kanban system.
-Every endpoint authenticated and rate limited.
-"""
-
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
@@ -20,8 +14,6 @@ from app.services.task_service import (
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-
-# --- Projects ----------------------------------------------------------------
 
 @router.post("/projects", status_code=201)
 @limiter.limit(API_LIMIT)
@@ -64,8 +56,6 @@ async def delete_proj(request: Request, project_id: str, current_user: dict = De
     return {"success": True, "message": "Project deleted."}
 
 
-# --- Columns -----------------------------------------------------------------
-
 @router.get("/projects/{project_id}/columns")
 @limiter.limit(API_LIMIT)
 async def list_columns(request: Request, project_id: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -87,8 +77,6 @@ async def add_column(request: Request, project_id: str, body: dict, current_user
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
-# --- Tasks -------------------------------------------------------------------
 
 @router.get("/projects/{project_id}/tasks")
 @limiter.limit(API_LIMIT)

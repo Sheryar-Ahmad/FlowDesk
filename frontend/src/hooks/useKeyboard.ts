@@ -1,11 +1,4 @@
-/**
- * useKeyboard.ts - Keyboard Shortcuts
- * 
- * Shortcuts:
- * Ctrl+K     - Focus search
- * Ctrl+M     - New snippet (M = Make)
- * Escape     - Close modal
- */
+
 
 import { useEffect } from "react"
 
@@ -22,7 +15,7 @@ export const useKeyboard = (shortcuts: ShortcutMap, options: KeyboardOptions = {
     const allowedWhileTyping = new Set(options.allowWhileTyping || [])
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
-      const isTyping = target.tagName === "INPUT" || 
+      const isTyping = target.tagName === "INPUT" ||
                        target.tagName === "TEXTAREA" ||
                        target.isContentEditable ||
                        target.closest('[contenteditable="true"]') !== null
@@ -33,20 +26,18 @@ export const useKeyboard = (shortcuts: ShortcutMap, options: KeyboardOptions = {
         e.key.toLowerCase(),
       ].filter(Boolean).join("+")
 
-      // Ctrl+K always works - focus search
+      // Global search and Escape remain available while an input is focused.
       if (key === "ctrl+k") {
         e.preventDefault()
         shortcuts["ctrl+k"]?.()
         return
       }
 
-      // Escape always works
       if (e.key === "Escape") {
         shortcuts["escape"]?.()
         return
       }
 
-      // Other shortcuts only when not typing
       if (isTyping && !allowedWhileTyping.has(key)) return
 
       if (shortcuts[key]) {

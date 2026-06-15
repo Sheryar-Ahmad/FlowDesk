@@ -1,28 +1,18 @@
-/**
- * auth.api.ts - Authentication API Service
- * ------------------------------------------
- * All API calls related to authentication.
- * Connects frontend to backend auth endpoints.
- * 
- * Uses axios for HTTP requests with:
- * - Automatic JSON parsing
- * - Error handling
- * - Request/response interceptors
- */
+
 
 import axios from "axios"
 import { API_BASE_URL } from "./config"
 
-// Create axios instance with default config
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
 })
 
-// Types
+
 export interface RegisterData {
   display_name: string
   email: string
@@ -49,11 +39,7 @@ export interface AuthResponse {
 }
 
 
-/**
- * Register a new user account.
- * Sends name, email, password to backend.
- * Returns JWT token and user data.
- */
+
 export const registerUser = async (
   data: RegisterData,
   signal?: AbortSignal,
@@ -63,20 +49,14 @@ export const registerUser = async (
 }
 
 
-/**
- * Login with email and password.
- * Returns JWT token and user data.
- */
+
 export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
   const response = await api.post("/auth/login", data)
   return response.data
 }
 
 
-/**
- * Get current logged in user data.
- * Requires valid JWT token in header.
- */
+
 export const getCurrentUser = async (token: string) => {
   const response = await api.get("/auth/me", {
     headers: { Authorization: `Bearer ${token}` }
@@ -85,10 +65,7 @@ export const getCurrentUser = async (token: string) => {
 }
 
 
-/**
- * Logout user.
- * Revokes refresh token on backend.
- */
+
 export const logoutUser = async (token: string, refreshToken: string) => {
   const response = await api.post(
     "/auth/logout",

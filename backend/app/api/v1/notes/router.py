@@ -1,9 +1,3 @@
-"""
-notes/router.py - Notes API Endpoints
-Full CRUD + version history + search.
-Every endpoint authenticated and rate limited.
-"""
-
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
