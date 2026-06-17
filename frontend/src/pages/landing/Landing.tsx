@@ -1,6 +1,5 @@
-﻿import { Link } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   Code2, FileText, Kanban, Bot, Timer, GitCompare,
   ArrowRight, Zap, Shield, Globe, ChevronRight,
@@ -125,7 +124,7 @@ const WORKFLOW_BENEFITS = [
 ]
 
 
-function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
+function Counter({ to, suffix = "" }: Readonly<{ to: number; suffix?: string }>) {
   const [count, setCount] = useState(0)
   const ref = useRef<HTMLSpanElement>(null)
   useEffect(() => {
@@ -139,11 +138,11 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
       }
       let start = 0
       const step = Math.max(1, Math.ceil(to / 40))
-      timer = window.setInterval(() => {
+      timer = globalThis.setInterval(() => {
         start = Math.min(start + step, to)
         setCount(start)
         if (start >= to && timer !== null) {
-          window.clearInterval(timer)
+          globalThis.clearInterval(timer)
           timer = null
         }
       }, 28)
@@ -151,7 +150,7 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
     if (ref.current) observer.observe(ref.current)
     return () => {
       observer.disconnect()
-      if (timer !== null) window.clearInterval(timer)
+      if (timer !== null) globalThis.clearInterval(timer)
     }
   }, [to])
   return <span ref={ref}>{count}{suffix}</span>
@@ -173,7 +172,7 @@ function CodeRain() {
       drops = Array.from({ length: cols }, (_, index) => drops[index] ?? Math.random() * -60)
     }
     resize()
-    window.addEventListener("resize", resize)
+    globalThis.addEventListener("resize", resize)
     const CHARS = "const async function return import export class type interface{};=>"
     let frame: number
     const draw = () => {
@@ -190,7 +189,7 @@ function CodeRain() {
       frame = requestAnimationFrame(draw)
     }
     draw()
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", resize) }
+    return () => { cancelAnimationFrame(frame); globalThis.removeEventListener("resize", resize) }
   }, [])
   return (
     <canvas ref={canvasRef} aria-hidden="true" style={{
@@ -202,17 +201,17 @@ function CodeRain() {
 
 function LegalDialog({
   document, onClose,
-}: {
+}: Readonly<{
   document: LegalDocument
   onClose: () => void
-}) {
+}>) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const content = LEGAL_DOCUMENTS[document]
 
   useEffect(() => {
-    const previousOverflow = window.document.body.style.overflow
-    const previousFocus = window.document.activeElement as HTMLElement | null
-    window.document.body.style.overflow = "hidden"
+    const previousOverflow = globalThis.document.body.style.overflow
+    const previousFocus = globalThis.document.activeElement as HTMLElement | null
+    globalThis.document.body.style.overflow = "hidden"
     closeRef.current?.focus()
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -222,10 +221,10 @@ function LegalDialog({
         closeRef.current?.focus()
       }
     }
-    window.addEventListener("keydown", handleKeyDown)
+    globalThis.addEventListener("keydown", handleKeyDown)
     return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.document.body.style.overflow = previousOverflow
+      globalThis.removeEventListener("keydown", handleKeyDown)
+      globalThis.document.body.style.overflow = previousOverflow
       previousFocus?.focus()
     }
   }, [document, onClose])
@@ -500,11 +499,11 @@ export default function Landing() {
               color: "#6366F1", fontFamily: "monospace", marginBottom: 4,
             }}>
               {s.value.includes("+") ? (
-                <><Counter to={parseInt(s.value)} />+</>
+                <><Counter to={Number.parseInt(s.value, 10)} />+</>
               ) : s.value.includes("%") ? (
-                <><Counter to={parseInt(s.value)} />%</>
+                <><Counter to={Number.parseInt(s.value, 10)} />%</>
               ) : (
-                <Counter to={parseInt(s.value) || 0} />
+                <Counter to={Number.parseInt(s.value, 10) || 0} />
               )}
             </div>
             <div style={{ fontSize: 12, color: "#475569" }}>{s.label}</div>

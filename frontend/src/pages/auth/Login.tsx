@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Code2, Eye, EyeOff, Loader2, ArrowRight, Terminal } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
@@ -21,14 +21,14 @@ const S = {
 function Field({
   id, name, label, type, value, onChange, placeholder, disabled, end,
   autoComplete, inputMode, maxLength,
-}: {
+}: Readonly<{
   id: string; name: string; label: string; type: string; value: string
   onChange: (v: string) => void; placeholder: string
-  disabled?: boolean; end?: React.ReactNode
+  disabled?: boolean; end?: ReactNode
   autoComplete?: string
-  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"]
   maxLength?: number
-}) {
+}>) {
   return (
     <div>
       <label htmlFor={id} style={{ display: "block", fontSize: 12, fontWeight: 500, color: S.muted, marginBottom: 6, letterSpacing: 0.3 }}>
@@ -75,7 +75,7 @@ export default function Login() {
     if (isAuthenticated) navigate("/dashboard", { replace: true })
   }, [isAuthenticated, navigate])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: Readonly<{ preventDefault: () => void }>) => {
     e.preventDefault()
     if (isLoading) return
     clearError()

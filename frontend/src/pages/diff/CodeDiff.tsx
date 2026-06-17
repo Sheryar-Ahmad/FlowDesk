@@ -18,28 +18,37 @@ const LANGUAGES = [
   "html", "css", "bash", "json", "yaml", "markdown", "xml"
 ]
 
+const LANGUAGE_HEURISTICS: Array<{ language: string; test: (code: string) => boolean }> = [
+  { language: "python", test: code => /\bdef\s+\w+\s*\(/.test(code) },
+  {
+    language: "typescript",
+    test: code => (
+      /\b(?:interface|type)\s+\w+/.test(code)
+      || /\b(?:const|let|var)\s+\w+\s*:\s*[A-Za-z_$]/.test(code)
+      || /\bfunction\s+\w+\s*\([^)]*:\s*[A-Za-z_$]/.test(code)
+      || /\bfunction\s+\w+\s*\([^)]*\)\s*:\s*[A-Za-z_$]/.test(code)
+      || /\([^)]*:\s*[A-Za-z_$][^)]*\)\s*=>/.test(code)
+    ),
+  },
+  { language: "javascript", test: code => code.includes("function") || code.includes("const ") || code.includes("let ") || code.includes("=>") },
+  { language: "java", test: code => code.includes("public class") || code.includes("System.out") },
+  { language: "cpp", test: code => code.includes("#include") || code.includes("cout <<") },
+  { language: "go", test: code => code.includes("package main") || code.includes("fmt.Println") },
+  { language: "rust", test: code => code.includes("fn ") && code.includes("->") },
+  { language: "sql", test: code => /^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER)\b/im.test(code) },
+  { language: "html", test: code => /<(?:!DOCTYPE|html|div|span|head|body)\b/i.test(code) },
+  { language: "xml", test: code => /^\s*<\?xml/m.test(code) || /<\/?[A-Za-z][^>]*>/m.test(code) },
+  { language: "bash", test: code => /^\s*(?:#!.*\b(?:bash|sh)|(?:export\s+)?[A-Z_][A-Z0-9_]*=)/m.test(code) },
+  { language: "yaml", test: code => /^\s*[\w-]+\s*:\s*(?:.+)?$/m.test(code) && !/[;{}]/.test(code) },
+]
+
 const detectLanguage = (code: string): string => {
   const trimmed = code.trim()
   if (!trimmed) return "plaintext"
 
-  if (/\bdef\s+\w+\s*\(/.test(code)) return "python"
-  if (
-    /\b(?:interface|type)\s+\w+/.test(code)
-    || /\b(?:const|let|var)\s+\w+\s*:\s*[A-Za-z_$]/.test(code)
-    || /\bfunction\s+\w+\s*\([^)]*:\s*[A-Za-z_$]/.test(code)
-    || /\bfunction\s+\w+\s*\([^)]*\)\s*:\s*[A-Za-z_$]/.test(code)
-    || /\([^)]*:\s*[A-Za-z_$][^)]*\)\s*=>/.test(code)
-  ) return "typescript"
-  if (code.includes("function") || code.includes("const ") || code.includes("let ") || code.includes("=>")) return "javascript"
-  if (code.includes("public class") || code.includes("System.out")) return "java"
-  if (code.includes("#include") || code.includes("cout <<")) return "cpp"
-  if (code.includes("package main") || code.includes("fmt.Println")) return "go"
-  if (code.includes("fn ") && code.includes("->")) return "rust"
-  if (/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER)\b/im.test(code)) return "sql"
-  if (/<(?:!DOCTYPE|html|div|span|head|body)\b/i.test(code)) return "html"
-  if (/^\s*<\?xml|<\/?[A-Za-z][^>]*>/m.test(code)) return "xml"
-  if (/^\s*(?:#!.*\b(?:bash|sh)|(?:export\s+)?[A-Z_][A-Z0-9_]*=)/m.test(code)) return "bash"
-  if (/^\s*[\w-]+\s*:\s*(?:.+)?$/m.test(code) && !/[;{}]/.test(code)) return "yaml"
+  const detected = LANGUAGE_HEURISTICS.find(({ test }) => test(code))
+  if (detected) return detected.language
+
   try {
     JSON.parse(trimmed)
     return "json"
@@ -61,18 +70,29 @@ interface DiffLine {
   status: "same" | "added" | "removed" | "changed"
 }
 
-const getLines = (code: string) => code === "" ? [] : code.replace(/\r\n?/g, "\n").split("\n")
+const getLines = (code: string) => code === "" ? [] : code.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n")
 
 const normalizeLine = (line: string, ignoreCase: boolean, ignoreWhitespace: boolean) => {
   let normalized = line
   if (ignoreCase) normalized = normalized.toLowerCase()
-  if (ignoreWhitespace) normalized = normalized.replace(/\s+/g, " ").trim()
+  if (ignoreWhitespace) normalized = normalized.replaceAll(/\s+/g, " ").trim()
   return normalized
 }
 
 const formatWhitespace = (line: string, showWhitespace: boolean) => {
   if (!showWhitespace) return line
-  return line.replace(/\t/g, "→   ").replace(/ /g, "·")
+  return line.replaceAll(/\t/g, "→   ").replaceAll(" ", "·")
+}
+
+const getIndexedStatus = (
+  hasLeft: boolean,
+  hasRight: boolean,
+  leftValue: string | undefined,
+  rightValue: string | undefined,
+): DiffLine["status"] => {
+  if (!hasLeft) return "added"
+  if (!hasRight) return "removed"
+  return leftValue === rightValue ? "same" : "changed"
 }
 
 const buildIndexedDiff = (
@@ -86,13 +106,7 @@ const buildIndexedDiff = (
   return Array.from({ length }, (_, index) => {
     const hasLeft = index < leftLines.length
     const hasRight = index < rightLines.length
-    const status: DiffLine["status"] = !hasLeft
-      ? "added"
-      : !hasRight
-        ? "removed"
-        : leftNormalized[index] === rightNormalized[index]
-          ? "same"
-          : "changed"
+    const status = getIndexedStatus(hasLeft, hasRight, leftNormalized[index], rightNormalized[index])
 
     return {
       line: index + 1,
@@ -217,7 +231,7 @@ const buildDiff = (
   return result
 }
 
-const escapeHtml = (value: string) => value.replace(
+const escapeHtml = (value: string) => value.replaceAll(
   /[&<>"']/g,
   character => ({
     "&": "&amp;",
@@ -227,6 +241,32 @@ const escapeHtml = (value: string) => value.replace(
     "'": "&#39;",
   })[character] ?? character,
 )
+
+const HTML_ROW_COLORS: Record<DiffLine["status"], string> = {
+  added: "#1a3a1a",
+  removed: "#3a1a1a",
+  changed: "#3a3a1a",
+  same: "transparent",
+}
+
+const UNIFIED_ROW_CLASSES: Record<DiffLine["status"], string> = {
+  added: "bg-green-950",
+  removed: "bg-red-950",
+  changed: "bg-yellow-950",
+  same: "",
+}
+
+const UNIFIED_TEXT_CLASSES: Record<DiffLine["status"], string> = {
+  added: "text-green-300",
+  removed: "text-red-300",
+  changed: "text-yellow-300",
+  same: "text-gray-500",
+}
+
+const getUnifiedLineText = (line: DiffLine) => {
+  if (line.status === "removed") return line.left
+  return line.right || line.left
+}
 
 const getApiErrorMessage = (error: unknown) => {
   if (axios.isAxiosError<{ detail?: string }>(error)) {
@@ -352,13 +392,13 @@ export default function CodeDiff() {
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
-    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    globalThis.setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   const exportHTML = () => {
     try {
       const rows = diff.map(line => {
-        const color = line.status === "added" ? "#1a3a1a" : line.status === "removed" ? "#3a1a1a" : line.status === "changed" ? "#3a3a1a" : "transparent"
+        const color = HTML_ROW_COLORS[line.status]
         const leftLine = line.leftLine || ""
         const rightLine = line.rightLine || ""
         return `<tr style="background:${color}"><td style="color:#666;padding:4px 8px;border-right:1px solid #333">${leftLine}</td><td style="color:#ccc;padding:4px 8px;border-right:1px solid #333;font-family:monospace;white-space:pre-wrap">${escapeHtml(line.left)}</td><td style="color:#666;padding:4px 8px;border-right:1px solid #333">${rightLine}</td><td style="color:#ccc;padding:4px 8px;font-family:monospace;white-space:pre-wrap">${escapeHtml(line.right)}</td></tr>`
@@ -432,7 +472,7 @@ ${rightCode.slice(0, 6000)}`
     }
 
     if (viewMode === "unified") {
-      window.requestAnimationFrame(() => {
+      globalThis.requestAnimationFrame(() => {
         document.querySelector(`[data-diff-line="${change.line}"]`)
           ?.scrollIntoView({ block: "center", behavior: "smooth" })
       })
@@ -1001,12 +1041,8 @@ function greet(name) {
                 </div>
               </div>
             ) : (
-              filteredDiff.map((line, i) => (
-                <div key={i} data-diff-line={line.line} className={`flex border-b border-gray-900 ${
-                  line.status === "added" ? "bg-green-950" :
-                  line.status === "removed" ? "bg-red-950" :
-                  line.status === "changed" ? "bg-yellow-950" : ""
-                } ${activeChange?.line === line.line ? "ring-1 ring-inset ring-indigo-500" : ""}`}>
+              filteredDiff.map(line => (
+                <div key={`${line.line}-${line.leftLine}-${line.rightLine}-${line.status}`} data-diff-line={line.line} className={`flex border-b border-gray-900 ${UNIFIED_ROW_CLASSES[line.status]} ${activeChange?.line === line.line ? "ring-1 ring-inset ring-indigo-500" : ""}`}>
                   {showLineNumbers && (
                     <div className="w-10 px-2 py-1 text-gray-600 border-r border-gray-800 text-right flex-shrink-0">
                       {line.line}
@@ -1028,12 +1064,9 @@ function greet(name) {
                         </div>
                       </div>
                     ) : (
-                      <span className={
-                        line.status === "added" ? "text-green-300" :
-                        line.status === "removed" ? "text-red-300" : "text-gray-500"
-                      }>
+                      <span className={UNIFIED_TEXT_CLASSES[line.status]}>
                         {formatWhitespace(
-                          line.status === "removed" ? line.left : line.right || line.left,
+                          getUnifiedLineText(line),
                           showWhitespace,
                         )}
                       </span>

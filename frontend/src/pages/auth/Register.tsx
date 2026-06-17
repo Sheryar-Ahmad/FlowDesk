@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   Code2, Eye, EyeOff, Loader2,
@@ -24,17 +24,20 @@ const S = {
   input:   "rgba(255,255,255,0.04)",
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PASSWORD_STRENGTH_SEGMENTS = Array.from({ length: 5 }, (_, segment) => segment)
+
 function Field({
   id, name, label, type, value, onChange, placeholder, disabled, end, hint,
   autoComplete, inputMode, maxLength,
-}: {
+}: Readonly<{
   id: string; name: string; label: string; type: string; value: string
   onChange: (v: string) => void; placeholder: string
-  disabled?: boolean; end?: React.ReactNode; hint?: React.ReactNode
+  disabled?: boolean; end?: ReactNode; hint?: ReactNode
   autoComplete?: string
-  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"]
   maxLength?: number
-}) {
+}>) {
   const hintId = hint ? `${id}-hint` : undefined
 
   return (
@@ -111,17 +114,25 @@ export default function Register() {
   const [showCPw,         setShowCPw]         = useState(false)
   const [pwTouched,       setPwTouched]       = useState(false)
 
-  const checks   = PW_RULES.map(r => r.test(password))
-  const validCnt = checks.filter(Boolean).length
+  const passwordChecks = PW_RULES.map(rule => ({ ...rule, passed: rule.test(password) }))
+  const validCnt = passwordChecks.filter(rule => rule.passed).length
   const pwMatch  = password === confirmPassword && confirmPassword.length > 0
 
   const validate = () => {
-    if (name.trim().length < 2)                    { setError("Name must be at least 2 characters"); return false }
-    if (name.trim().length > 100)                  { setError("Name must not exceed 100 characters"); return false }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Enter a valid email address"); return false }
-    if (email.trim().length > 255)                 { setError("Email must not exceed 255 characters"); return false }
-    if (validCnt < 5)                              { setError("Password does not meet all requirements"); return false }
-    if (password !== confirmPassword)              { setError("Passwords do not match"); return false }
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    const validationError = [
+      trimmedName.length < 2 && "Name must be at least 2 characters",
+      trimmedName.length > 100 && "Name must not exceed 100 characters",
+      !EMAIL_PATTERN.test(trimmedEmail) && "Enter a valid email address",
+      trimmedEmail.length > 255 && "Email must not exceed 255 characters",
+      validCnt < 5 && "Password does not meet all requirements",
+      password !== confirmPassword && "Passwords do not match",
+    ].find((message): message is string => Boolean(message))
+    if (validationError) {
+      setError(validationError)
+      return false
+    }
     return true
   }
 
@@ -131,13 +142,13 @@ export default function Register() {
 
   useEffect(() => {
     if (!success) return
-    const timer = window.setTimeout(() => navigate("/dashboard", { replace: true }), 800)
-    return () => window.clearTimeout(timer)
+    const timer = globalThis.setTimeout(() => navigate("/dashboard", { replace: true }), 800)
+    return () => globalThis.clearTimeout(timer)
   }, [navigate, success])
 
   useEffect(() => () => requestRef.current?.abort(), [])
 
-  const handleRegister = async (e: FormEvent) => {
+  const handleRegister = async (e: Readonly<{ preventDefault: () => void }>) => {
     e.preventDefault()
     if (isLoading) return
     setError("")
@@ -279,10 +290,10 @@ export default function Register() {
                 <div style={{ marginTop: 10 }}>
 
                   <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} style={{
+                    {PASSWORD_STRENGTH_SEGMENTS.map(segment => (
+                      <div key={segment} style={{
                         flex: 1, height: 3, borderRadius: 99,
-                        background: i < validCnt ? strengthColor(validCnt) : "rgba(255,255,255,0.08)",
+                        background: segment < validCnt ? strengthColor(validCnt) : "rgba(255,255,255,0.08)",
                         transition: "background 0.3s",
                       }} />
                     ))}
@@ -292,22 +303,22 @@ export default function Register() {
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 12px" }}>
-                    {PW_RULES.map((r, i) => (
-                      <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    {passwordChecks.map(rule => (
+                      <div key={rule.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <div style={{
                           width: 13, height: 13, borderRadius: "50%", flexShrink: 0,
-                          background: checks[i] ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)",
-                          border: `1px solid ${checks[i] ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.1)"}`,
+                          background: rule.passed ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${rule.passed ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.1)"}`,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           transition: "all 0.2s",
                         }}>
-                          {checks[i]
+                          {rule.passed
                             ? <Check size={8} color={S.emerald} />
                             : <X size={7} color={S.faint} />
                           }
                         </div>
-                        <span style={{ fontSize: 11, color: checks[i] ? S.emerald : S.muted }}>
-                          {r.label}
+                        <span style={{ fontSize: 11, color: rule.passed ? S.emerald : S.muted }}>
+                          {rule.label}
                         </span>
                       </div>
                     ))}

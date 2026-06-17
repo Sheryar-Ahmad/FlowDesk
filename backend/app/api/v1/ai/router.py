@@ -1,8 +1,9 @@
+from typing import Annotated, List, Literal, Optional
+
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Literal, Optional
 from datetime import datetime, timedelta, timezone
 import structlog
 import json
@@ -13,7 +14,18 @@ from app.core.middleware.rate_limiter import limiter, AI_LIMIT
 from app.services.ai_service import analyze_code, generate_session_title, build_context_from_history, smart_ai_router
 
 logger = structlog.get_logger(__name__)
-router = APIRouter()
+router = APIRouter(
+    responses={
+        400: {"description": "Bad request."},
+        404: {"description": "Requested AI resource was not found."},
+        500: {"description": "AI service error."},
+    }
+)
+
+CurrentUser = Annotated[dict, Depends(get_current_user)]
+DbSession = Annotated[AsyncSession, Depends(get_db)]
+SESSION_NOT_FOUND = "Session not found."
+AI_LIMIT_MESSAGE = "Free tier limit: 20 AI messages per day. Upgrade to Pro for higher limits."
 
 
 class Message(BaseModel):
@@ -73,6 +85,105 @@ async def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:
     return result.fetchone()
 
 
+def parse_messages(value) -> list[dict]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (TypeError, json.JSONDecodeError):
+            value = []
+    if not isinstance(value, list):
+        return []
+    return [
+        message
+        for message in value
+        if isinstance(message, dict)
+        and message.get("role") in {"user", "assistant"}
+        and isinstance(message.get("content"), str)
+        and message["content"].strip()
+    ]
+
+
+async def load_session_messages(db: AsyncSession, session_id: str | None, user_id: str):
+    if not session_id:
+        return None, []
+
+    result = await db.execute(
+        text(
+            """
+            SELECT id, title, messages, message_count, tokens_used, model_used, created_at
+            FROM ai_sessions
+            WHERE id=:sid AND user_id=:uid
+            """
+        ),
+        {"sid": session_id, "uid": user_id},
+    )
+    session_data = result.fetchone()
+    if not session_data:
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
+    return session_data, parse_messages(session_data.messages)
+
+
+async def load_recent_session_context(db: AsyncSession, user_id: str) -> list[dict]:
+    result = await db.execute(
+        text("SELECT messages FROM ai_sessions WHERE user_id=:uid ORDER BY updated_at DESC LIMIT 5"),
+        {"uid": user_id},
+    )
+    return [{"messages": parse_messages(row.messages)} for row in result.fetchall()]
+
+
+async def save_ai_session(
+    db: AsyncSession,
+    user_id: str,
+    session_id: str | None,
+    session_data,
+    user_msg: dict,
+    ai_msg: dict,
+    tokens_used: int,
+    model: str,
+) -> tuple[str, str | None]:
+    updated_messages = parse_messages(session_data.messages) + [user_msg, ai_msg] if session_data else [user_msg, ai_msg]
+    session_title = session_data.title if session_data else None
+
+    if session_id and session_data:
+        await db.execute(
+            text(
+                """
+                UPDATE ai_sessions
+                SET messages=CAST(:msgs AS jsonb), message_count=message_count+1,
+                    tokens_used=tokens_used+:tokens, updated_at=NOW()
+                WHERE id=:sid AND user_id=:uid
+                """
+            ),
+            {
+                "msgs": json.dumps(updated_messages),
+                "tokens": tokens_used,
+                "sid": session_id,
+                "uid": user_id,
+            },
+        )
+        return session_id, session_title
+
+    session_title = await generate_session_title([user_msg])
+    result_insert = await db.execute(
+        text(
+            """
+            INSERT INTO ai_sessions (user_id, title, messages, message_count, tokens_used, model_used)
+            VALUES (:uid, :title, CAST(:msgs AS jsonb), 1, :tokens, :model)
+            RETURNING id
+            """
+        ),
+        {
+            "uid": user_id,
+            "title": session_title,
+            "msgs": json.dumps(updated_messages),
+            "tokens": tokens_used,
+            "model": model,
+        },
+    )
+    new_session = result_insert.fetchone()
+    return str(new_session.id), session_title
+
+
 async def reserve_ai_message(db: AsyncSession, user_id: str):
     """Atomically reserves one daily AI request before contacting a provider."""
     now = datetime.now(timezone.utc)
@@ -105,7 +216,7 @@ async def reserve_ai_message(db: AsyncSession, user_id: str):
     )
     reservation = result.fetchone()
     if not reservation:
-        raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for higher limits.")
+        raise ValueError(AI_LIMIT_MESSAGE)
     await db.commit()
     return reservation
 
@@ -165,7 +276,7 @@ def parse_subtasks(raw_response: str) -> List[str]:
         parsed = json.loads(cleaned[start:end])
         if isinstance(parsed, list):
             return [str(item).strip() for item in parsed if str(item).strip()][:5]
-    except (ValueError, json.JSONDecodeError):
+    except ValueError:
         pass
     return [
         line.strip().lstrip("-*0123456789.) ").strip()
@@ -179,57 +290,16 @@ def parse_subtasks(raw_response: str) -> List[str]:
 async def chat(
     request: Request,
     body: ChatRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """
     Chat with AI. Supports persistent sessions with memory.
     """
     try:
         session_id = body.session_id
-        session_messages = []
-        session_data = None
-
-        if session_id:
-
-            result = await db.execute(
-                text("SELECT id, title, messages, message_count, tokens_used, model_used, created_at FROM ai_sessions WHERE id=:sid AND user_id=:uid"),
-                {"sid": session_id, "uid": current_user["id"]}
-            )
-            session_data = result.fetchone()
-            if not session_data:
-                raise HTTPException(status_code=404, detail="Session not found.")
-            stored = session_data.messages
-            if isinstance(stored, str):
-                try:
-                    stored = json.loads(stored)
-                except (TypeError, json.JSONDecodeError):
-                    stored = []
-            session_messages = [
-                message
-                for message in stored
-                if isinstance(message, dict)
-                and message.get("role") in {"user", "assistant"}
-                and isinstance(message.get("content"), str)
-                and message["content"].strip()
-            ] if isinstance(stored, list) else []
-
-
-        past_result = await db.execute(
-            text("SELECT messages FROM ai_sessions WHERE user_id=:uid ORDER BY updated_at DESC LIMIT 5"),
-            {"uid": current_user["id"]}
-        )
-        past_sessions = []
-        for row in past_result.fetchall():
-            msgs = row.messages
-            if isinstance(msgs, str):
-                try:
-                    msgs = json.loads(msgs)
-                except (TypeError, json.JSONDecodeError):
-                    msgs = []
-            past_sessions.append({"messages": msgs})
-
-
+        session_data, session_messages = await load_session_messages(db, session_id, current_user["id"])
+        past_sessions = await load_recent_session_context(db, current_user["id"])
         reservation = await reserve_ai_message(db, current_user["id"])
         messages_used = reservation.ai_messages_used_today - 1
         context = build_context_from_history(past_sessions)
@@ -257,48 +327,18 @@ async def chat(
             raise
 
 
-        ai_msg = {"role": "assistant", "content": result_ai["response"]}
         user_msg = new_messages[-1]
-
-        updated_messages = session_messages + [user_msg, ai_msg]
-
-        session_title = session_data.title if session_data else None
-        if session_id and session_data:
-
-            await db.execute(
-                text("""
-                    UPDATE ai_sessions
-                    SET messages=CAST(:msgs AS jsonb), message_count=message_count+1,
-                        tokens_used=tokens_used+:tokens, updated_at=NOW()
-                    WHERE id=:sid AND user_id=:uid
-                """),
-                {
-                    "msgs": json.dumps(updated_messages),
-                    "tokens": result_ai["tokens_used"],
-                    "sid": session_id, "uid": current_user["id"]
-                }
-            )
-        else:
-
-            session_title = await generate_session_title(new_messages)
-            result_insert = await db.execute(
-                text("""
-                    INSERT INTO ai_sessions (user_id, title, messages, message_count, tokens_used, model_used)
-                    VALUES (:uid, :title, CAST(:msgs AS jsonb), 1, :tokens, :model)
-                    RETURNING id
-                """),
-                {
-                    "uid": current_user["id"],
-                    "title": session_title,
-                    "msgs": json.dumps(updated_messages),
-                    "tokens": result_ai["tokens_used"],
-                    "model": result_ai["model"]
-                }
-            )
-            new_session = result_insert.fetchone()
-            session_id = str(new_session.id)
-
-
+        ai_msg = {"role": "assistant", "content": result_ai["response"]}
+        session_id, session_title = await save_ai_session(
+            db=db,
+            user_id=current_user["id"],
+            session_id=session_id,
+            session_data=session_data,
+            user_msg=user_msg,
+            ai_msg=ai_msg,
+            tokens_used=result_ai["tokens_used"],
+            model=result_ai["model"],
+        )
         await db.commit()
 
         remaining = "unlimited" if reservation.plan == "pro" else max(0, 20 - reservation.ai_messages_used_today)
@@ -325,8 +365,8 @@ async def chat(
 
 @router.get("/sessions")
 async def get_sessions(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Get all AI chat sessions for current user."""
     result = await db.execute(
@@ -358,8 +398,8 @@ async def get_sessions(
 @router.get("/sessions/{session_id}")
 async def get_session(
     session_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Get a specific session with all messages."""
     result = await db.execute(
@@ -368,14 +408,9 @@ async def get_session(
     )
     session = result.fetchone()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found.")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
 
-    messages = session.messages
-    if isinstance(messages, str):
-        try:
-            messages = json.loads(messages)
-        except (TypeError, json.JSONDecodeError):
-            messages = []
+    messages = parse_messages(session.messages)
 
     return {
         "success": True,
@@ -395,8 +430,8 @@ async def get_session(
 async def rename_session(
     session_id: str,
     body: SessionRename,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Rename one of the current user's AI chat sessions."""
     result = await db.execute(
@@ -416,7 +451,7 @@ async def rename_session(
     )
     session = result.fetchone()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found.")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
     await db.commit()
     return {
         "success": True,
@@ -431,8 +466,8 @@ async def rename_session(
 @router.delete("/sessions/{session_id}")
 async def delete_session(
     session_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Delete a chat session."""
     result = await db.execute(
@@ -440,7 +475,7 @@ async def delete_session(
         {"sid": session_id, "uid": current_user["id"]}
     )
     if not result.fetchone():
-        raise HTTPException(status_code=404, detail="Session not found.")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
     await db.commit()
     return {"success": True, "message": "Session deleted."}
 
@@ -450,8 +485,8 @@ async def delete_session(
 async def analyze(
     request: Request,
     body: AnalyzeRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Analyze code - explain, fix, review, optimize, document, test."""
     reservation = None
@@ -480,8 +515,8 @@ async def analyze(
 async def summarize_note(
     request: Request,
     body: NoteSummaryRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Summarize a note without creating an AI chat session."""
     content = body.content.strip()
@@ -508,8 +543,8 @@ async def summarize_note(
 async def suggest_task_subtasks(
     request: Request,
     body: TaskSubtasksRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Generate actionable subtasks for a task."""
     title = body.title.strip()
@@ -537,8 +572,8 @@ async def suggest_task_subtasks(
 async def prioritize_tasks(
     request: Request,
     body: TaskPrioritizeRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Recommend what the user should work on next."""
     if not body.tasks:
@@ -560,8 +595,8 @@ async def prioritize_tasks(
 
 @router.get("/usage")
 async def get_usage(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Get AI usage stats."""
     now = datetime.now(timezone.utc)

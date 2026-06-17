@@ -75,7 +75,7 @@ interface SpeechRecognitionInstance {
 }
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
-type SpeechRecognitionWindow = typeof window & {
+type SpeechRecognitionWindow = typeof globalThis & {
   SpeechRecognition?: SpeechRecognitionConstructor
   webkitSpeechRecognition?: SpeechRecognitionConstructor
 }
@@ -207,9 +207,39 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;")
 }
 
+function hashString(value: string) {
+  let hash = 0
+  for (const char of value) {
+    hash = Math.imul(hash, 31) + (char.codePointAt(0) ?? 0)
+  }
+  return Math.abs(hash).toString(36)
+}
+
+function createKeyFactory(scope: string) {
+  const seen = new Map<string, number>()
+  return (value: string) => {
+    const base = `${scope}-${hashString(value)}`
+    const count = seen.get(base) ?? 0
+    seen.set(base, count + 1)
+    return count === 0 ? base : `${base}-${count}`
+  }
+}
+
+const CODE_FENCE_SPLIT_PATTERN = /(```[\s\S]*?```)/g
+const FIRST_CODE_BLOCK_PATTERN = /```(\w*)\n([\s\S]*?)```/
+const ORDERED_LIST_PATTERN = /^\d+\./
+const ORDERED_LIST_NUMBER_PATTERN = /^\d+/
+
+function countCodeFences(value: string) {
+  const fencePattern = /```/g
+  let count = 0
+  while (fencePattern.exec(value)) count += 1
+  return count
+}
+
 function getStoredTheme(): ThemeName {
   const value = LS.get("fd_ai_theme", "dark")
-  return typeof value === "string" && Object.prototype.hasOwnProperty.call(THEMES, value)
+  return typeof value === "string" && Object.hasOwn(THEMES, value)
     ? value as ThemeName
     : "dark"
 }
@@ -232,18 +262,20 @@ function getStoredBoolean(key: string, fallback: boolean) {
 }
 
 
-function MessageContent({ content, fontSize, C: T }: { content: string; fontSize: number; C: typeof THEMES.dark }) {
-  const parts = content.split(/(```[\s\S]*?```)/g)
+function MessageContent({ content, fontSize, C: T }: Readonly<{ content: string; fontSize: number; C: typeof THEMES.dark }>) {
+  const parts = content.split(CODE_FENCE_SPLIT_PATTERN)
+  const keyForPart = createKeyFactory("message-part")
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {parts.map((part, i) => {
+      {parts.map(part => {
+        const partKey = keyForPart(part)
         if (part.startsWith("```")) {
           const lines = part.split("\n")
           const lang = lines[0].replace("```", "").trim() || "code"
           const code = lines.slice(1, -1).join("\n")
           const lineCount = code.split("\n").length
           return (
-            <div key={i} style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border2}`, margin: "4px 0" }}>
+            <div key={partKey} style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border2}`, margin: "4px 0" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 12px", background: T.surface2, borderBottom: `1px solid ${T.border}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ display: "flex", gap: 4 }}>
@@ -275,32 +307,34 @@ function MessageContent({ content, fontSize, C: T }: { content: string; fontSize
             </div>
           )
         }
+        const keyForLine = createKeyFactory(`message-line-${partKey}`)
         return (
-          <div key={i} style={{ fontSize, color: "#CBD5E1", lineHeight: 1.78 }}>
-            {part.split("\n").map((line, j) => {
+          <div key={partKey} style={{ fontSize, color: "#CBD5E1", lineHeight: 1.78 }}>
+            {part.split("\n").map(line => {
+              const lineKey = keyForLine(line)
               const safeLine = escapeHtml(line)
               const b = safeLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#F8FAFC;font-weight:600">$1</strong>')
               const it = b.replace(/\*(.*?)\*/g, '<em style="color:#CBD5E1">$1</em>')
               const c = it.replace(/`([^`]+)`/g, '<code style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:12px;color:#A5B4FC">$1</code>')
               const lk = c.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" style="color:#60A5FA;text-decoration:underline">$1</a>')
-              if (line.startsWith("# "))   return <h1 key={j} style={{ fontSize: fontSize + 4, fontWeight: 700, color: "#F8FAFC", margin: "12px 0 5px" }}>{line.slice(2)}</h1>
-              if (line.startsWith("## "))  return <h2 key={j} style={{ fontSize: fontSize + 2, fontWeight: 600, color: "#F1F5F9", margin: "9px 0 3px" }}>{line.slice(3)}</h2>
-              if (line.startsWith("### ")) return <h3 key={j} style={{ fontSize: fontSize + 1, fontWeight: 600, color: "#A5B4FC", margin: "7px 0 3px" }}>{line.slice(4)}</h3>
-              if (line.startsWith("> "))   return <blockquote key={j} style={{ borderLeft: `3px solid ${T.indigo}`, paddingLeft: 12, margin: "4px 0", color: T.muted, fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: lk.slice(2) }} />
+              if (line.startsWith("# "))   return <h1 key={lineKey} style={{ fontSize: fontSize + 4, fontWeight: 700, color: "#F8FAFC", margin: "12px 0 5px" }}>{line.slice(2)}</h1>
+              if (line.startsWith("## "))  return <h2 key={lineKey} style={{ fontSize: fontSize + 2, fontWeight: 600, color: "#F1F5F9", margin: "9px 0 3px" }}>{line.slice(3)}</h2>
+              if (line.startsWith("### ")) return <h3 key={lineKey} style={{ fontSize: fontSize + 1, fontWeight: 600, color: "#A5B4FC", margin: "7px 0 3px" }}>{line.slice(4)}</h3>
+              if (line.startsWith("> "))   return <blockquote key={lineKey} style={{ borderLeft: `3px solid ${T.indigo}`, paddingLeft: 12, margin: "4px 0", color: T.muted, fontStyle: "italic" }} dangerouslySetInnerHTML={{ __html: lk.slice(2) }} />
               if (line.startsWith("- ") || line.startsWith("• ")) return (
-                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
+                <div key={lineKey} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
                   <span style={{ color: T.indigo, marginTop: 4, flexShrink: 0 }}>•</span>
                   <span dangerouslySetInnerHTML={{ __html: lk.slice(2) }} />
                 </div>
               )
-              if (/^\d+\./.test(line)) return (
-                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
-                  <span style={{ color: T.indigo, fontFamily: "monospace", fontSize: 11, marginTop: 4, flexShrink: 0 }}>{line.match(/^\d+/)?.[0]}.</span>
+              if (ORDERED_LIST_PATTERN.test(line)) return (
+                <div key={lineKey} style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "2px 0" }}>
+                  <span style={{ color: T.indigo, fontFamily: "monospace", fontSize: 11, marginTop: 4, flexShrink: 0 }}>{ORDERED_LIST_NUMBER_PATTERN.exec(line)?.[0]}.</span>
                   <span dangerouslySetInnerHTML={{ __html: lk.replace(/^\d+\.\s*/, "") }} />
                 </div>
               )
-              if (line === "") return <div key={j} style={{ height: 6 }} />
-              return <p key={j} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: lk }} />
+              if (line === "") return <div key={lineKey} style={{ height: 6 }} />
+              return <p key={lineKey} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: lk }} />
             })}
           </div>
         )
@@ -310,7 +344,7 @@ function MessageContent({ content, fontSize, C: T }: { content: string; fontSize
 }
 
 
-function ThinkingDots({ C: T }: { C: typeof THEMES.dark }) {
+function ThinkingDots({ C: T }: Readonly<{ C: typeof THEMES.dark }>) {
   const [elapsed, setElapsed] = useState(0)
   const [tip, setTip] = useState(0)
   useEffect(() => {
@@ -339,16 +373,16 @@ function ThinkingDots({ C: T }: { C: typeof THEMES.dark }) {
 }
 
 
-function StatsModal({ messages, sessions, usage, onClose, C: T }: {
+function StatsModal({ messages, sessions, usage, onClose, C: T }: Readonly<{
   messages: Message[]; sessions: Session[]
   usage: { used_today: number; remaining: number | string; limit: number | string }
   onClose: () => void; C: typeof THEMES.dark
-}) {
+}>) {
   const aiMsgs = messages.filter(m => m.role === "assistant")
   const userMsgs = messages.filter(m => m.role === "user")
   const totalWords = aiMsgs.reduce((a, m) => a + m.content.split(/\s+/).length, 0)
   const totalTokens = messages.reduce((a, m) => a + (m.tokens || 0), 0)
-  const codeBlocks = Math.round(aiMsgs.reduce((a, m) => a + (m.content.match(/```/g) || []).length / 2, 0))
+  const codeBlocks = Math.round(aiMsgs.reduce((a, m) => a + countCodeFences(m.content) / 2, 0))
   const avgLen = aiMsgs.length > 0 ? Math.round(totalWords / aiMsgs.length) : 0
   const reactions = messages.filter(m => m.reaction).length
   const pinned = messages.filter(m => m.pinned).length
@@ -413,11 +447,11 @@ function StatsModal({ messages, sessions, usage, onClose, C: T }: {
 }
 
 
-function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: {
+function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: Readonly<{
   snippets: Snippet[]; onDelete: (id: string) => void
   onCopy: (code: string) => void; onClose: () => void
   C: typeof THEMES.dark
-}) {
+}>) {
   const [q, setQ] = useState("")
   const filtered = snippets.filter(s => s.title.toLowerCase().includes(q.toLowerCase()) || s.lang.toLowerCase().includes(q.toLowerCase()))
   return (
@@ -458,7 +492,7 @@ function SnippetVault({ snippets, onDelete, onCopy, onClose, C: T }: {
 }
 
 
-function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C: T, compactMode, setCompactMode, soundEnabled, setSoundEnabled, autoScroll, setAutoScroll, showTimestamps, setShowTimestamps }: {
+function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C: T, compactMode, setCompactMode, soundEnabled, setSoundEnabled, autoScroll, setAutoScroll, showTimestamps, setShowTimestamps }: Readonly<{
   themeName: ThemeName; fontSize: number
   setTheme: (t: ThemeName) => void; setFontSize: (n: number) => void
   onClose: () => void; C: typeof THEMES.dark
@@ -466,7 +500,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
   soundEnabled: boolean; setSoundEnabled: (v: boolean) => void
   autoScroll: boolean; setAutoScroll: (v: boolean) => void
   showTimestamps: boolean; setShowTimestamps: (v: boolean) => void
-}) {
+}>) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 16 }}>
       <div style={{ background: T.surface, borderRadius: 16, width: "100%", maxWidth: 420, border: `1px solid ${T.border}`, overflow: "hidden" }}>
@@ -524,7 +558,7 @@ function SettingsPanel({ themeName, fontSize, setTheme, setFontSize, onClose, C:
 }
 
 
-function ShortcutsModal({ onClose, C: T }: { onClose: () => void; C: typeof THEMES.dark }) {
+function ShortcutsModal({ onClose, C: T }: Readonly<{ onClose: () => void; C: typeof THEMES.dark }>) {
   const shortcuts = [
     ["Enter", "Send message"],
     ["Shift+Enter", "New line"],
@@ -557,7 +591,7 @@ function ShortcutsModal({ onClose, C: T }: { onClose: () => void; C: typeof THEM
 }
 
 
-function TagPicker({ current, onSelect, onClose, C: T }: { current?: string; onSelect: (t: string | undefined) => void; onClose: () => void; C: typeof THEMES.dark }) {
+function TagPicker({ current, onSelect, onClose, C: T }: Readonly<{ current?: string; onSelect: (t: string | undefined) => void; onClose: () => void; C: typeof THEMES.dark }>) {
   return (
     <div style={{ position: "absolute", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 8, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", top: "100%", right: 0, marginTop: 4, minWidth: 160 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -665,8 +699,8 @@ export default function AIAssistant() {
   const playPing = useCallback(() => {
     if (!soundEnabled) return
     try {
-      const AudioContextApi = window.AudioContext
-        ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      const AudioContextApi = globalThis.AudioContext
+        ?? (globalThis as typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!AudioContextApi) return
       const ctx = new AudioContextApi()
       const osc = ctx.createOscillator(); const gain = ctx.createGain()
@@ -731,7 +765,7 @@ export default function AIAssistant() {
       const storedPins = LS.get(`fd_pins_${sessionId}`, [])
       setPinnedMsgIds(Array.isArray(storedPins) ? storedPins as string[] : [])
       setEditingSessionId(null)
-      if (window.innerWidth < 768) setShowSidebar(false)
+      if (globalThis.innerWidth < 768) setShowSidebar(false)
     } catch (error) {
       if (!axios.isCancel(error) && !controller.signal.aborted) {
         toast.error("Failed to load session")
@@ -753,7 +787,7 @@ export default function AIAssistant() {
     setMessages([]); setCurrentSessionId(null); setInput(""); setPinnedMsgIds([])
     setSearchQuery(""); setShowSearch(false); setActiveTagFilter(null)
     setEditingSessionId(null); setSessionTitleDraft("")
-    if (window.innerWidth < 768) setShowSidebar(false)
+    if (globalThis.innerWidth < 768) setShowSidebar(false)
     inputRef.current?.focus()
   }, [])
 
@@ -920,7 +954,7 @@ export default function AIAssistant() {
 
 
   const toggleVoice = useCallback(() => {
-    const speechWindow = window as SpeechRecognitionWindow
+    const speechWindow = globalThis as SpeechRecognitionWindow
     const SpeechRecognitionApi = speechWindow.webkitSpeechRecognition ?? speechWindow.SpeechRecognition
     if (!SpeechRecognitionApi) {
       toast.error("Speech recognition not supported"); return
@@ -979,11 +1013,11 @@ export default function AIAssistant() {
 
   useEffect(() => {
     if (!isAuthenticated) return
-    const timer = window.setTimeout(() => {
+    const timer = globalThis.setTimeout(() => {
       void loadUsage()
       void loadSessions()
     }, 0)
-    return () => window.clearTimeout(timer)
+    return () => globalThis.clearTimeout(timer)
   }, [isAuthenticated, loadSessions, loadUsage])
 
   useEffect(() => () => {
@@ -1010,8 +1044,8 @@ export default function AIAssistant() {
         setEditingSessionId(null); setSessionTitleDraft("")
       }
     }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
+    globalThis.addEventListener("keydown", handler)
+    return () => globalThis.removeEventListener("keydown", handler)
   }, [handleExportChat, startNewChat])
 
 
@@ -1053,12 +1087,12 @@ export default function AIAssistant() {
 
 
   const readAloud = (text: string) => {
-    if (!("speechSynthesis" in window)) { toast.error("TTS not supported"); return }
-    window.speechSynthesis.cancel()
+    if (!("speechSynthesis" in globalThis)) { toast.error("TTS not supported"); return }
+    globalThis.speechSynthesis.cancel()
     const plain = text.replace(/```[\s\S]*?```/g, "…code block…").replace(/[#*`]/g, "").trim()
     const utt = new SpeechSynthesisUtterance(plain)
     utt.rate = 1.05; utt.pitch = 1
-    window.speechSynthesis.speak(utt)
+    globalThis.speechSynthesis.speak(utt)
     toast("Reading aloud 🔊", { duration: 2000 })
   }
 
@@ -1209,8 +1243,8 @@ export default function AIAssistant() {
             { icon: <Keyboard size={14} />, title: "Shortcuts (Ctrl+/)", active: showShortcuts, action: () => setShowShortcuts(true), show: true },
             { icon: <Settings size={14} />, title: "Settings", active: showSettings, action: () => setShowSettings(true), show: true },
             { icon: fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />, title: "Fullscreen", active: fullscreen, action: () => setFullscreen(f => !f), show: true },
-          ].filter(b => b.show).map((b, i) => (
-            <button key={i} onClick={b.action} title={b.title} style={{
+          ].filter(b => b.show).map(b => (
+            <button key={b.title} onClick={b.action} title={b.title} style={{
               background: b.active ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer",
               color: b.active ? T.indigo : T.muted, padding: 6, borderRadius: 7, display: "flex",
               transition: "all 0.12s",
@@ -1293,7 +1327,17 @@ export default function AIAssistant() {
                     No sessions
                   </div>
                 ) : filteredSessions.map(s => (
-                  <div key={s.id} onClick={() => loadSession(s.id)} style={{
+                  <div
+                    key={s.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => loadSession(s.id)}
+                    onKeyDown={event => {
+                      if (event.key !== "Enter" && event.key !== " ") return
+                      event.preventDefault()
+                      void loadSession(s.id)
+                    }}
+                    style={{
                     display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 9px", borderRadius: 8,
                     cursor: "pointer", marginBottom: 2,
                     background: currentSessionId === s.id ? "rgba(99,102,241,0.1)" : "transparent",
@@ -1346,12 +1390,15 @@ export default function AIAssistant() {
                         {s.tokens_used > 0 && <span style={{ fontSize: 10, color: T.muted }}>{s.tokens_used.toLocaleString()}t</span>}
                       </div>
                     </div>
-                    <div onClick={event => event.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {editingSessionId === s.id ? (
                         <>
                           <button
                             type="button"
-                            onClick={() => void renameSession(s.id)}
+                            onClick={event => {
+                              event.stopPropagation()
+                              void renameSession(s.id)
+                            }}
                             disabled={renamingSessionId === s.id}
                             title="Save session name"
                             aria-label="Save session name"
@@ -1363,7 +1410,11 @@ export default function AIAssistant() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => { setEditingSessionId(null); setSessionTitleDraft("") }}
+                            onClick={event => {
+                              event.stopPropagation()
+                              setEditingSessionId(null)
+                              setSessionTitleDraft("")
+                            }}
                             title="Cancel rename"
                             aria-label="Cancel rename"
                             style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", display: "flex", padding: 4 }}
@@ -1391,27 +1442,27 @@ export default function AIAssistant() {
                 pinnedMessages.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "28px 0", color: T.muted, fontSize: 12 }}>No pinned messages</div>
                 ) : pinnedMessages.map(m => (
-                  <div key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (window.innerWidth < 768) setShowSidebar(false) }}
-                    style={{ padding: "8px 9px", borderRadius: 8, background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.15)`, marginBottom: 5, cursor: "pointer" }}>
+                  <button type="button" key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (globalThis.innerWidth < 768) setShowSidebar(false) }}
+                    style={{ width: "100%", textAlign: "left", font: "inherit", padding: "8px 9px", borderRadius: 8, background: "rgba(249,115,22,0.06)", border: `1px solid rgba(249,115,22,0.15)`, marginBottom: 5, cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
                       <Pin size={8} color="#FB923C" /><span style={{ fontSize: 9, color: T.muted }}>{m.role === "user" ? "You" : "AI"}</span>
                     </div>
                     <p style={{ fontSize: 11, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.content.slice(0, 70)}</p>
-                  </div>
+                  </button>
                 ))
               )}
               {sidebarView === "bookmarks" && (
                 bookmarkedMessages.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "28px 0", color: T.muted, fontSize: 12 }}>No bookmarks yet</div>
                 ) : bookmarkedMessages.map(m => (
-                  <div key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (window.innerWidth < 768) setShowSidebar(false) }}
-                    style={{ padding: "8px 9px", borderRadius: 8, background: "rgba(245,158,11,0.06)", border: `1px solid rgba(245,158,11,0.15)`, marginBottom: 5, cursor: "pointer" }}>
+                  <button type="button" key={m.id} onClick={() => { document.getElementById(`msg-${m.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); if (globalThis.innerWidth < 768) setShowSidebar(false) }}
+                    style={{ width: "100%", textAlign: "left", font: "inherit", padding: "8px 9px", borderRadius: 8, background: "rgba(245,158,11,0.06)", border: `1px solid rgba(245,158,11,0.15)`, marginBottom: 5, cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
                       <Star size={8} color={T.amber} /><span style={{ fontSize: 9, color: T.muted }}>{m.role === "user" ? "You" : "AI"}</span>
                       {msgTags[m.id] && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: TAG_COLORS[msgTags[m.id]] + "20", color: TAG_COLORS[msgTags[m.id]] }}>{msgTags[m.id]}</span>}
                     </div>
                     <p style={{ fontSize: 11, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.content.slice(0, 70)}</p>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
@@ -1424,8 +1475,8 @@ export default function AIAssistant() {
                 </button>
                 {showPromptHistory && (
                   <div style={{ maxHeight: 120, overflowY: "auto" }}>
-                    {promptHistory.slice(0, 8).map((p, i) => (
-                      <button key={i} onClick={() => { setInput(p.text); inputRef.current?.focus(); if (window.innerWidth < 768) setShowSidebar(false) }} style={{
+                    {promptHistory.slice(0, 8).map(p => (
+                      <button key={`${p.ts}-${hashString(p.text)}`} onClick={() => { setInput(p.text); inputRef.current?.focus(); if (globalThis.innerWidth < 768) setShowSidebar(false) }} style={{
                         width: "100%", textAlign: "left", padding: "5px 8px", background: "none", border: "none", cursor: "pointer",
                         color: T.muted, fontSize: 11, borderRadius: 6,
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -1654,7 +1705,7 @@ export default function AIAssistant() {
 
                                 {message.content.includes("```") && (
                                   <button onClick={() => {
-                                    const match = message.content.match(/```(\w*)\n([\s\S]*?)```/)
+                                    const match = FIRST_CODE_BLOCK_PATTERN.exec(message.content)
                                     if (match) saveSnippet(match[2], match[1] || "code")
                                   }} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", gap: 2, fontSize: 10 }}>
                                     <Archive size={9} />Save
