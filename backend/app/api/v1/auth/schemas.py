@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
 
@@ -46,13 +46,14 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     """Response returned after successful login or register."""
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     user: dict
 
 
 class RefreshRequest(BaseModel):
     """Data required to refresh access token."""
-    refresh_token: str
+    refresh_token: str = Field(min_length=32, max_length=512)
 
 
 class ForgotPasswordRequest(BaseModel):

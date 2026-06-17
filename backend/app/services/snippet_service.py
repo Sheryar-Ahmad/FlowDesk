@@ -356,14 +356,15 @@ async def increment_use_count(
     db: AsyncSession,
     snippet_id: str,
     user_id: str,
-) -> None:
+) -> bool:
     """Increments use_count when snippet is copied."""
-    await db.execute(
+    result = await db.execute(
         text("""
             UPDATE snippets
             SET use_count = use_count + 1
-            WHERE id = :snippet_id AND user_id = :user_id
+            WHERE id = :snippet_id AND user_id = :user_id AND deleted_at IS NULL
         """),
         {"snippet_id": snippet_id, "user_id": user_id}
     )
     await db.commit()
+    return result.rowcount > 0

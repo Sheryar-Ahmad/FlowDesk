@@ -40,7 +40,8 @@ def require_ai_text(content, provider: str) -> str:
     return text
 
 
-def build_system_prompt(user_context: dict = {}) -> str:
+def build_system_prompt(user_context: dict | None = None) -> str:
+    user_context = user_context or {}
     name = user_context.get("name", "Developer")
     stack = user_context.get("stack", "")
     style = user_context.get("style", "")
@@ -142,10 +143,12 @@ async def chat_with_ai(
     messages: list,
     user_plan: str,
     ai_messages_used: int,
-    user_context: dict = {},
-    session_messages: list = [],
+    user_context: dict | None = None,
+    session_messages: list | None = None,
 ) -> dict:
     """Ultimate AI chat with memory and context awareness."""
+    user_context = user_context or {}
+    session_messages = session_messages or []
 
     if user_plan == "free" and ai_messages_used >= 20:
         raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for unlimited.")
@@ -261,9 +264,10 @@ async def analyze_code(code: str, language: str, task: str = "explain") -> str:
     return result["response"]
 
 
-async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
+async def chat_with_gemini(messages: list, user_context: dict | None = None) -> dict:
     """Gemini fallback using new google-genai package."""
     from google import genai
+    user_context = user_context or {}
 
     if not settings.GEMINI_API_KEY:
         raise ValueError("Gemini API key not configured.")
@@ -292,8 +296,9 @@ async def chat_with_gemini(messages: list, user_context: dict = {}) -> dict:
     }
 
 
-async def chat_with_mistral(messages: list, user_context: dict = {}) -> dict:
+async def chat_with_mistral(messages: list, user_context: dict | None = None) -> dict:
     """Mistral fallback - free tier available."""
+    user_context = user_context or {}
     try:
         from mistralai import Client
     except ImportError:
@@ -335,10 +340,12 @@ async def smart_ai_router(
     messages: list,
     user_plan: str,
     ai_messages_used: int,
-    user_context: dict = {},
-    session_messages: list = [],
+    user_context: dict | None = None,
+    session_messages: list | None = None,
 ) -> dict:
     """Routes requests through configured providers in fallback order."""
+    user_context = user_context or {}
+    session_messages = session_messages or []
     errors = []
 
 

@@ -16,6 +16,11 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
+@router.get("/health")
+async def notes_health():
+    return {"status": "notes service running"}
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @limiter.limit(API_LIMIT)
 async def create(request: Request, body: NoteCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -68,8 +73,3 @@ async def delete(request: Request, note_id: str, current_user: dict = Depends(ge
 async def versions(request: Request, note_id: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     v = await get_note_versions(db, note_id, current_user["id"])
     return {"success": True, "versions": v}
-
-
-@router.get("/health")
-async def notes_health():
-    return {"status": "notes service running"}

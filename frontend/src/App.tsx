@@ -1,6 +1,8 @@
 ﻿import { Routes, Route, Navigate } from "react-router-dom"
 import { lazy, Suspense } from "react"
 import { Loader2 } from "lucide-react"
+import { ProtectedRoute } from "./components/ProtectedRoute"
+import { Seo } from "./components/Seo"
 const Landing = lazy(() => import("./pages/landing/Landing"))
 const Login = lazy(() => import("./pages/auth/Login"))
 const Register = lazy(() => import("./pages/auth/Register"))
@@ -19,18 +21,19 @@ const Loading = () => (
 function App() {
   return (
     <div className="min-h-screen bg-gray-950">
+      <Seo />
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/snippets" element={<SnippetList />} />
-          <Route path="/notes" element={<NoteEditor />} />
-          <Route path="/tasks" element={<TaskBoard />} />
-          <Route path="/ai" element={<AIAssistant />} />
-          <Route path="/timer" element={<FocusTimer />} />
-          <Route path="/diff" element={<CodeDiff />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/snippets" element={<ProtectedRoute><SnippetList /></ProtectedRoute>} />
+          <Route path="/notes" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
+          <Route path="/tasks" element={<ProtectedRoute><TaskBoard /></ProtectedRoute>} />
+          <Route path="/ai" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
+          <Route path="/timer" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
+          <Route path="/diff" element={<ProtectedRoute><CodeDiff /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

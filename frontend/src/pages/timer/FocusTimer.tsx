@@ -14,16 +14,8 @@ import {
 } from "lucide-react"
 import { DeleteButton } from "../../components/DeleteButton"
 import { useAuthStore } from "../../store/authStore"
-import axios from "axios"
+import api from "../../services/api/client"
 import toast from "react-hot-toast"
-
-
-const api = axios.create({ baseURL: "http://localhost:8000/api/v1", timeout: 10000 })
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
 
 
 type TimerMode = "focus" | "short_break" | "long_break"

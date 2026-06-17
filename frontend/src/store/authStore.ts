@@ -7,14 +7,15 @@ import {
   logoutUser,
 } from "../services/api/auth.api"
 import type { RegisterData, LoginData } from "../services/api/auth.api"
+import {
+  clearAuthSession,
+  readAuthSession,
+  updateSessionUser,
+  writeAuthSession,
+  type SessionUser,
+} from "../services/api/authSession"
 
-interface User {
-  id: string
-  email: string
-  display_name: string
-  plan: string
-  email_verified: boolean
-}
+type User = SessionUser
 
 interface AuthState {
   user: User | null
@@ -24,7 +25,7 @@ interface AuthState {
   error: string | null
 
 
-  register: (data: RegisterData) => Promise<void>
+  register: (data: RegisterData, signal?: AbortSignal) => Promise<void>
   login: (data: LoginData) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -32,17 +33,24 @@ interface AuthState {
   setLoading: (loading: boolean) => void
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
+const storedSession = readAuthSession()
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: storedSession?.user ?? null,
+  accessToken: storedSession?.accessToken ?? null,
+  isAuthenticated: Boolean(storedSession),
   isLoading: false,
   error: null,
 
-  register: async (data: RegisterData) => {
+  register: async (data: RegisterData, signal?: AbortSignal) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await registerUser(data)
+      const response = await registerUser(data, signal)
+      writeAuthSession({
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        user: response.user,
+      })
       set({
         user: response.user,
         accessToken: response.access_token,
@@ -51,6 +59,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       })
     } catch (err: unknown) {
+      if (signal?.aborted) {
+        set({ isLoading: false })
+        throw err
+      }
       const message = getAuthErrorMessage(err, "Registration failed. Please try again.")
       set({ error: message, isLoading: false })
       throw new Error(message, { cause: err })
@@ -61,6 +73,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await loginUser(data)
+      writeAuthSession({
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        user: response.user,
+      })
       set({
         user: response.user,
         accessToken: response.access_token,
@@ -76,15 +93,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    const { accessToken } = get()
+    const session = readAuthSession()
     set({ isLoading: true })
     try {
-      if (accessToken) {
-        await logoutUser(accessToken, "")
-      }
+      if (session?.refreshToken) await logoutUser(session.refreshToken)
     } catch {
-      // Even if logout API fails, clear local state
+      // The browser session must still be cleared if token revocation fails.
     } finally {
+      clearAuthSession()
       set({
         user: null,
         accessToken: null,
@@ -96,12 +112,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshUser: async () => {
-    const { accessToken } = get()
-    if (!accessToken) return
+    if (!readAuthSession()) return
 
-    const response = await getCurrentUser(accessToken)
+    const response = await getCurrentUser()
+    updateSessionUser(response.user)
+    const session = readAuthSession()
     set({
       user: response.user,
+      accessToken: session?.accessToken ?? null,
       isAuthenticated: true,
     })
   },

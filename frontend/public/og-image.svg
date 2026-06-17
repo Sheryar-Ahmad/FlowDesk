@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080b14"/>
+      <stop offset="1" stop-color="#111936"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1040" cy="90" r="250" fill="#6366f1" opacity=".08"/>
+  <circle cx="140" cy="580" r="240" fill="#22d3ee" opacity=".06"/>
+  <rect x="90" y="92" width="76" height="76" rx="20" fill="#6366f1"/>
+  <path d="M112 117h31l-14 13 14 13h-31" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="190" y="150" fill="#f8fafc" font-family="Arial, sans-serif" font-size="54" font-weight="700">FlowDesk</text>
+  <text x="90" y="290" fill="#f8fafc" font-family="Arial, sans-serif" font-size="72" font-weight="700">The unified developer</text>
+  <text x="90" y="380" fill="url(#brand)" font-family="Arial, sans-serif" font-size="72" font-weight="700">workspace</text>
+  <text x="92" y="462" fill="#94a3b8" font-family="Arial, sans-serif" font-size="30">Snippets. Notes. Tasks. AI. Focus. Diff.</text>
+</svg>

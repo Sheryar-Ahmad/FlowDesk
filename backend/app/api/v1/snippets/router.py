@@ -16,6 +16,11 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
+@router.get("/health")
+async def snippets_health():
+    return {"status": "snippets service running"}
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @limiter.limit(API_LIMIT)
 async def create(
@@ -129,10 +134,7 @@ async def copy_snippet(
     db: AsyncSession = Depends(get_db),
 ):
     """Tracks when user copies a snippet."""
-    await increment_use_count(db, snippet_id, current_user["id"])
+    updated = await increment_use_count(db, snippet_id, current_user["id"])
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snippet not found.")
     return {"success": True, "message": "Usage tracked."}
-
-
-@router.get("/health")
-async def snippets_health():
-    return {"status": "snippets service running"}

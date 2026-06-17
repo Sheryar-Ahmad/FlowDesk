@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Literal, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import structlog
 import json
 
@@ -73,33 +73,54 @@ async def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:
     return result.fetchone()
 
 
-async def reset_daily_limit_if_needed(db: AsyncSession, user_id: str, user_data) -> int:
-    """Resets daily limit if new day."""
+async def reserve_ai_message(db: AsyncSession, user_id: str):
+    """Atomically reserves one daily AI request before contacting a provider."""
     now = datetime.now(timezone.utc)
-    messages_used = user_data.ai_messages_used_today or 0
-    reset_at = user_data.ai_messages_reset_at
+    reset_before = now.replace(microsecond=0) - timedelta(days=1)
+    result = await db.execute(
+        text("""
+            UPDATE users
+            SET ai_messages_used_today = CASE
+                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                        THEN 1
+                    ELSE ai_messages_used_today + 1
+                END,
+                ai_messages_reset_at = CASE
+                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                        THEN :now
+                    ELSE ai_messages_reset_at
+                END
+            WHERE id = :uid
+              AND (
+                  plan = 'pro'
+                  OR CASE
+                      WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                          THEN 0
+                      ELSE ai_messages_used_today
+                  END < 20
+              )
+            RETURNING ai_messages_used_today, plan, display_name
+        """),
+        {"uid": user_id, "now": now, "reset_before": reset_before},
+    )
+    reservation = result.fetchone()
+    if not reservation:
+        raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for higher limits.")
+    await db.commit()
+    return reservation
 
 
-    if reset_at:
-        if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
-            reset_at = reset_at.replace(tzinfo=timezone.utc)
-        if (now - reset_at).total_seconds() >= 86400:
-            messages_used = 0
-            await db.execute(
-                text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=NOW() WHERE id=:uid"),
-                {"uid": user_id}
-            )
-            await db.commit()
-            logger.info("AI daily limit auto-reset", user_id=user_id)
-    else:
-
-        await db.execute(
-            text("UPDATE users SET ai_messages_reset_at=NOW() WHERE id=:uid AND ai_messages_reset_at IS NULL"),
-            {"uid": user_id}
-        )
-        await db.commit()
-
-    return messages_used
+async def refund_ai_message(db: AsyncSession, user_id: str) -> None:
+    """Returns a reserved request when every provider fails."""
+    await db.execute(
+        text("""
+            UPDATE users
+            SET ai_messages_used_today = GREATEST(ai_messages_used_today - 1, 0)
+            WHERE id = :uid
+        """),
+        {"uid": user_id},
+    )
+    await db.commit()
 
 
 async def run_one_shot_ai(
@@ -109,25 +130,24 @@ async def run_one_shot_ai(
     task_name: str,
 ) -> dict:
     """Run a metered AI request without creating a chat session."""
-    user_data = await get_user_ai_data(db, current_user["id"])
-    messages_used = await reset_daily_limit_if_needed(db, current_user["id"], user_data)
+    reservation = await reserve_ai_message(db, current_user["id"])
+    messages_used = reservation.ai_messages_used_today - 1
     context = {
-        "name": user_data.display_name or current_user.get("display_name", "Developer"),
+        "name": reservation.display_name or current_user.get("display_name", "Developer"),
         "task": task_name,
     }
-    result_ai = await smart_ai_router(
-        messages=[{"role": "user", "content": prompt}],
-        user_plan=current_user["plan"],
-        ai_messages_used=messages_used,
-        user_context=context,
-        session_messages=[],
-    )
-    await db.execute(
-        text("UPDATE users SET ai_messages_used_today=ai_messages_used_today+1 WHERE id=:uid"),
-        {"uid": current_user["id"]},
-    )
-    await db.commit()
-    remaining = "unlimited" if current_user["plan"] == "pro" else max(0, 20 - messages_used - 1)
+    try:
+        result_ai = await smart_ai_router(
+            messages=[{"role": "user", "content": prompt}],
+            user_plan=reservation.plan,
+            ai_messages_used=messages_used,
+            user_context=context,
+            session_messages=[],
+        )
+    except Exception:
+        await refund_ai_message(db, current_user["id"])
+        raise
+    remaining = "unlimited" if reservation.plan == "pro" else max(0, 20 - reservation.ai_messages_used_today)
     return {
         "success": True,
         "response": result_ai["response"],
@@ -166,10 +186,6 @@ async def chat(
     Chat with AI. Supports persistent sessions with memory.
     """
     try:
-        user_data = await get_user_ai_data(db, current_user["id"])
-        messages_used = await reset_daily_limit_if_needed(db, current_user["id"], user_data)
-
-
         session_id = body.session_id
         session_messages = []
         session_data = None
@@ -214,8 +230,10 @@ async def chat(
             past_sessions.append({"messages": msgs})
 
 
+        reservation = await reserve_ai_message(db, current_user["id"])
+        messages_used = reservation.ai_messages_used_today - 1
         context = build_context_from_history(past_sessions)
-        context["name"] = user_data.display_name or current_user.get("display_name", "Developer")
+        context["name"] = reservation.display_name or current_user.get("display_name", "Developer")
 
 
         new_messages = [{"role": m.role, "content": m.content} for m in body.messages]
@@ -226,22 +244,17 @@ async def chat(
         else:
             all_messages = new_messages
 
-        # Call AI with full context - Groq first, Gemini fallback
         try:
             result_ai = await smart_ai_router(
                 messages=all_messages,
-                user_plan=current_user["plan"],
+                user_plan=reservation.plan,
                 ai_messages_used=messages_used,
                 user_context=context,
                 session_messages=session_messages,
             )
-        except ValueError as groq_err:
-            if "429" in str(groq_err) or "rate_limit" in str(groq_err).lower():
-                logger.warning("Groq limit reached, switching to Gemini fallback")
-                from app.services.ai_service import chat_with_gemini
-                result_ai = await chat_with_gemini(all_messages, context)
-            else:
-                raise groq_err
+        except Exception:
+            await refund_ai_message(db, current_user["id"])
+            raise
 
 
         ai_msg = {"role": "assistant", "content": result_ai["response"]}
@@ -286,13 +299,9 @@ async def chat(
             session_id = str(new_session.id)
 
 
-        await db.execute(
-            text("UPDATE users SET ai_messages_used_today=ai_messages_used_today+1 WHERE id=:uid"),
-            {"uid": current_user["id"]}
-        )
         await db.commit()
 
-        remaining = "unlimited" if current_user["plan"] == "pro" else max(0, 20 - messages_used - 1)
+        remaining = "unlimited" if reservation.plan == "pro" else max(0, 20 - reservation.ai_messages_used_today)
 
         return {
             "success": True,
@@ -445,12 +454,23 @@ async def analyze(
     db: AsyncSession = Depends(get_db),
 ):
     """Analyze code - explain, fix, review, optimize, document, test."""
+    reservation = None
     try:
+        reservation = await reserve_ai_message(db, current_user["id"])
         response = await analyze_code(body.code, body.language, body.task)
-        return {"success": True, "response": response}
+        remaining = (
+            "unlimited"
+            if reservation.plan == "pro"
+            else max(0, 20 - reservation.ai_messages_used_today)
+        )
+        return {"success": True, "response": response, "messages_remaining": remaining}
     except ValueError as e:
+        if reservation is not None:
+            await refund_ai_message(db, current_user["id"])
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if reservation is not None:
+            await refund_ai_message(db, current_user["id"])
         logger.error("Analyze error", error=str(e))
         raise HTTPException(status_code=500, detail="Analysis failed.")
 

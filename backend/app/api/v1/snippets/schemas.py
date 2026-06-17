@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 import re
@@ -19,7 +19,7 @@ class SnippetCreate(BaseModel):
     code: str
     language: str
     description: Optional[str] = None
-    tags: Optional[List[str]] = []
+    tags: List[str] = Field(default_factory=list)
     is_public: bool = False
     collection_id: Optional[str] = None
 
@@ -106,7 +106,7 @@ class SnippetResponse(BaseModel):
     is_public: bool
     is_pinned: bool
     use_count: int
-    tags: List[str] = []
+    tags: List[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

@@ -1,12 +1,12 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
 
 class NoteCreate(BaseModel):
     title: str
-    content: dict = {}
-    content_text: str = ""
+    content: dict = Field(default_factory=dict)
+    content_text: str = Field(default="", max_length=1_000_000)
 
     @field_validator("title")
     @classmethod
@@ -22,7 +22,7 @@ class NoteCreate(BaseModel):
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[dict] = None
-    content_text: Optional[str] = None
+    content_text: Optional[str] = Field(default=None, max_length=1_000_000)
     word_count: Optional[int] = None
 
 

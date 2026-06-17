@@ -1,83 +1,93 @@
 
 
-import axios from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios"
 
+import {
+  clearAuthSession,
+  readAuthSession,
+  writeAuthSession,
+  type AuthSession,
+} from "./authSession"
+import { API_BASE_URL } from "./config"
+
+interface RetryableRequest extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
+
+interface RefreshResponse {
+  access_token: string
+  refresh_token: string
+  user: AuthSession["user"]
+}
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
   timeout: 30000,
-});
+})
 
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+  timeout: 15000,
+})
 
-apiClient.interceptors.request.use(
-  (config) => {
+let refreshRequest: Promise<AuthSession> | null = null
 
-    const token = localStorage.getItem('access_token');
+async function refreshSession(): Promise<AuthSession> {
+  const current = readAuthSession()
+  if (!current?.refreshToken) throw new Error("No refresh token is available.")
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-
-    if (import.meta.env.DEV) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  const { data } = await refreshClient.post<RefreshResponse>("/auth/refresh", {
+    refresh_token: current.refreshToken,
+  })
+  const session: AuthSession = {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    user: data.user,
   }
-);
+  writeAuthSession(session)
+  return session
+}
 
+apiClient.interceptors.request.use((config) => {
+  const token = readAuthSession()?.accessToken
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
 
 apiClient.interceptors.response.use(
-  (response) => {
+  response => response,
+  async (error: AxiosError) => {
+    const request = error.config as RetryableRequest | undefined
+    const url = request?.url ?? ""
+    const canRefresh = (
+      error.response?.status === 401
+      && request
+      && !request._retry
+      && !url.includes("/auth/login")
+      && !url.includes("/auth/register")
+      && !url.includes("/auth/refresh")
+    )
 
-    if (import.meta.env.DEV) {
-      console.log(`[API Response] ${response.config.url}`, response.data);
-    }
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
+    if (!canRefresh) return Promise.reject(error)
 
-    // Refresh once on 401, then replay the original request.
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(
-            'http://localhost:8000/api/v1/auth/refresh',
-            { refresh_token: refreshToken }
-          );
-
-          const newAccessToken = response.data.access_token;
-          localStorage.setItem('access_token', newAccessToken);
-
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return apiClient(originalRequest);
-        }
-      } catch {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+    request._retry = true
+    try {
+      refreshRequest ??= refreshSession().finally(() => {
+        refreshRequest = null
+      })
+      const session = await refreshRequest
+      request.headers.Authorization = `Bearer ${session.accessToken}`
+      return apiClient(request)
+    } catch (refreshError) {
+      clearAuthSession()
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.assign("/login?reason=session-expired")
       }
+      return Promise.reject(refreshError)
     }
+  },
+)
 
-
-    const message = error.response?.data?.detail || error.message || 'Network error';
-    console.error('[API Error]', message);
-
-    return Promise.reject(error);
-  }
-);
-
-export default apiClient;
+export default apiClient

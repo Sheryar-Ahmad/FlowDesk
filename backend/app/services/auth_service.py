@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone, timedelta
-from typing import Optional
 import structlog
+from sqlalchemy.exc import IntegrityError
 
 from app.core.security.hashing import hash_password, verify_password, needs_rehash
 from app.core.security.jwt import create_access_token, create_refresh_token, hash_token
@@ -35,22 +35,25 @@ async def register_user(
     password_hashed = hash_password(password)
 
 
-    result = await db.execute(
-        text("""
-            INSERT INTO users (email, password_hash, display_name, email_verified, plan)
-            VALUES (:email, :password_hash, :display_name, :email_verified, :plan)
-            RETURNING id, email, display_name, plan, created_at
-        """),
-        {
-            "email": email.lower().strip(),
-            "password_hash": password_hashed,
-            "display_name": display_name.strip(),
-            "email_verified": False,
-            "plan": "free",
-        }
-    )
-    user = result.fetchone()
-    await db.commit()
+    try:
+        result = await db.execute(
+            text("""
+                INSERT INTO users (email, password_hash, display_name, email_verified, plan)
+                VALUES (:email, :password_hash, :display_name, :email_verified, :plan)
+                RETURNING id, email, display_name, plan, created_at
+            """),
+            {
+                "email": email.lower().strip(),
+                "password_hash": password_hashed,
+                "display_name": display_name.strip(),
+                "email_verified": False,
+                "plan": "free",
+            }
+        )
+        user = result.fetchone()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ValueError("An account with this email already exists.") from exc
 
     logger.info(
         "New user registered",
@@ -80,9 +83,6 @@ async def register_user(
             "ip_address": ip_address,
         }
     )
-    await db.commit()
-
-
     await db.execute(
         text("""
             INSERT INTO audit_logs (user_id, action, resource_type, ip_address, metadata)
@@ -191,22 +191,24 @@ async def login_user(
         raise ValueError("Invalid email or password.")
 
 
+    new_password_hash = hash_password(password) if needs_rehash(user.password_hash) else None
     await db.execute(
         text("""
             UPDATE users
             SET failed_login_count = 0,
                 locked_until = NULL,
                 last_login_at = :now,
-                last_login_ip = :ip
+                last_login_ip = :ip,
+                password_hash = COALESCE(:password_hash, password_hash)
             WHERE id = :user_id
         """),
         {
             "now": now,
             "ip": ip_address,
+            "password_hash": new_password_hash,
             "user_id": str(user.id),
         }
     )
-    await db.commit()
 
 
     access_token = create_access_token(
@@ -230,9 +232,6 @@ async def login_user(
             "ip_address": ip_address,
         }
     )
-    await db.commit()
-
-
     await db.execute(
         text("""
             INSERT INTO audit_logs (user_id, action, ip_address, metadata)
@@ -261,6 +260,81 @@ async def login_user(
             "plan": user.plan,
             "email_verified": user.email_verified,
         }
+    }
+
+
+async def refresh_access_token(
+    db: AsyncSession,
+    refresh_token: str,
+    ip_address: str = None,
+) -> dict:
+    """Rotates a valid refresh token to prevent replay after renewal."""
+    now = datetime.now(timezone.utc)
+    token_hash = hash_token(refresh_token)
+    result = await db.execute(
+        text("""
+            SELECT rt.id, rt.user_id, u.email, u.display_name, u.plan, u.email_verified
+            FROM refresh_tokens rt
+            JOIN users u ON u.id = rt.user_id
+            WHERE rt.token_hash = :token_hash
+              AND rt.is_revoked = FALSE
+              AND rt.expires_at > :now
+              AND u.deleted_at IS NULL
+              AND (u.locked_until IS NULL OR u.locked_until <= :now)
+            FOR UPDATE
+        """),
+        {"token_hash": token_hash, "now": now},
+    )
+    session = result.fetchone()
+    if not session:
+        raise ValueError("Your session has expired. Please sign in again.")
+
+    raw_refresh_token, new_refresh_token_hash = create_refresh_token()
+    expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    await db.execute(
+        text("""
+            UPDATE refresh_tokens
+            SET is_revoked = TRUE, revoked_at = :now, revoked_reason = 'rotated'
+            WHERE id = :token_id
+        """),
+        {"now": now, "token_id": str(session.id)},
+    )
+    await db.execute(
+        text("""
+            INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address)
+            VALUES (:user_id, :token_hash, :expires_at, :ip_address)
+        """),
+        {
+            "user_id": str(session.user_id),
+            "token_hash": new_refresh_token_hash,
+            "expires_at": expires_at,
+            "ip_address": ip_address,
+        },
+    )
+    await db.execute(
+        text("""
+            INSERT INTO audit_logs (user_id, action, resource_type, ip_address, metadata)
+            VALUES (:user_id, 'auth.refresh', 'user', :ip_address, '{}')
+        """),
+        {"user_id": str(session.user_id), "ip_address": ip_address},
+    )
+    await db.commit()
+
+    return {
+        "access_token": create_access_token(
+            user_id=str(session.user_id),
+            email=session.email,
+            plan=session.plan,
+        ),
+        "refresh_token": raw_refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": str(session.user_id),
+            "email": session.email,
+            "display_name": session.display_name,
+            "plan": session.plan,
+            "email_verified": session.email_verified,
+        },
     }
 
 

@@ -16,17 +16,9 @@ import {
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import { DeleteButton } from "../../components/DeleteButton"
-import { API_BASE_URL } from "../../services/api/config"
+import api from "../../services/api/client"
 import axios from "axios"
 import toast from "react-hot-toast"
-
-
-const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 })
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
 
 
 interface Message {
@@ -1698,7 +1690,7 @@ export default function AIAssistant() {
                 <div style={{ marginBottom: 8, padding: "9px 13px", background: "rgba(244,63,94,0.07)", border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <AlertCircle size={12} color={T.rose} />
-                    <span style={{ fontSize: 12, color: T.rose }}>Daily limit reached. Upgrade to Pro for unlimited AI.</span>
+                    <span style={{ fontSize: 12, color: T.rose }}>Daily limit reached. Upgrade to Pro for higher AI limits.</span>
                   </div>
                   <button onClick={() => toast("🚀 Pro coming soon!", { duration: 4000 })} style={{ fontSize: 11, background: T.rose, border: "none", borderRadius: 6, padding: "4px 11px", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Upgrade</button>
                 </div>

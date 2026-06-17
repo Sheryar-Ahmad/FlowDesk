@@ -19,7 +19,7 @@ const features = [
   {
     icon: FileCode,
     title: "Snippets",
-    desc: "Save, tag, and search code across 50+ languages",
+    desc: "Save, tag, and search code across popular languages",
     path: "/snippets",
     ready: true,
     accentColor: "#6366f1",
@@ -49,7 +49,7 @@ const features = [
   {
     icon: Bot,
     title: "AI Assistant",
-    desc: "Llama 3.3 70B — explain, fix, refactor, generate",
+    desc: "Llama 3.3 70B - explain, fix, refactor, generate",
     path: "/ai",
     ready: true,
     accentColor: "#a855f7",
@@ -59,7 +59,7 @@ const features = [
   {
     icon: Timer,
     title: "Focus Timer",
-    desc: "Beast-mode Pomodoro with flow tracking and session log",
+    desc: "Pomodoro sessions with flow tracking and a session log",
     path: "/timer",
     ready: true,
     accentColor: "#f97316",
@@ -337,7 +337,7 @@ function QuickStat({
 
 
 export default function Dashboard() {
-  const { user, accessToken, isAuthenticated, logout, refreshUser } = useAuthStore()
+  const { user, isAuthenticated, logout, refreshUser } = useAuthStore()
   const navigate = useNavigate()
   const [time, setTime] = useState(new Date())
   const [isUpgrading, setIsUpgrading] = useState(false)
@@ -452,12 +452,6 @@ export default function Dashboard() {
   }
 
   const handleUpgrade = async () => {
-    if (!accessToken) {
-      toast.error("Please sign in again before upgrading.")
-      navigate("/login")
-      return
-    }
-
     const checkoutWindow = window.open("", "_blank")
     if (!checkoutWindow) {
       toast.error("Please allow pop-ups for FlowDesk to open the secure checkout.")
@@ -467,7 +461,7 @@ export default function Dashboard() {
 
     setIsUpgrading(true)
     try {
-      const { checkout_url } = await createProCheckout(accessToken)
+      const { checkout_url } = await createProCheckout()
       checkoutWindow.location.href = checkout_url
       setIsCheckoutOpen(true)
       setIsUpgrading(false)
@@ -802,7 +796,7 @@ export default function Dashboard() {
             <p style={{ fontSize: 12, color: "#475569", margin: "0 0 12px", lineHeight: 1.5 }}>
               {user?.plan === "pro"
                 ? "All features unlocked. Thanks for supporting FlowDesk."
-                : "Upgrade to Pro for unlimited snippets, AI sessions, and priority support."}
+                : "Upgrade to Pro for expanded workspace and AI limits with priority support."}
             </p>
             {user?.plan !== "pro" && (
               <>

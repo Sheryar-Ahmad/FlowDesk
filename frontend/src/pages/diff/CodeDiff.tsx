@@ -8,16 +8,9 @@ import {
   Minimize2, FileCode, RefreshCw, Bot, SlidersHorizontal
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
-import { API_BASE_URL } from "../../services/api/config"
+import api from "../../services/api/client"
 import axios from "axios"
 import toast from "react-hot-toast"
-
-const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 })
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
 
 const LANGUAGES = [
   "auto", "python", "javascript", "typescript", "java", "cpp", "c",

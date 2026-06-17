@@ -1,16 +1,8 @@
 
 
 import axios from "axios"
-import { API_BASE_URL } from "./config"
-
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000,
-})
+import api from "./client"
+import type { SessionUser } from "./authSession"
 
 
 export interface RegisterData {
@@ -27,14 +19,9 @@ export interface LoginData {
 export interface AuthResponse {
   success: boolean
   access_token: string
+  refresh_token: string
   token_type: string
-  user: {
-    id: string
-    email: string
-    display_name: string
-    plan: string
-    email_verified: boolean
-  }
+  user: SessionUser
   message?: string
 }
 
@@ -57,21 +44,15 @@ export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
 
 
 
-export const getCurrentUser = async (token: string) => {
-  const response = await api.get("/auth/me", {
-    headers: { Authorization: `Bearer ${token}` }
-  })
+export const getCurrentUser = async () => {
+  const response = await api.get("/auth/me")
   return response.data
 }
 
 
 
-export const logoutUser = async (token: string, refreshToken: string) => {
-  const response = await api.post(
-    "/auth/logout",
-    { refresh_token: refreshToken },
-    { headers: { Authorization: `Bearer ${token}` } }
-  )
+export const logoutUser = async (refreshToken: string) => {
+  const response = await api.post("/auth/logout", { refresh_token: refreshToken })
   return response.data
 }
 

@@ -1,7 +1,7 @@
 ﻿from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, timedelta
 import structlog
@@ -15,9 +15,9 @@ router = APIRouter()
 
 
 class SessionCreate(BaseModel):
-    duration_minutes: int
+    duration_minutes: int = Field(ge=1, le=1440)
     completed: bool = True
-    session_date: Optional[str] = None
+    session_date: Optional[date] = None
 
 
 @router.post("/sessions", status_code=201)
@@ -29,7 +29,7 @@ async def create_session(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        session_date = body.session_date or str(date.today())
+        session_date = body.session_date or date.today()
         await db.execute(
             text("INSERT INTO pomodoro_sessions (user_id, duration_minutes, completed, session_date) VALUES (:uid, :duration, :completed, :session_date)"),
             {"uid": current_user["id"], "duration": body.duration_minutes, "completed": body.completed, "session_date": session_date}

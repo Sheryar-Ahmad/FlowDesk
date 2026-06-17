@@ -1,13 +1,4 @@
-import axios from "axios"
-import { useAuthStore } from "../../store/authStore"
-import { API_BASE_URL } from "./config"
-
-const api = axios.create({ baseURL: API_BASE_URL, timeout: 10000 })
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+import api from "./client"
 
 export interface Project { id: string; name: string; description?: string; color: string; is_archived: boolean; created_at: string }
 export interface Column { id: string; project_id: string; name: string; position: number; color: string }

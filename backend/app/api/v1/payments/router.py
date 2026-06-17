@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+from datetime import datetime
 from uuid import UUID
 
 import structlog
@@ -20,6 +21,15 @@ from app.services.payment_service import (
 router = APIRouter()
 logger = structlog.get_logger(__name__)
 settings = get_settings()
+
+
+def parse_provider_datetime(value):
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 @router.post("/checkout")
@@ -76,10 +86,20 @@ async def lemon_squeezy_webhook(
     event_name = payload.get("meta", {}).get("event_name", "")
     custom_data = payload.get("meta", {}).get("custom_data") or {}
     user_id = custom_data.get("user_id")
-    attributes = payload.get("data", {}).get("attributes", {})
+    data = payload.get("data") or {}
+    attributes = data.get("attributes") or {}
     variant_id = str(attributes.get("variant_id", ""))
+    store_id = str(attributes.get("store_id", ""))
+    provider_subscription_id = str(data.get("id", ""))
+    is_test_mode = bool(attributes.get("test_mode", False))
 
-    if not user_id or variant_id != settings.LEMON_SQUEEZY_VARIANT_ID:
+    if (
+        not user_id
+        or not provider_subscription_id
+        or variant_id != settings.LEMON_SQUEEZY_VARIANT_ID
+        or store_id != settings.LEMON_SQUEEZY_STORE_ID
+        or is_test_mode != settings.LEMON_SQUEEZY_TEST_MODE
+    ):
         logger.warning("Ignoring unrelated payment webhook", event=event_name)
         return {"success": True, "ignored": True}
 
@@ -107,17 +127,113 @@ async def lemon_squeezy_webhook(
         "unpaid",
     }
 
-    if should_be_pro or should_be_free:
-        plan = "pro" if should_be_pro else "free"
-        result = await db.execute(
-            text("UPDATE users SET plan = :plan WHERE id = :user_id"),
+    event_id = hashlib.sha256(body).hexdigest()
+    event_result = await db.execute(
+        text("""
+            INSERT INTO payment_webhook_events (
+                provider, provider_event_id, event_name, payload
+            )
+            VALUES ('lemon_squeezy', :event_id, :event_name, CAST(:payload AS jsonb))
+            ON CONFLICT (provider_event_id) DO NOTHING
+            RETURNING id
+        """),
+        {
+            "event_id": event_id,
+            "event_name": event_name or "unknown",
+            "payload": json.dumps(payload),
+        },
+    )
+    event_row = event_result.fetchone()
+    if not event_row:
+        await db.rollback()
+        return {"success": True, "duplicate": True}
+
+    plan = "pro" if should_be_pro else "free" if should_be_free else None
+    if plan:
+        user_result = await db.execute(
+            text("UPDATE users SET plan = :plan, updated_at = NOW() WHERE id = :user_id"),
             {"plan": plan, "user_id": user_id},
         )
-        await db.commit()
-        if result.rowcount:
-            logger.info("User plan updated from payment webhook", user_id=user_id, plan=plan)
-        else:
+        if not user_result.rowcount:
             logger.warning("Payment webhook referenced an unknown user", user_id=user_id)
+            await db.execute(
+                text("""
+                    UPDATE payment_webhook_events
+                    SET processed_at = NOW(), processing_error = 'unknown_user'
+                    WHERE id = :event_id
+                """),
+                {"event_id": str(event_row.id)},
+            )
+            await db.commit()
+            return {"success": True, "ignored": True}
+
+    if subscription_status in {
+        "on_trial",
+        "active",
+        "paused",
+        "past_due",
+        "unpaid",
+        "cancelled",
+        "expired",
+    }:
+        await db.execute(
+            text("""
+                INSERT INTO subscriptions (
+                    user_id, provider, provider_subscription_id,
+                    provider_customer_id, store_id, product_id, variant_id,
+                    status, renews_at, ends_at, trial_ends_at, cancelled_at,
+                    is_test_mode, provider_data
+                )
+                VALUES (
+                    :user_id, 'lemon_squeezy', :subscription_id,
+                    :customer_id, :store_id, :product_id, :variant_id,
+                    :status, :renews_at, :ends_at, :trial_ends_at, :cancelled_at,
+                    :is_test_mode, CAST(:provider_data AS jsonb)
+                )
+                ON CONFLICT (provider_subscription_id) DO UPDATE SET
+                    user_id = EXCLUDED.user_id,
+                    provider_customer_id = EXCLUDED.provider_customer_id,
+                    store_id = EXCLUDED.store_id,
+                    product_id = EXCLUDED.product_id,
+                    variant_id = EXCLUDED.variant_id,
+                    status = EXCLUDED.status,
+                    renews_at = EXCLUDED.renews_at,
+                    ends_at = EXCLUDED.ends_at,
+                    trial_ends_at = EXCLUDED.trial_ends_at,
+                    cancelled_at = EXCLUDED.cancelled_at,
+                    is_test_mode = EXCLUDED.is_test_mode,
+                    provider_data = EXCLUDED.provider_data,
+                    updated_at = NOW()
+            """),
+            {
+                "user_id": user_id,
+                "subscription_id": provider_subscription_id,
+                "customer_id": str(attributes.get("customer_id") or "") or None,
+                "store_id": int(store_id),
+                "product_id": int(attributes["product_id"]) if attributes.get("product_id") else None,
+                "variant_id": int(variant_id),
+                "status": subscription_status,
+                "renews_at": parse_provider_datetime(attributes.get("renews_at")),
+                "ends_at": parse_provider_datetime(attributes.get("ends_at")),
+                "trial_ends_at": parse_provider_datetime(attributes.get("trial_ends_at")),
+                "cancelled_at": parse_provider_datetime(attributes.get("cancelled_at")),
+                "is_test_mode": is_test_mode,
+                "provider_data": json.dumps(attributes),
+            },
+        )
+
+    await db.execute(
+        text("""
+            UPDATE payment_webhook_events
+            SET processed_at = NOW(), processing_error = NULL
+            WHERE id = :event_id
+        """),
+        {"event_id": str(event_row.id)},
+    )
+    await db.commit()
+
+    if plan:
+        logger.info("User plan updated from payment webhook", user_id=user_id, plan=plan)
 
     return {"success": True}
 

@@ -12,11 +12,13 @@ def _fmt(n) -> dict:
     content = n.content
     if isinstance(content, str):
         try: content = json.loads(content)
-        except: content = {}
+        except (TypeError, json.JSONDecodeError):
+            content = {}
     return {"id": str(n.id), "user_id": str(n.user_id), "title": n.title, "content": content, "content_text": n.content_text or "", "word_count": n.word_count or 0, "created_at": n.created_at, "updated_at": n.updated_at}
 
 
-async def create_note(db: AsyncSession, user_id: str, plan: str, title: str, content: dict = {}, content_text: str = "") -> dict:
+async def create_note(db: AsyncSession, user_id: str, plan: str, title: str, content: Optional[dict] = None, content_text: str = "") -> dict:
+    content = content or {}
     if plan == "free":
         r = await db.execute(text("SELECT COUNT(*) FROM notes WHERE user_id=:u AND deleted_at IS NULL"), {"u": user_id})
         if (r.scalar() or 0) >= FREE_TIER_NOTE_LIMIT:
@@ -86,13 +88,6 @@ async def delete_note(db: AsyncSession, note_id: str, user_id: str) -> bool:
         await db.execute(text("INSERT INTO audit_logs (user_id,action,resource_type,resource_id,metadata) VALUES (:u,'note.delete','note',:r,'{}')"), {"u": user_id, "r": note_id})
         await db.commit()
     return deleted
-
-
-async def get_note_versions(db: AsyncSession, note_id: str, user_id: str) -> list:
-    existing = await get_note_by_id(db, note_id, user_id)
-    if not existing: return []
-    r = await db.execute(text("SELECT version_number, title, created_at FROM note_versions WHERE note_id=:nid ORDER BY version_number DESC LIMIT 20"), {"nid": note_id})
-    return [{"version": v.version_number, "title": v.title, "saved_at": v.created_at} for v in r.fetchall()]
 
 
 async def get_note_versions(db: AsyncSession, note_id: str, user_id: str) -> list:

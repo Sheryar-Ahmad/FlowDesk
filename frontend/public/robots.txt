@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /snippets
+Disallow: /notes
+Disallow: /tasks
+Disallow: /ai
+Disallow: /timer
+Disallow: /diff
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+Sitemap: https://flowdesk.pages.dev/sitemap.xml

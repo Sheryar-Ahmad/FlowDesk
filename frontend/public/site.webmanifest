@@ -1,0 +1,17 @@
+{
+  "name": "FlowDesk - Unified Developer Workspace",
+  "short_name": "FlowDesk",
+  "description": "A focused workspace for code snippets, notes, tasks, AI assistance, focus sessions, and code comparison.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080b14",
+  "theme_color": "#080b14",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -23,7 +23,7 @@ import {
   Code, Bold, Italic, List, ListOrdered,
   Loader2, X, Sparkles,
   Tag, Pin, Archive, History, Target,
-  Lock, Copy, AlignLeft,
+  Lock, LockOpen, Copy, AlignLeft,
   BarChart2, Replace,
   Timer,
   Heading1, Heading2, Heading3,
@@ -190,6 +190,54 @@ function getLocalMeta(id: string): LocalNoteMeta {
 function setLocalMeta(id: string, patch: Partial<LocalNoteMeta>) {
   const prev = getLocalMeta(id)
   localStorage.setItem(`fd_note_${id}`, JSON.stringify({ ...prev, ...patch }))
+}
+
+interface LocalLockRecord {
+  version: 1
+  salt: string
+  hash: string
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  return btoa(String.fromCharCode(...bytes))
+}
+
+async function createLocalLockRecord(password: string, salt?: ArrayBuffer): Promise<LocalLockRecord> {
+  const generatedSalt = crypto.getRandomValues(new Uint8Array(16))
+  const actualSalt = salt ?? generatedSalt.buffer
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  )
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt: actualSalt, iterations: 210_000 },
+    key,
+    256,
+  )
+  return {
+    version: 1,
+    salt: bytesToBase64(new Uint8Array(actualSalt)),
+    hash: bytesToBase64(new Uint8Array(bits)),
+  }
+}
+
+async function verifyLocalLock(password: string, stored: string): Promise<boolean> {
+  try {
+    const record = JSON.parse(stored) as LocalLockRecord
+    if (record.version !== 1 || !record.salt || !record.hash) return false
+    const saltBytes = Uint8Array.from(atob(record.salt), char => char.charCodeAt(0))
+    const salt = saltBytes.buffer.slice(
+      saltBytes.byteOffset,
+      saltBytes.byteOffset + saltBytes.byteLength,
+    ) as ArrayBuffer
+    const candidate = await createLocalLockRecord(password, salt)
+    return candidate.hash === record.hash
+  } catch {
+    return password === stored
+  }
 }
 
 
@@ -979,12 +1027,13 @@ export default function NoteEditor() {
   }
 
 
-  const handleLock = () => {
+  const handleLock = async () => {
     if (!selectedNote) return
     const pw = lockInput.trim()
-    if (!pw) { toast.error("Enter a password"); return }
-    patchMeta({ locked: true, lockHint: pw.slice(0, 1) + "***" })
-    localStorage.setItem(`fd_lock_${selectedNote.id}`, pw)
+    if (pw.length < 8) { toast.error("Use at least 8 characters"); return }
+    const lockRecord = await createLocalLockRecord(pw)
+    patchMeta({ locked: true, lockHint: undefined })
+    localStorage.setItem(`fd_lock_${selectedNote.id}`, JSON.stringify(lockRecord))
     setShowLockModal(false)
     setLockInput("")
     selectedNoteRef.current = null
@@ -995,14 +1044,18 @@ export default function NoteEditor() {
     editor?.commands.setContent(EMPTY_DOCUMENT, { emitUpdate: false })
     setFocusMode(false)
     setSidebarOpen(true)
-    toast.success("Note locked 🔒")
+    toast.success("Note locked on this device")
   }
 
-  const handleUnlock = () => {
+  const handleUnlock = async () => {
     const id = pendingUnlockId
     if (!id) return
     const stored = localStorage.getItem(`fd_lock_${id}`)
-    if (lockInput === stored) {
+    if (stored && await verifyLocalLock(lockInput, stored)) {
+      if (!stored.startsWith("{")) {
+        const migratedRecord = await createLocalLockRecord(lockInput)
+        localStorage.setItem(`fd_lock_${id}`, JSON.stringify(migratedRecord))
+      }
       setLocalMeta(id, { locked: false })
       setShowLockModal(false)
       setLockInput("")
@@ -1900,18 +1953,24 @@ export default function NoteEditor() {
             background: C.surface, borderRadius: 14, width: "100%", maxWidth: 340,
             border: `1px solid ${C.border}`, padding: 24, textAlign: "center",
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>{lockMode === "lock" ? "🔒" : "🔓"}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              {lockMode === "lock" ? <Lock size={30} color={C.indigo} /> : <LockOpen size={30} color={C.indigo} />}
+            </div>
             <h3 style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>
               {lockMode === "lock" ? "Lock this note" : "Enter password"}
             </h3>
             <p style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>
-              {lockMode === "lock" ? "Set a password to protect this note locally." : `Hint: starts with "${getLocalMeta(pendingUnlockId||"")?.lockHint || "?"}" `}
+              {lockMode === "lock"
+                ? "This hides the note on this device. It does not encrypt server data."
+                : "Enter the local password for this note."}
             </p>
             <input
               type="password"
               value={lockInput}
               onChange={e => setLockInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && (lockMode === "lock" ? handleLock() : handleUnlock())}
+              onKeyDown={e => {
+                if (e.key === "Enter") void (lockMode === "lock" ? handleLock() : handleUnlock())
+              }}
               placeholder="Password"
               autoFocus
               style={{
@@ -1926,7 +1985,7 @@ export default function NoteEditor() {
                 flex: 1, background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`,
                 borderRadius: 8, padding: "8px", color: C.muted, cursor: "pointer", fontSize: 13,
               }}>Cancel</button>
-              <button onClick={lockMode === "lock" ? handleLock : handleUnlock} style={{
+              <button onClick={() => void (lockMode === "lock" ? handleLock() : handleUnlock())} style={{
                 flex: 2, background: C.indigo, border: "none", borderRadius: 8,
                 padding: "8px", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13,
               }}>

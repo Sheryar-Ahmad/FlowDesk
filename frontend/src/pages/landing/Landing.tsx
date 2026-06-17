@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom"
 import {
   Code2, FileText, Kanban, Bot, Timer, GitCompare,
   ArrowRight, Zap, Shield, Globe, ChevronRight,
-  Star, Check, Sparkles, X,
+  Check, Sparkles, X,
 } from "lucide-react"
 
 type LegalDocument = "privacy" | "terms"
@@ -64,10 +64,10 @@ const FEATURES = [
   {
     icon: Code2,
     title: "Snippet Manager",
-    desc: "Save, tag, and search code across 50+ languages. Monaco editor, bulk export, templates, and a command palette.",
+    desc: "Save, tag, and search code across popular programming languages. Monaco editor, bulk export, templates, and a command palette.",
     color: "#6366F1",
     tag: "Code",
-    bullets: ["Monaco editor", "50+ languages", "Command palette"],
+    bullets: ["Monaco editor", "Popular languages", "Command palette"],
   },
   {
     icon: FileText,
@@ -91,12 +91,12 @@ const FEATURES = [
     desc: "Powered by Llama 3.3 70B. Explain, fix, refactor, and generate code with full context awareness.",
     color: "#A855F7",
     tag: "AI",
-    bullets: ["Llama 3.3 70B", "Code-aware", "Always free"],
+    bullets: ["Llama 3.3 70B", "Code-aware", "Free tier"],
   },
   {
     icon: Timer,
     title: "Focus Timer",
-    desc: "Beast-mode Pomodoro with flow state tracking, session notes, ambient sounds, and daily heatmaps.",
+    desc: "Pomodoro sessions with flow state tracking, session notes, ambient sounds, and daily heatmaps.",
     color: "#F97316",
     tag: "Focus",
     bullets: ["Flow state", "Session log", "7-day heatmap"],
@@ -112,16 +112,16 @@ const FEATURES = [
 ]
 
 const STATS = [
-  { value: "50+", label: "Languages supported" },
+  { value: "20+", label: "Languages supported" },
   { value: "6", label: "Integrated tools" },
   { value: "100%", label: "Free to start" },
   { value: "0", label: "Context switches" },
 ]
 
-const TESTIMONIALS = [
-  { text: "Replaced Notion, GitHub Gists, TickTick, and a pomodoro app. One tab.", author: "Senior SWE, Google" },
-  { text: "The snippet manager alone is worth it. Monaco in the browser, instant search.", author: "Backend Dev, Berlin" },
-  { text: "I finally stay in flow. The focus timer + tasks combo is unreal.", author: "Indie dev, Toronto" },
+const WORKFLOW_BENEFITS = [
+  { title: "One focused workspace", text: "Keep snippets, notes, planning, and focus sessions together instead of rebuilding context across separate tools." },
+  { title: "Developer-first editing", text: "Use code-aware editors, language metadata, fast search, keyboard shortcuts, and practical export tools." },
+  { title: "Connected daily workflow", text: "Move from planning to focused work, save reusable knowledge, and review progress from the same dashboard." },
 ]
 
 
@@ -472,7 +472,7 @@ export default function Landing() {
 
 
           <div style={{ marginTop: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
-            {["No credit card", "Free forever plan", "Open source friendly"].map(t => (
+            {["No credit card", "Free tier available", "Built for developers"].map(t => (
               <span key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#334155" }}>
                 <Check size={12} color="#10B981" /> {t}
               </span>
@@ -768,11 +768,8 @@ export default function Landing() {
       }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 12 }}>
-              {[...Array(5)].map((_, i) => <Star key={i} size={16} color="#F59E0B" fill="#F59E0B" />)}
-            </div>
             <h2 style={{ fontSize: "clamp(22px, 3.5vw, 34px)", fontWeight: 700, color: "#F8FAFC", margin: 0, letterSpacing: -0.8 }}>
-              Developers actually love it
+              Designed around real developer workflows
             </h2>
           </div>
 
@@ -781,26 +778,16 @@ export default function Landing() {
             gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: 16,
           }}>
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} style={{
+            {WORKFLOW_BENEFITS.map(benefit => (
+              <div key={benefit.title} style={{
                 background: "rgba(255,255,255,0.025)",
                 border: "1px solid rgba(255,255,255,0.07)",
                 borderRadius: 14, padding: "22px 24px",
               }}>
-                <div style={{ display: "flex", gap: 3, marginBottom: 14 }}>
-                  {[...Array(5)].map((_, j) => <Star key={j} size={12} color="#F59E0B" fill="#F59E0B" />)}
-                </div>
-                <p style={{ fontSize: 14, color: "#94A3B8", lineHeight: 1.65, margin: "0 0 16px", fontStyle: "italic" }}>
-                  "{t.text}"
+                <h3 style={{ fontSize: 16, color: "#E2E8F0", margin: "0 0 10px" }}>{benefit.title}</h3>
+                <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.65, margin: 0 }}>
+                  {benefit.text}
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #6366F1, #22D3EE)",
-                    flexShrink: 0,
-                  }} />
-                  <span style={{ fontSize: 12, color: "#475569" }}>{t.author}</span>
-                </div>
               </div>
             ))}
           </div>
@@ -830,7 +817,7 @@ export default function Landing() {
                 background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)",
                 borderRadius: 99, padding: "4px 12px", marginBottom: 18,
               }}>
-                <Zap size={11} /> Built for developers, by developers
+                <Zap size={11} /> Built for focused software work
               </div>
 
               <h2 style={{
@@ -840,7 +827,7 @@ export default function Landing() {
                 Ready to own your workflow?
               </h2>
               <p style={{ fontSize: 15, color: "#475569", margin: "0 0 32px" }}>
-                Free forever. No credit card. Upgrade when you're ready.
+                Start with the free tier. No credit card required.
               </p>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>

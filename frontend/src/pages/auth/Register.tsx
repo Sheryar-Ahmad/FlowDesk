@@ -7,7 +7,6 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import toast from "react-hot-toast"
-import { getAuthErrorMessage, registerUser } from "../../services/api/auth.api"
 import { useAuthStore } from "../../store/authStore"
 
 const S = {
@@ -98,7 +97,7 @@ function strengthLabel(n: number) {
 
 export default function Register() {
   const navigate = useNavigate()
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+  const { isAuthenticated, register } = useAuthStore()
   const requestRef = useRef<AbortController | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -132,7 +131,7 @@ export default function Register() {
 
   useEffect(() => {
     if (!success) return
-    const timer = window.setTimeout(() => navigate("/login", { replace: true }), 1800)
+    const timer = window.setTimeout(() => navigate("/dashboard", { replace: true }), 800)
     return () => window.clearTimeout(timer)
   }, [navigate, success])
 
@@ -150,7 +149,7 @@ export default function Register() {
     setIsLoading(true)
 
     try {
-      await registerUser({
+      await register({
         email: email.toLowerCase().trim(),
         password,
         display_name: name.trim(),
@@ -162,7 +161,9 @@ export default function Register() {
       }
     } catch (requestError: unknown) {
       if (axios.isCancel(requestError) || controller.signal.aborted) return
-      const message = getAuthErrorMessage(requestError, "Registration failed. Please try again.")
+      const message = requestError instanceof Error
+        ? requestError.message
+        : "Registration failed. Please try again."
       setError(message)
       toast.error(message)
     } finally {
@@ -197,7 +198,7 @@ export default function Register() {
           <CheckCircle size={28} color={S.emerald} />
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#F8FAFC", margin: "0 0 8px" }}>Account created!</h2>
-        <p style={{ fontSize: 13, color: S.muted, margin: 0 }}>Redirecting you to login…</p>
+        <p style={{ fontSize: 13, color: S.muted, margin: 0 }}>Opening your workspace...</p>
       </div>
     </div>
   )

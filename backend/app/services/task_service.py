@@ -20,8 +20,6 @@ async def create_project(db: AsyncSession, user_id: str, plan: str, name: str, d
         RETURNING id, user_id, name, description, color, is_archived, created_at, updated_at
     """), {"u": user_id, "name": name, "desc": description, "color": color})
     p = r.fetchone()
-    await db.commit()
-
 
     for i, col in enumerate(["To Do", "In Progress", "Done"]):
         await db.execute(text("INSERT INTO kanban_columns (project_id, user_id, name, position) VALUES (:pid, :uid, :name, :pos)"),
@@ -130,9 +128,23 @@ async def update_task(db: AsyncSession, task_id: str, user_id: str, updates: dic
         t = r.fetchone()
         return _fmt_task(t) if t else None
     fields.append("updated_at=NOW()")
-    await db.execute(text(f"UPDATE tasks SET {','.join(fields)} WHERE id=:id AND user_id=:u"), params)
+    result = await db.execute(
+        text(f"UPDATE tasks SET {','.join(fields)} WHERE id=:id AND user_id=:u"),
+        params,
+    )
+    if result.rowcount == 0:
+        await db.rollback()
+        return None
     await db.commit()
-    r = await db.execute(text("SELECT id, project_id, user_id, title, description, status, priority, due_date, position, labels, created_at, updated_at, completed_at FROM tasks WHERE id=:id"), {"id": task_id})
+    r = await db.execute(
+        text("""
+            SELECT id, project_id, user_id, title, description, status, priority,
+                   due_date, position, labels, created_at, updated_at, completed_at
+            FROM tasks
+            WHERE id=:id AND user_id=:u
+        """),
+        {"id": task_id, "u": user_id},
+    )
     t = r.fetchone()
     return _fmt_task(t) if t else None
 
@@ -151,5 +163,6 @@ def _fmt_task(t) -> dict:
     labels = t.labels
     if isinstance(labels, str):
         try: labels = json.loads(labels)
-        except: labels = []
+        except (TypeError, json.JSONDecodeError):
+            labels = []
     return {"id": str(t.id), "project_id": str(t.project_id), "user_id": str(t.user_id), "title": t.title, "description": t.description, "status": t.status, "priority": t.priority, "due_date": str(t.due_date) if t.due_date else None, "position": t.position, "labels": labels or [], "created_at": t.created_at, "updated_at": t.updated_at, "completed_at": t.completed_at}

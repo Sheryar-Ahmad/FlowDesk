@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -6,10 +6,14 @@ from app.database.connection import get_db
 from app.api.v1.auth.schemas import (
     RegisterRequest,
     LoginRequest,
-    TokenResponse,
     RefreshRequest,
 )
-from app.services.auth_service import register_user, login_user, logout_user
+from app.services.auth_service import (
+    login_user,
+    logout_user,
+    refresh_access_token,
+    register_user,
+)
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import limiter, AUTH_LIMIT
 
@@ -36,21 +40,12 @@ async def register(
             ip_address=ip_address,
         )
 
-        response = Response()
-        response = Response(
-            content=str({
-                "success": True,
-                "access_token": result["access_token"],
-                "token_type": result["token_type"],
-                "user": result["user"],
-            }),
-        )
-
         logger.info("Registration successful", email=body.email)
 
         return {
             "success": True,
             "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
             "token_type": result["token_type"],
             "user": result["user"],
             "message": "Account created successfully. Please verify your email.",
@@ -92,6 +87,7 @@ async def login(
         return {
             "success": True,
             "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
             "token_type": result["token_type"],
             "user": result["user"],
         }
@@ -107,6 +103,35 @@ async def login(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Login failed. Please try again.",
         )
+
+
+@router.post("/refresh")
+@limiter.limit(AUTH_LIMIT)
+async def refresh(
+    request: Request,
+    body: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Rotates a valid refresh token and returns a fresh session."""
+    try:
+        ip_address = request.client.host if request.client else None
+        result = await refresh_access_token(
+            db=db,
+            refresh_token=body.refresh_token,
+            ip_address=ip_address,
+        )
+        return {"success": True, **result}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        logger.error("Token refresh error", error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Session refresh failed. Please sign in again.",
+        ) from exc
 
 
 @router.post("/logout")
