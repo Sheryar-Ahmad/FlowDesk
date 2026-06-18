@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from
 import { Link, useNavigate } from "react-router-dom"
 import {
   Code2, Eye, EyeOff, Loader2,
-  CheckCircle, XCircle, ArrowRight, Check, X,
+  CheckCircle, XCircle, Check, X,
 } from "lucide-react"
 import axios from "axios"
 import toast from "react-hot-toast"
@@ -371,7 +371,7 @@ export default function Register() {
             >
               {isLoading
                 ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Creating account…</>
-                : <>Create free account <ArrowRight size={14} /></>
+                : "Create free account"
               }
             </button>
           </form>
@@ -384,7 +384,7 @@ export default function Register() {
             <Link to="/login" style={{ color: S.indigo, textDecoration: "none", fontWeight: 600 }}
               onMouseEnter={e => (e.currentTarget.style.color = "#818CF8")}
               onMouseLeave={e => (e.currentTarget.style.color = S.indigo)}
-            >Sign in →</Link>
+            >Sign in</Link>
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import {
   Code2, FileText, Kanban, Bot, Timer, GitCompare,
-  ArrowRight, Zap, Shield, Globe, ChevronRight,
+  Zap, Shield, Globe,
   Check, Sparkles, X,
 } from "lucide-react"
 
@@ -410,7 +410,6 @@ export default function Landing() {
           }}>
             <Sparkles size={12} />
             One app to replace 10 developer tools
-            <ChevronRight size={11} />
           </div>
 
 
@@ -452,7 +451,7 @@ export default function Landing() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#4F46E5"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)" }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#6366F1"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
             >
-              Start building free <ArrowRight size={15} />
+              Start building free
             </Link>
             <Link to="/login" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -580,7 +579,6 @@ export default function Landing() {
                         </div>
                       )}
                     </div>
-                    {active && <ChevronRight size={14} color={feat.color} style={{ marginLeft: "auto" }} />}
                   </button>
                 )
               })}
@@ -751,7 +749,6 @@ export default function Landing() {
                     <span style={{ fontSize: 11, color: feat.color, fontFamily: "monospace", opacity: 0.7 }}>
                       Open {feat.title.toLowerCase()}
                     </span>
-                    <ArrowRight size={11} color={feat.color} style={{ opacity: hovered ? 1 : 0.4, transform: hovered ? "translateX(3px)" : "translateX(0)", transition: "all 0.2s" }} />
                   </div>
                 </Link>
               )
@@ -841,7 +838,7 @@ export default function Landing() {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#4F46E5"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)" }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#6366F1"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
                 >
-                  Get started free <ArrowRight size={15} />
+                  Get started free
                 </Link>
                 <Link to="/login" style={{
                   color: "#64748B", fontSize: 14, textDecoration: "none",
@@ -850,7 +847,7 @@ export default function Landing() {
                 onMouseEnter={e => (e.currentTarget.style.color = "#94A3B8")}
                 onMouseLeave={e => (e.currentTarget.style.color = "#64748B")}
                 >
-                  Already have an account <ChevronRight size={13} />
+                  Already have an account
                 </Link>
               </div>
 

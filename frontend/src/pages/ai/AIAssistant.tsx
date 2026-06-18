@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import {
   ArrowLeft, Send, Copy, Check, Loader2,
   Code, FileText, Zap, Shield, RefreshCw,
-  Sparkles, Terminal, Brain, Lightbulb,
+  Sparkles, Brain, Lightbulb,
   Search, AlertCircle, TrendingUp, Plus, Clock,
   MessageSquare, PanelLeftOpen, PanelLeftClose,
   Download, Pin, Star, BookOpen,
@@ -127,7 +127,7 @@ const QUICK_ACTIONS = [
   { icon: Zap,         label: "Fix Bug",    prompt: "Find and fix ALL bugs:\n\n",                 color: "#FBBF24" },
   { icon: Shield,      label: "Security",   prompt: "Security audit this code:\n\n",              color: "#F87171" },
   { icon: TrendingUp,  label: "Optimize",   prompt: "Optimize for performance:\n\n",              color: "#34D399" },
-  { icon: Terminal,    label: "Tests",      prompt: "Write comprehensive tests:\n\n",             color: "#A78BFA" },
+  { icon: Code,        label: "Tests",      prompt: "Write comprehensive tests:\n\n",             color: "#A78BFA" },
   { icon: FileText,    label: "Document",   prompt: "Add documentation:\n\n",                     color: "#22D3EE" },
   { icon: RefreshCw,   label: "Refactor",   prompt: "Refactor following best practices:\n\n",     color: "#FB923C" },
   { icon: Lightbulb,   label: "Improve",    prompt: "Suggest a better approach:\n\n",             color: "#F472B6" },
@@ -973,7 +973,7 @@ export default function AIAssistant() {
     rec.onerror = () => { setIsListening(false); toast.error("Voice input failed") }
     rec.onend = () => setIsListening(false)
     recognitionRef.current = rec; rec.start(); setIsListening(true)
-    toast("Listening… 🎤", { duration: 3000 })
+    toast("Listening...", { duration: 3000 })
   }, [input, isListening])
 
 
@@ -1176,6 +1176,35 @@ export default function AIAssistant() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         textarea, input { font-family: inherit; }
         button:focus-visible { outline: 2px solid ${T.indigo}; outline-offset: 2px; }
+        @media (max-width: 640px) {
+          .ai-header { height: 58px !important; padding: 0 8px !important; gap: 4px !important; }
+          .ai-title-block { gap: 7px !important; }
+          .ai-title-icon { width: 30px !important; height: 30px !important; border-radius: 8px !important; }
+          .ai-title-subtitle { display: none !important; }
+          .ai-title-row { flex-wrap: nowrap !important; gap: 4px !important; }
+          .ai-title-row > span:first-child { font-size: 13px !important; white-space: nowrap !important; }
+          .ai-header-actions { gap: 1px !important; }
+          .ai-header-tool.hide-mobile { display: none !important; }
+          .ai-header-tool { padding: 6px !important; }
+          .ai-usage-meter { margin-right: 2px !important; }
+          .ai-usage-meter > div { width: 38px !important; }
+          .ai-new-button { padding: 7px 9px !important; border-radius: 9px !important; }
+          .ai-new-label { display: none !important; }
+          .ai-empty-state { justify-content: flex-start !important; padding: 24px 14px 14px !important; overflow-y: auto !important; }
+          .ai-empty-hero { width: 58px !important; height: 58px !important; border-radius: 18px !important; margin-bottom: 12px !important; }
+          .ai-empty-title { font-size: 19px !important; margin-bottom: 5px !important; }
+          .ai-empty-copy { font-size: 12px !important; line-height: 1.55 !important; margin-bottom: 2px !important; }
+          .ai-empty-provider { margin-bottom: 16px !important; }
+          .ai-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+          .ai-empty-hints { display: none !important; }
+          .ai-composer { padding: 8px 10px 10px !important; }
+          .ai-prompt-strip { margin-bottom: 6px !important; padding-bottom: 4px !important; }
+          .ai-input-row { gap: 6px !important; align-items: stretch !important; }
+          .ai-side-actions { display: none !important; }
+          .ai-textarea { min-height: 72px !important; padding: 10px 36px 10px 12px !important; font-size: 14px !important; }
+          .ai-send-button { height: auto !important; min-height: 72px !important; padding: 0 14px !important; border-radius: 12px !important; }
+          .ai-composer-help { display: none !important; }
+        }
       `}</style>
 
 
@@ -1186,7 +1215,7 @@ export default function AIAssistant() {
       )}
 
 
-      <div style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 12px", height: 52, display: "flex", alignItems: "center", gap: 6, flexShrink: 0, zIndex: 40 }}>
+      <div className="ai-header" style={{ borderBottom: `1px solid ${T.border}`, background: T.surface, padding: "0 12px", height: 52, display: "flex", alignItems: "center", gap: 6, flexShrink: 0, zIndex: 40 }}>
         <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: T.muted, display: "flex", padding: 6, borderRadius: 7 }}>
           <ArrowLeft size={17} />
         </button>
@@ -1195,12 +1224,12 @@ export default function AIAssistant() {
         </button>
 
 
-        <div style={{ display: "flex", alignItems: "center", gap: 9, flex: 1, minWidth: 0 }}>
-          <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div className="ai-title-block" style={{ display: "flex", alignItems: "center", gap: 9, flex: 1, minWidth: 0 }}>
+          <div className="ai-title-icon" style={{ width: 32, height: 32, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Brain size={16} color="#fff" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+            <div className="ai-title-row" style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>FlowDesk AI</span>
               {currentSessionId && (
                 <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: T.emerald, border: `1px solid rgba(16,185,129,0.2)`, display: "flex", alignItems: "center", gap: 3 }}>
@@ -1213,15 +1242,15 @@ export default function AIAssistant() {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 10, color: T.muted }}>Groq • Llama 3.3 70B • Ultra Fast</div>
+            <div className="ai-title-subtitle" style={{ fontSize: 10, color: T.muted }}>Groq • Llama 3.3 70B • Ultra Fast</div>
           </div>
         </div>
 
 
-        <div style={{ display: "flex", gap: 2, alignItems: "center", flexShrink: 0 }}>
+        <div className="ai-header-actions" style={{ display: "flex", gap: 2, alignItems: "center", flexShrink: 0 }}>
 
           {user?.plan === "free" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 5, marginRight: 4 }}>
+            <div className="ai-usage-meter" style={{ display: "flex", alignItems: "center", gap: 5, marginRight: 4 }}>
               <div style={{ width: 50, height: 3, background: T.faint, borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", borderRadius: 99, width: `${remainingPercent}%`, background: remainingPercent > 50 ? T.emerald : remainingPercent > 20 ? T.amber : T.rose, transition: "width 0.5s" }} />
               </div>
@@ -1236,23 +1265,23 @@ export default function AIAssistant() {
 
 
           {[
-            { icon: <Search size={14} />, title: "Search (Ctrl+F)", active: showSearch, action: () => setShowSearch(s => !s), show: messages.length > 0 },
-            { icon: <Archive size={14} />, title: "Snippet Vault", active: showSnippets, action: () => setShowSnippets(true), show: true },
-            { icon: <BarChart2 size={14} />, title: "Stats", active: showStats, action: () => setShowStats(true), show: messages.length > 0 },
-            { icon: <Download size={14} />, title: "Export", active: false, action: () => handleExportChat("md"), show: messages.length > 0 },
-            { icon: <Keyboard size={14} />, title: "Shortcuts (Ctrl+/)", active: showShortcuts, action: () => setShowShortcuts(true), show: true },
-            { icon: <Settings size={14} />, title: "Settings", active: showSettings, action: () => setShowSettings(true), show: true },
-            { icon: fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />, title: "Fullscreen", active: fullscreen, action: () => setFullscreen(f => !f), show: true },
+            { icon: <Search size={14} />, title: "Search (Ctrl+F)", active: showSearch, action: () => setShowSearch(s => !s), show: messages.length > 0, mobile: true },
+            { icon: <Archive size={14} />, title: "Snippet Vault", active: showSnippets, action: () => setShowSnippets(true), show: true, mobile: false },
+            { icon: <BarChart2 size={14} />, title: "Stats", active: showStats, action: () => setShowStats(true), show: messages.length > 0, mobile: false },
+            { icon: <Download size={14} />, title: "Export", active: false, action: () => handleExportChat("md"), show: messages.length > 0, mobile: false },
+            { icon: <Keyboard size={14} />, title: "Shortcuts (Ctrl+/)", active: showShortcuts, action: () => setShowShortcuts(true), show: true, mobile: false },
+            { icon: <Settings size={14} />, title: "Settings", active: showSettings, action: () => setShowSettings(true), show: true, mobile: true },
+            { icon: fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />, title: "Fullscreen", active: fullscreen, action: () => setFullscreen(f => !f), show: true, mobile: false },
           ].filter(b => b.show).map(b => (
-            <button key={b.title} onClick={b.action} title={b.title} style={{
+            <button className={`ai-header-tool ${b.mobile ? "" : "hide-mobile"}`} key={b.title} onClick={b.action} title={b.title} style={{
               background: b.active ? "rgba(99,102,241,0.12)" : "none", border: "none", cursor: "pointer",
               color: b.active ? T.indigo : T.muted, padding: 6, borderRadius: 7, display: "flex",
               transition: "all 0.12s",
             }}>{b.icon}</button>
           ))}
 
-          <button onClick={startNewChat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 10px", color: T.muted, cursor: "pointer" }}>
-            <Plus size={12} />New
+          <button className="ai-new-button" onClick={startNewChat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 10px", color: T.muted, cursor: "pointer" }}>
+            <Plus size={12} /><span className="ai-new-label">New</span>
           </button>
         </div>
       </div>
@@ -1483,7 +1512,7 @@ export default function AIAssistant() {
                       }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "none"}
-                      >↺ {p.text.slice(0, 45)}{p.text.length > 45 ? "…" : ""}</button>
+                      >{p.text.slice(0, 45)}{p.text.length > 45 ? "…" : ""}</button>
                     ))}
                   </div>
                 )}
@@ -1515,20 +1544,20 @@ export default function AIAssistant() {
               </div>
             ) : displayMessages.length === 0 && !loading ? (
 
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100%", padding: "28px 16px", textAlign: "center" }}>
-                <div style={{ width: 68, height: 68, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, boxShadow: "0 10px 36px rgba(99,102,241,0.3)" }}>
+              <div className="ai-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100%", padding: "28px 16px", textAlign: "center" }}>
+                <div className="ai-empty-hero" style={{ width: 68, height: 68, background: "linear-gradient(135deg,#6366F1,#8B5CF6)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, boxShadow: "0 10px 36px rgba(99,102,241,0.3)" }}>
                   <Brain size={32} color="#fff" />
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 6 }}>FlowDesk AI</h2>
-                <p style={{ fontSize: 13, color: T.muted, maxWidth: 380, marginBottom: 4, lineHeight: 1.65 }}>
+                <h2 className="ai-empty-title" style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 6 }}>FlowDesk AI</h2>
+                <p className="ai-empty-copy" style={{ fontSize: 13, color: T.muted, maxWidth: 380, marginBottom: 4, lineHeight: 1.65 }}>
                   Senior developer on demand. Drag & drop files, use voice input, paste code directly.
                 </p>
-                <p style={{ fontSize: 10, color: T.muted, marginBottom: 24, display: "flex", alignItems: "center", gap: 4 }}>
+                <p className="ai-empty-provider" style={{ fontSize: 10, color: T.muted, marginBottom: 24, display: "flex", alignItems: "center", gap: 4 }}>
                   <Brain size={9} />Powered by Llama 3.3 70B via Groq
                 </p>
                 <div style={{ width: "100%", maxWidth: 660, marginBottom: 20 }}>
                   <p style={{ fontSize: 10, color: T.muted, marginBottom: 9, textTransform: "uppercase", letterSpacing: 1 }}>Quick Actions</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 7 }}>
+                  <div className="ai-quick-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 7 }}>
                     {QUICK_ACTIONS.map(a => (
                       <button key={a.label} onClick={() => { setInput(a.prompt); inputRef.current?.focus() }} style={{
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
@@ -1544,8 +1573,8 @@ export default function AIAssistant() {
                     ))}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-                  {[["Ctrl+/","Shortcuts"],["Ctrl+B","Sidebar"],["Drop file","Attach"],["🎤","Voice input"]].map(([k, l]) => (
+                <div className="ai-empty-hints" style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                  {[["Ctrl+/","Shortcuts"],["Ctrl+B","Sidebar"],["Drop file","Attach"],["Voice","Voice input"]].map(([k, l]) => (
                     <span key={k} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, color: T.muted }}>
                       <span style={{ color: T.indigo }}>{k}</span> — {l}
                     </span>
@@ -1734,7 +1763,7 @@ export default function AIAssistant() {
           </div>
 
 
-          <div style={{ borderTop: `1px solid ${T.border}`, background: T.surface, padding: "9px 13px 11px", flexShrink: 0 }}>
+          <div className="ai-composer" style={{ borderTop: `1px solid ${T.border}`, background: T.surface, padding: "9px 13px 11px", flexShrink: 0 }}>
             <div style={{ maxWidth: 820, margin: "0 auto" }}>
 
               {isLimitReached && (
@@ -1748,7 +1777,7 @@ export default function AIAssistant() {
               )}
 
 
-              <div style={{ display: "flex", gap: 4, marginBottom: 7, overflowX: "auto", paddingBottom: 2 }}>
+              <div className="ai-prompt-strip" style={{ display: "flex", gap: 4, marginBottom: 7, overflowX: "auto", paddingBottom: 2 }}>
                 {QUICK_ACTIONS.slice(0, 10).map(a => (
                   <button key={a.label} onClick={() => { setInput(a.prompt); inputRef.current?.focus() }} style={{
                     flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 10,
@@ -1795,9 +1824,9 @@ export default function AIAssistant() {
               )}
 
 
-              <div style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
+              <div className="ai-input-row" style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+                <div className="ai-side-actions" style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                   <button onClick={toggleVoice} title="Voice input" style={{
                     background: isListening ? "rgba(244,63,94,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${isListening ? "rgba(244,63,94,0.3)" : T.border}`,
                     borderRadius: 8, padding: "7px 8px", cursor: "pointer", color: isListening ? T.rose : T.muted, display: "flex",
@@ -1815,10 +1844,10 @@ export default function AIAssistant() {
 
 
                 <div style={{ flex: 1, position: "relative" }}>
-                  <textarea ref={inputRef} value={input}
+                  <textarea className="ai-textarea" ref={inputRef} value={input}
                     onChange={e => { setInput(e.target.value); setCharCount(e.target.value.length) }}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                    placeholder={isLimitReached ? "Daily limit reached." : "Ask anything… paste code, drop files, use voice 🎤"}
+                    placeholder={isLimitReached ? "Daily limit reached." : "Ask anything... paste code, drop files, use voice"}
                     disabled={loading || isLimitReached}
                     rows={3}
                     style={{
@@ -1837,7 +1866,7 @@ export default function AIAssistant() {
                 </div>
 
 
-                <button onClick={() => sendMessage()} disabled={!input.trim() || loading || isLimitReached} style={{
+                <button className="ai-send-button" onClick={() => sendMessage()} disabled={!input.trim() || loading || isLimitReached} style={{
                   flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                   background: "linear-gradient(135deg,#6366F1,#8B5CF6)", border: "none", borderRadius: 10,
                   padding: "0 15px", height: 84, cursor: (!input.trim() || loading || isLimitReached) ? "not-allowed" : "pointer",
@@ -1848,7 +1877,7 @@ export default function AIAssistant() {
                 </button>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, flexWrap: "wrap", gap: 3 }}>
+              <div className="ai-composer-help" style={{ display: "flex", justifyContent: "space-between", marginTop: 5, flexWrap: "wrap", gap: 3 }}>
                 <span style={{ fontSize: 9, color: T.muted }}>Enter send • Shift+Enter line • Ctrl+/ shortcuts • Drop files</span>
                 <span style={{ fontSize: 9, color: T.muted, display: "flex", alignItems: "center", gap: 3 }}>
                   <Brain size={8} />{currentSessionId ? "Memory active" : "New session"}

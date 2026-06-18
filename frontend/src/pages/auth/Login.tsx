@@ -1,7 +1,7 @@
 
 import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Code2, Eye, EyeOff, Loader2, ArrowRight, Terminal } from "lucide-react"
+import { Code2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import toast from "react-hot-toast"
 
@@ -125,7 +125,7 @@ export default function Login() {
               borderRadius: 8, padding: "10px 14px", marginBottom: 16,
               fontSize: 13, color: S.rose, display: "flex", alignItems: "center", gap: 8,
             }}>
-              <Terminal size={13} /> {error}
+              {error}
             </div>
           )}
 
@@ -171,7 +171,7 @@ export default function Login() {
             >
               {isLoading
                 ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Signing in…</>
-                : <>Sign in <ArrowRight size={14} /></>
+                : "Sign in"
               }
             </button>
           </form>
@@ -184,7 +184,7 @@ export default function Login() {
             <Link to="/register" style={{ color: S.indigo, textDecoration: "none", fontWeight: 600 }}
               onMouseEnter={e => (e.currentTarget.style.color = "#818CF8")}
               onMouseLeave={e => (e.currentTarget.style.color = S.indigo)}
-            >Create one free →</Link>
+            >Create one free</Link>
           </div>
         </div>
 

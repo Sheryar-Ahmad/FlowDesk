@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, LogOut, FileCode, FileText, Kanban,
-  Bot, Timer, GitCompare, Zap, ChevronRight,
+  Bot, Timer, GitCompare, Zap,
   Activity, Clock, Star, TrendingUp, RefreshCw,
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
@@ -288,15 +288,6 @@ function FeatureCard({
         }}>
           {stat}
         </span>
-        <ChevronRight
-          size={14}
-          style={{
-            color: feature.accentColor,
-            opacity: hovered ? 1 : 0.3,
-            transform: hovered ? "translateX(3px)" : "translateX(0)",
-            transition: "opacity 0.2s, transform 0.2s",
-          }}
-        />
       </div>
     </button>
   )
@@ -815,7 +806,7 @@ export default function Dashboard() {
                     ? "Opening checkout..."
                     : isCheckoutOpen
                       ? "Checkout opened"
-                      : "Upgrade to Pro →"}
+                      : "Upgrade to Pro"}
                 </button>
                 <p style={{
                   margin: "9px 0 0",

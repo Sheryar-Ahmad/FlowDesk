@@ -9,7 +9,7 @@ import {
   Search, Plus, Copy, Pin, Code2,
   X, Check, Loader2, Globe, Lock, FileCode,
   Edit3, Save, ArrowLeft, Download, Share2,
-  BarChart2, Star, ChevronRight,
+  BarChart2, Star,
   Maximize2, Minimize2, WrapText, ZoomIn, ZoomOut,
   Clock, Layers, Command,
   Upload, Hash, Sparkles,
@@ -63,7 +63,7 @@ const SORT_OPTIONS = [
   { value: "newest",    label: "Newest"  },
   { value: "oldest",    label: "Oldest"  },
   { value: "most_used", label: "Popular" },
-  { value: "alpha",     label: "A → Z"   },
+  { value: "alpha",     label: "A-Z"     },
   { value: "pinned",    label: "Pinned"  },
 ]
 
@@ -1151,7 +1151,7 @@ export default function SnippetList() {
                 color: sortBy === s.value ? C.indigo : C.textMuted,
                 cursor: "pointer", fontSize: 12, textAlign: "left", marginBottom: 2,
               }}>
-                {sortBy === s.value && <ChevronRight size={10} />}
+                {sortBy === s.value && <Check size={10} />}
                 {sortBy !== s.value && <span style={{ width: 10 }} />}
                 {s.label}
               </button>
