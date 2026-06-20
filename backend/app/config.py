@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 5
     DB_POOL_TIMEOUT: int = 30
     DB_POOL_RECYCLE_SECONDS: int = 1800
+    DB_SSL_ROOT_CERT: str = ""
     SUPABASE_URL: str = "https://your-project.supabase.co"
     SUPABASE_KEY: str = ""
     SUPABASE_SECRET: str = ""

@@ -49,7 +49,11 @@ def upgrade() -> None:
     for table_name in UPDATED_AT_TABLES:
         op.execute(
             f"""
-            DROP TRIGGER IF EXISTS trg_{table_name}_updated_at ON {table_name};
+            DROP TRIGGER IF EXISTS trg_{table_name}_updated_at ON {table_name}
+            """
+        )
+        op.execute(
+            f"""
             CREATE TRIGGER trg_{table_name}_updated_at
             BEFORE UPDATE ON {table_name}
             FOR EACH ROW
@@ -98,7 +102,11 @@ def upgrade() -> None:
     )
     op.execute(
         """
-        DROP TRIGGER IF EXISTS trg_notes_capture_version ON notes;
+        DROP TRIGGER IF EXISTS trg_notes_capture_version ON notes
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_notes_capture_version
         BEFORE UPDATE ON notes
         FOR EACH ROW

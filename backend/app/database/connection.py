@@ -1,4 +1,5 @@
 import asyncio
+import ssl
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import structlog
@@ -38,6 +39,7 @@ def normalize_database_url(raw_url: str | None = None) -> str:
     parsed = urlsplit(url)
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
     query.pop("sslmode", None)
+    query.pop("sslrootcert", None)
     if is_transaction_pooler(url):
         query.setdefault("prepared_statement_cache_size", "0")
 
@@ -54,6 +56,7 @@ def build_connect_args(raw_url: str | None = None) -> dict:
     parsed = urlsplit(url)
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
     sslmode = query.get("sslmode", "").lower()
+    sslrootcert = query.get("sslrootcert") or settings.DB_SSL_ROOT_CERT.strip()
 
     connect_args = {
         "command_timeout": 60,
@@ -63,11 +66,21 @@ def build_connect_args(raw_url: str | None = None) -> dict:
         },
     }
 
-    if is_supabase_host(url) or sslmode in {"require", "verify-ca", "verify-full"}:
-        connect_args["ssl"] = True
-
     if sslmode == "disable":
-        connect_args.pop("ssl", None)
+        return connect_args
+
+    if sslmode in {"verify-ca", "verify-full"}:
+        context = ssl.create_default_context(cafile=sslrootcert or None)
+        context.check_hostname = sslmode == "verify-full"
+        connect_args["ssl"] = context
+        return connect_args
+
+    if is_supabase_host(url) or sslmode == "require":
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = context
+
 
     return connect_args
 

@@ -17,8 +17,11 @@ mode URL on port `5432`, because it works on IPv4 and is meant for persistent
 backend services. Transaction pooler URLs on port `6543` can work too; FlowDesk
 automatically disables asyncpg prepared-statement caching for that mode.
 
-Both `postgresql://` and `postgres://` prefixes are accepted. Supabase URLs are
-opened with SSL automatically by the backend connector.
+Both `postgresql://` and `postgres://` prefixes are accepted. Supabase URLs use
+TLS automatically by the backend connector. For stricter certificate
+verification, download the Supabase database root certificate and set
+`DB_SSL_ROOT_CERT` to its deployed file path, then use `sslmode=verify-full` in
+the connection URL.
 
 ## 2. Backend
 
