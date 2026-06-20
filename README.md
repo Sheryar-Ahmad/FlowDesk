@@ -44,8 +44,8 @@ Currently in active development following the Spiral SDLC model.
 - [x] Spiral 6 - Task Board
 - [x] Spiral 7 - AI Assistant
 - [x] Spiral 8 - Additional features
-- [ ] Spiral 9 - Payments
-- [ ] Spiral 10 - API Tester
+- [x] Spiral 9 - Payments
+- [x] Spiral 10 - API Tester
 - [ ] Spiral 11 - Desktop App
 - [ ] Spiral 12 - Launch
 
