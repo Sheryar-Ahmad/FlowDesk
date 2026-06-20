@@ -4,19 +4,21 @@ The recommended low-cost production layout is:
 
 - Cloudflare Pages for the Vite frontend
 - Render for the FastAPI container
-- Neon for PostgreSQL
+- Supabase Postgres
 - Groq, Mistral, or Gemini for AI
 - Resend for transactional email
 - Lemon Squeezy for subscriptions
 
 ## 1. Database
 
-Create a Neon PostgreSQL project and copy its pooled connection string. The
-backend container runs `alembic upgrade head` before starting, so a fresh
-database is initialized automatically.
+Use your Supabase Postgres connection string as `DATABASE_URL`. For Render's
+free runtime, the safest Supabase option is usually the shared pooler session
+mode URL on port `5432`, because it works on IPv4 and is meant for persistent
+backend services. Transaction pooler URLs on port `6543` can work too; FlowDesk
+automatically disables asyncpg prepared-statement caching for that mode.
 
-Set `DATABASE_URL` to the Neon connection string. Both `postgresql://` and
-`postgres://` prefixes are accepted.
+Both `postgresql://` and `postgres://` prefixes are accepted. Supabase URLs are
+opened with SSL automatically by the backend connector.
 
 ## 2. Backend
 
@@ -28,6 +30,7 @@ FRONTEND_URL
 ALLOWED_ORIGINS
 ALLOWED_HOSTS
 GROQ_API_KEY
+DEEPSEEK_API_KEY
 MISTRAL_API_KEY
 GEMINI_API_KEY
 RESEND_API_KEY

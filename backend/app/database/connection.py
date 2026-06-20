@@ -1,26 +1,75 @@
+import asyncio
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
     AsyncSession,
     async_sessionmaker,
+    create_async_engine,
 )
-from sqlalchemy import text
 from sqlalchemy.pool import AsyncAdaptedQueuePool
-import asyncio
-import structlog
+
 from app.config import get_settings
 from app.models.base import Base
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
 
-def build_database_url() -> str:
-    """Builds the correct database URL for async SQLAlchemy."""
-    url = settings.DATABASE_URL
+
+def is_supabase_host(url: str) -> bool:
+    hostname = urlsplit(url).hostname or ""
+    return hostname.endswith(".supabase.co") or hostname.endswith(".pooler.supabase.com")
+
+
+def is_transaction_pooler(url: str) -> bool:
+    parsed = urlsplit(url)
+    return (parsed.hostname or "").endswith(".pooler.supabase.com") and parsed.port == 6543
+
+
+def normalize_database_url(raw_url: str | None = None) -> str:
+    """Build the asyncpg URL and remove query args asyncpg cannot consume."""
+    url = (raw_url if raw_url is not None else settings.DATABASE_URL).strip()
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    return url
+
+    parsed = urlsplit(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.pop("sslmode", None)
+    if is_transaction_pooler(url):
+        query.setdefault("prepared_statement_cache_size", "0")
+
+    return urlunsplit(parsed._replace(query=urlencode(query)))
+
+
+def build_database_url() -> str:
+    """Builds the correct database URL for async SQLAlchemy."""
+    return normalize_database_url()
+
+
+def build_connect_args(raw_url: str | None = None) -> dict:
+    url = raw_url or settings.DATABASE_URL
+    parsed = urlsplit(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    sslmode = query.get("sslmode", "").lower()
+
+    connect_args = {
+        "command_timeout": 60,
+        "server_settings": {
+            "application_name": "FlowDesk",
+            "jit": "off",
+        },
+    }
+
+    if is_supabase_host(url) or sslmode in {"require", "verify-ca", "verify-full"}:
+        connect_args["ssl"] = True
+
+    if sslmode == "disable":
+        connect_args.pop("ssl", None)
+
+    return connect_args
 
 
 engine = create_async_engine(
@@ -30,20 +79,12 @@ engine = create_async_engine(
     echo=settings.DEBUG,
 
     poolclass=AsyncAdaptedQueuePool,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
     pool_pre_ping=True,
-    pool_recycle=3600,
-    pool_timeout=30,
-
-
-    connect_args={
-        "command_timeout": 60,
-        "server_settings": {
-            "application_name": "FlowDesk",
-            "jit": "off",
-        },
-    },
+    pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
+    pool_timeout=settings.DB_POOL_TIMEOUT,
+    connect_args=build_connect_args(),
 )
 
 

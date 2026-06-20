@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
 
     DATABASE_URL: str = ""
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 5
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE_SECONDS: int = 1800
     SUPABASE_URL: str = "https://your-project.supabase.co"
     SUPABASE_KEY: str = ""
     SUPABASE_SECRET: str = ""
@@ -90,6 +94,13 @@ class Settings(BaseSettings):
             if not self.ALLOWED_HOSTS:
                 raise ValueError("ALLOWED_HOSTS must contain at least one API hostname in production.")
         return self
+
+    @field_validator("DB_POOL_SIZE", "DB_MAX_OVERFLOW", "DB_POOL_TIMEOUT", "DB_POOL_RECYCLE_SECONDS")
+    @classmethod
+    def validate_database_pool_numbers(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("Database pool settings cannot be negative.")
+        return value
 
     model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
