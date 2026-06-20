@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import structlog
@@ -84,20 +84,35 @@ async def lemon_squeezy_webhook(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
 
     event_name = payload.get("meta", {}).get("event_name", "")
-    custom_data = payload.get("meta", {}).get("custom_data") or {}
-    user_id = custom_data.get("user_id")
     data = payload.get("data") or {}
     attributes = data.get("attributes") or {}
+    custom_data = payload.get("meta", {}).get("custom_data") or attributes.get("custom_data") or {}
+    user_id = custom_data.get("user_id")
     variant_id = str(attributes.get("variant_id", ""))
     store_id = str(attributes.get("store_id", ""))
-    provider_subscription_id = str(data.get("id", ""))
+    provider_subscription_id = str(attributes.get("subscription_id") or data.get("id", ""))
     is_test_mode = bool(attributes.get("test_mode", False))
+
+    if not user_id and provider_subscription_id:
+        existing_subscription = await db.execute(
+            text(
+                """
+                SELECT user_id
+                FROM subscriptions
+                WHERE provider_subscription_id = :subscription_id
+                """
+            ),
+            {"subscription_id": provider_subscription_id},
+        )
+        subscription_row = existing_subscription.fetchone()
+        if subscription_row:
+            user_id = str(subscription_row.user_id)
 
     if (
         not user_id
         or not provider_subscription_id
-        or variant_id != settings.LEMON_SQUEEZY_VARIANT_ID
-        or store_id != settings.LEMON_SQUEEZY_STORE_ID
+        or (variant_id and variant_id != settings.LEMON_SQUEEZY_VARIANT_ID)
+        or (store_id and store_id != settings.LEMON_SQUEEZY_STORE_ID)
         or is_test_mode != settings.LEMON_SQUEEZY_TEST_MODE
     ):
         logger.warning("Ignoring unrelated payment webhook", event=event_name)
@@ -111,20 +126,35 @@ async def lemon_squeezy_webhook(
 
     subscription_status = attributes.get("status", "")
     pro_statuses = {"on_trial", "active", "paused", "past_due", "cancelled"}
-    should_be_pro = (
-        event_name
-        in {
-            "subscription_created",
-            "subscription_paused",
-            "subscription_resumed",
-            "subscription_unpaused",
-            "subscription_updated",
-        }
-        and subscription_status in pro_statuses
-    )
-    should_be_free = event_name in {"subscription_expired"} or subscription_status in {
+    pro_events = {
+        "subscription_created",
+        "subscription_paused",
+        "subscription_resumed",
+        "subscription_unpaused",
+        "subscription_updated",
+        "subscription_payment_success",
+        "subscription_payment_recovered",
+    }
+    free_events = {
+        "subscription_expired",
+        "subscription_payment_refunded",
+        "order_refunded",
+    }
+    should_be_free = event_name in free_events or subscription_status in {
         "expired",
         "unpaid",
+    }
+    should_be_pro = (
+        event_name in pro_events
+        and not should_be_free
+        and (not subscription_status or subscription_status in pro_statuses)
+    )
+    should_reset_quota = event_name in {
+        "subscription_created",
+        "subscription_payment_success",
+        "subscription_payment_recovered",
+        "subscription_resumed",
+        "subscription_unpaused",
     }
 
     event_id = hashlib.sha256(body).hexdigest()
@@ -148,11 +178,33 @@ async def lemon_squeezy_webhook(
         await db.rollback()
         return {"success": True, "duplicate": True}
 
-    plan = "pro" if should_be_pro else "free" if should_be_free else None
+    plan = "free" if should_be_free else "pro" if should_be_pro else None
     if plan:
+        renews_at = parse_provider_datetime(attributes.get("renews_at"))
+        quota_reset_at = renews_at or datetime.now(timezone.utc) + timedelta(days=30)
         user_result = await db.execute(
-            text("UPDATE users SET plan = :plan, updated_at = NOW() WHERE id = :user_id"),
-            {"plan": plan, "user_id": user_id},
+            text("""
+                UPDATE users
+                SET plan = :plan,
+                    ai_messages_used_month = CASE
+                        WHEN :plan = 'free' THEN 0
+                        WHEN :reset_quota THEN 0
+                        ELSE ai_messages_used_month
+                    END,
+                    ai_messages_month_reset_at = CASE
+                        WHEN :plan = 'pro'
+                            THEN COALESCE(:quota_reset_at, ai_messages_month_reset_at, NOW() + INTERVAL '1 month')
+                        ELSE NULL
+                    END,
+                    updated_at = NOW()
+                WHERE id = :user_id
+            """),
+            {
+                "plan": plan,
+                "reset_quota": should_reset_quota,
+                "quota_reset_at": quota_reset_at,
+                "user_id": user_id,
+            },
         )
         if not user_result.rowcount:
             logger.warning("Payment webhook referenced an unknown user", user_id=user_id)
@@ -209,9 +261,9 @@ async def lemon_squeezy_webhook(
                 "user_id": user_id,
                 "subscription_id": provider_subscription_id,
                 "customer_id": str(attributes.get("customer_id") or "") or None,
-                "store_id": int(store_id),
+                "store_id": int(store_id) if store_id else None,
                 "product_id": int(attributes["product_id"]) if attributes.get("product_id") else None,
-                "variant_id": int(variant_id),
+                "variant_id": int(variant_id) if variant_id else None,
                 "status": subscription_status,
                 "renews_at": parse_provider_datetime(attributes.get("renews_at")),
                 "ends_at": parse_provider_datetime(attributes.get("ends_at")),

@@ -11,6 +11,7 @@ import json
 from app.database.connection import get_db
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import limiter, AI_LIMIT
+from app.constants import FREE_TIER_AI_MESSAGES_PER_DAY, PRO_TIER_AI_MESSAGES_PER_MONTH
 from app.services.ai_service import analyze_code, generate_session_title, build_context_from_history, smart_ai_router
 
 logger = structlog.get_logger(__name__)
@@ -25,7 +26,7 @@ router = APIRouter(
 CurrentUser = Annotated[dict, Depends(get_current_user)]
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 SESSION_NOT_FOUND = "Session not found."
-AI_LIMIT_MESSAGE = "Free tier limit: 20 AI messages per day. Upgrade to Pro for higher limits."
+AI_LIMIT_MESSAGE = "AI message limit reached. Upgrade or wait until your quota resets."
 
 
 class Message(BaseModel):
@@ -79,10 +80,35 @@ class SessionRename(BaseModel):
 async def get_user_ai_data(db: AsyncSession, user_id: str) -> dict:
     """Gets user AI usage and context data."""
     result = await db.execute(
-        text("SELECT ai_messages_used_today, ai_messages_reset_at, plan, display_name FROM users WHERE id=:uid"),
+        text(
+            """
+            SELECT ai_messages_used_today, ai_messages_reset_at,
+                   ai_messages_used_month, ai_messages_month_reset_at,
+                   plan, display_name
+            FROM users WHERE id=:uid
+            """
+        ),
         {"uid": user_id}
     )
     return result.fetchone()
+
+
+def quota_limit(plan: str) -> int:
+    return PRO_TIER_AI_MESSAGES_PER_MONTH if plan == "pro" else FREE_TIER_AI_MESSAGES_PER_DAY
+
+
+def reserved_usage(reservation) -> int:
+    if reservation.plan == "pro":
+        return reservation.ai_messages_used_month or 0
+    return reservation.ai_messages_used_today or 0
+
+
+def usage_before_reservation(reservation) -> int:
+    return max(0, reserved_usage(reservation) - 1)
+
+
+def quota_remaining(reservation) -> int:
+    return max(0, quota_limit(reservation.plan) - reserved_usage(reservation))
 
 
 def parse_messages(value) -> list[dict]:
@@ -185,34 +211,68 @@ async def save_ai_session(
 
 
 async def reserve_ai_message(db: AsyncSession, user_id: str):
-    """Atomically reserves one daily AI request before contacting a provider."""
+    """Atomically reserves one AI request before contacting a provider."""
     now = datetime.now(timezone.utc)
     reset_before = now.replace(microsecond=0) - timedelta(days=1)
+    monthly_reset_at = now + timedelta(days=30)
     result = await db.execute(
         text("""
             UPDATE users
             SET ai_messages_used_today = CASE
+                    WHEN plan = 'pro' THEN ai_messages_used_today
                     WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
                         THEN 1
                     ELSE ai_messages_used_today + 1
                 END,
                 ai_messages_reset_at = CASE
+                    WHEN plan = 'pro' THEN ai_messages_reset_at
                     WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
                         THEN :now
                     ELSE ai_messages_reset_at
+                END,
+                ai_messages_used_month = CASE
+                    WHEN plan <> 'pro' THEN ai_messages_used_month
+                    WHEN ai_messages_month_reset_at IS NULL OR ai_messages_month_reset_at <= :now
+                        THEN 1
+                    ELSE ai_messages_used_month + 1
+                END,
+                ai_messages_month_reset_at = CASE
+                    WHEN plan <> 'pro' THEN ai_messages_month_reset_at
+                    WHEN ai_messages_month_reset_at IS NULL OR ai_messages_month_reset_at <= :now
+                        THEN :monthly_reset_at
+                    ELSE ai_messages_month_reset_at
                 END
             WHERE id = :uid
               AND (
-                  plan = 'pro'
-                  OR CASE
-                      WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
-                          THEN 0
-                      ELSE ai_messages_used_today
-                  END < 20
+                  (
+                      plan = 'pro'
+                      AND CASE
+                          WHEN ai_messages_month_reset_at IS NULL OR ai_messages_month_reset_at <= :now
+                              THEN 0
+                          ELSE ai_messages_used_month
+                      END < :pro_limit
+                  )
+                  OR (
+                      plan <> 'pro'
+                      AND CASE
+                          WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                              THEN 0
+                          ELSE ai_messages_used_today
+                      END < :free_limit
+                  )
               )
-            RETURNING ai_messages_used_today, plan, display_name
+            RETURNING ai_messages_used_today, ai_messages_reset_at,
+                      ai_messages_used_month, ai_messages_month_reset_at,
+                      plan, display_name
         """),
-        {"uid": user_id, "now": now, "reset_before": reset_before},
+        {
+            "uid": user_id,
+            "now": now,
+            "reset_before": reset_before,
+            "monthly_reset_at": monthly_reset_at,
+            "free_limit": FREE_TIER_AI_MESSAGES_PER_DAY,
+            "pro_limit": PRO_TIER_AI_MESSAGES_PER_MONTH,
+        },
     )
     reservation = result.fetchone()
     if not reservation:
@@ -226,7 +286,14 @@ async def refund_ai_message(db: AsyncSession, user_id: str) -> None:
     await db.execute(
         text("""
             UPDATE users
-            SET ai_messages_used_today = GREATEST(ai_messages_used_today - 1, 0)
+            SET ai_messages_used_today = CASE
+                    WHEN plan = 'pro' THEN ai_messages_used_today
+                    ELSE GREATEST(ai_messages_used_today - 1, 0)
+                END,
+                ai_messages_used_month = CASE
+                    WHEN plan = 'pro' THEN GREATEST(ai_messages_used_month - 1, 0)
+                    ELSE ai_messages_used_month
+                END
             WHERE id = :uid
         """),
         {"uid": user_id},
@@ -242,7 +309,7 @@ async def run_one_shot_ai(
 ) -> dict:
     """Run a metered AI request without creating a chat session."""
     reservation = await reserve_ai_message(db, current_user["id"])
-    messages_used = reservation.ai_messages_used_today - 1
+    messages_used = usage_before_reservation(reservation)
     context = {
         "name": reservation.display_name or current_user.get("display_name", "Developer"),
         "task": task_name,
@@ -258,13 +325,13 @@ async def run_one_shot_ai(
     except Exception:
         await refund_ai_message(db, current_user["id"])
         raise
-    remaining = "unlimited" if reservation.plan == "pro" else max(0, 20 - reservation.ai_messages_used_today)
     return {
         "success": True,
         "response": result_ai["response"],
         "tokens_used": result_ai["tokens_used"],
         "model": result_ai["model"],
-        "messages_remaining": remaining,
+        "messages_remaining": quota_remaining(reservation),
+        "messages_limit": quota_limit(reservation.plan),
     }
 
 
@@ -301,7 +368,7 @@ async def chat(
         session_data, session_messages = await load_session_messages(db, session_id, current_user["id"])
         past_sessions = await load_recent_session_context(db, current_user["id"])
         reservation = await reserve_ai_message(db, current_user["id"])
-        messages_used = reservation.ai_messages_used_today - 1
+        messages_used = usage_before_reservation(reservation)
         context = build_context_from_history(past_sessions)
         context["name"] = reservation.display_name or current_user.get("display_name", "Developer")
 
@@ -341,8 +408,6 @@ async def chat(
         )
         await db.commit()
 
-        remaining = "unlimited" if reservation.plan == "pro" else max(0, 20 - reservation.ai_messages_used_today)
-
         return {
             "success": True,
             "response": result_ai["response"],
@@ -351,7 +416,8 @@ async def chat(
             "intent": result_ai.get("intent", "general"),
             "session_id": session_id,
             "session_title": session_title,
-            "messages_remaining": remaining,
+            "messages_remaining": quota_remaining(reservation),
+            "messages_limit": quota_limit(reservation.plan),
         }
 
     except HTTPException:
@@ -492,13 +558,19 @@ async def analyze(
     reservation = None
     try:
         reservation = await reserve_ai_message(db, current_user["id"])
-        response = await analyze_code(body.code, body.language, body.task)
-        remaining = (
-            "unlimited"
-            if reservation.plan == "pro"
-            else max(0, 20 - reservation.ai_messages_used_today)
+        response = await analyze_code(
+            body.code,
+            body.language,
+            body.task,
+            user_plan=reservation.plan,
+            ai_messages_used=usage_before_reservation(reservation),
         )
-        return {"success": True, "response": response, "messages_remaining": remaining}
+        return {
+            "success": True,
+            "response": response,
+            "messages_remaining": quota_remaining(reservation),
+            "messages_limit": quota_limit(reservation.plan),
+        }
     except ValueError as e:
         if reservation is not None:
             await refund_ai_message(db, current_user["id"])
@@ -601,19 +673,41 @@ async def get_usage(
     """Get AI usage stats."""
     now = datetime.now(timezone.utc)
     result = await db.execute(
-        text("SELECT ai_messages_used_today, ai_messages_reset_at, plan FROM users WHERE id=:uid"),
+        text("""
+            SELECT ai_messages_used_today, ai_messages_reset_at,
+                   ai_messages_used_month, ai_messages_month_reset_at, plan
+            FROM users WHERE id=:uid
+        """),
         {"uid": current_user["id"]}
     )
     user = result.fetchone()
-    used = user.ai_messages_used_today or 0
+    used_today = user.ai_messages_used_today or 0
+    used_month = user.ai_messages_used_month or 0
 
 
-    if user.ai_messages_reset_at:
+    if user.plan == "pro" and user.ai_messages_month_reset_at:
+        monthly_reset = user.ai_messages_month_reset_at
+        if hasattr(monthly_reset, "tzinfo") and monthly_reset.tzinfo is None:
+            monthly_reset = monthly_reset.replace(tzinfo=timezone.utc)
+        if monthly_reset <= now:
+            used_month = 0
+            await db.execute(
+                text("""
+                    UPDATE users
+                    SET ai_messages_used_month=0,
+                        ai_messages_month_reset_at=:next_reset
+                    WHERE id=:uid
+                """),
+                {"uid": current_user["id"], "next_reset": now + timedelta(days=30)},
+            )
+            await db.commit()
+
+    if user.plan != "pro" and user.ai_messages_reset_at:
         reset_at = user.ai_messages_reset_at
         if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
             reset_at = reset_at.replace(tzinfo=timezone.utc)
         if (now - reset_at).total_seconds() >= 86400:
-            used = 0
+            used_today = 0
             await db.execute(
                 text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=NOW() WHERE id=:uid"),
                 {"uid": current_user["id"]}
@@ -622,9 +716,14 @@ async def get_usage(
 
     return {
         "success": True,
-        "used_today": used,
-        "limit": "unlimited" if user.plan == "pro" else 20,
-        "remaining": "unlimited" if user.plan == "pro" else max(0, 20 - used),
+        "used_today": used_today,
+        "used_month": used_month,
+        "limit": quota_limit(user.plan),
+        "remaining": max(
+            0,
+            quota_limit(user.plan) - (used_month if user.plan == "pro" else used_today),
+        ),
+        "reset_at": user.ai_messages_month_reset_at if user.plan == "pro" else user.ai_messages_reset_at,
         "plan": user.plan,
     }
 

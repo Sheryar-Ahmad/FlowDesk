@@ -49,7 +49,7 @@ const features = [
   {
     icon: Bot,
     title: "AI Assistant",
-    desc: "Llama 3.3 70B - explain, fix, refactor, generate",
+    desc: "Explain, fix, refactor, and generate with provider fallbacks",
     path: "/ai",
     ready: true,
     accentColor: "#a855f7",
@@ -333,6 +333,7 @@ export default function Dashboard() {
   const [time, setTime] = useState(new Date())
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [acceptedProTerms, setAcceptedProTerms] = useState(false)
   const [dashboardStats, setDashboardStats] = useState(EMPTY_DASHBOARD_STATS)
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState(false)
@@ -443,6 +444,11 @@ export default function Dashboard() {
   }
 
   const handleUpgrade = async () => {
+    if (!acceptedProTerms) {
+      toast.error("Please confirm the Pro plan terms before checkout.")
+      return
+    }
+
     const checkoutWindow = window.open("", "_blank")
     if (!checkoutWindow) {
       toast.error("Please allow pop-ups for FlowDesk to open the secure checkout.")
@@ -793,13 +799,13 @@ export default function Dashboard() {
               <>
                 <button
                   onClick={handleUpgrade}
-                  disabled={isUpgrading || isCheckoutOpen}
+                  disabled={!acceptedProTerms || isUpgrading || isCheckoutOpen}
                   style={{
                   width: "100%", background: "rgba(99,102,241,0.2)",
                   border: "1px solid rgba(99,102,241,0.35)", borderRadius: 8,
                   padding: "8px", color: "#818cf8",
-                  cursor: isUpgrading ? "wait" : isCheckoutOpen ? "default" : "pointer",
-                  opacity: isUpgrading || isCheckoutOpen ? 0.65 : 1,
+                  cursor: isUpgrading ? "wait" : isCheckoutOpen || !acceptedProTerms ? "default" : "pointer",
+                  opacity: isUpgrading || isCheckoutOpen || !acceptedProTerms ? 0.65 : 1,
                   fontSize: 12, fontWeight: 600,
                 }}>
                   {isUpgrading
@@ -808,6 +814,28 @@ export default function Dashboard() {
                       ? "Checkout opened"
                       : "Upgrade to Pro"}
                 </button>
+                <label style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 8,
+                  marginTop: 10,
+                  color: "#64748b",
+                  fontSize: 10,
+                  lineHeight: 1.45,
+                  cursor: "pointer",
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={acceptedProTerms}
+                    onChange={event => setAcceptedProTerms(event.target.checked)}
+                    style={{ marginTop: 2, accentColor: "#6366f1" }}
+                  />
+                  <span>
+                    I understand FlowDesk Pro includes 500 AI messages per month,
+                    uses DeepSeek-powered Pro AI, unused messages do not roll over,
+                    and refunds are generally unavailable after AI credits are used.
+                  </span>
+                </label>
                 <p style={{
                   margin: "9px 0 0",
                   color: "#334155",

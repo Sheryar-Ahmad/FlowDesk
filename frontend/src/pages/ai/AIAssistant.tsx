@@ -87,6 +87,7 @@ interface ChatResponse {
   session_id: string
   session_title?: string
   messages_remaining?: number | string
+  messages_limit?: number
 }
 
 
@@ -901,6 +902,7 @@ export default function AIAssistant() {
           ...prev,
           used_today: prev.used_today + 1,
           remaining: data.messages_remaining ?? prev.remaining,
+          limit: data.messages_limit ?? prev.limit,
         }))
       }
       const title = data.session_title?.trim() || text.split(/\s+/).slice(0, 8).join(" ")
@@ -936,8 +938,8 @@ export default function AIAssistant() {
       if (detail.includes("All AI models") || detail.includes("temporarily unavailable")) {
         toast.error("⚠️ All AI services busy. Try again in 1-2 hours.", { duration: 8000 })
         setUsage(prev => ({ ...prev, remaining: 0, used_today: typeof prev.limit === "number" ? prev.limit : 20 }))
-      } else if (detail.includes("Daily limit") || detail.includes("Free tier limit")) {
-        toast.error("Daily limit reached. Upgrade to Pro!", { duration: 5000 })
+      } else if (detail.includes("limit")) {
+        toast.error("AI message limit reached.", { duration: 5000 })
         setUsage(prev => ({ ...prev, remaining: 0 }))
       } else { toast.error(detail || "AI error. Try again.") }
       setMessages(prev => prev.filter(m => m.id !== userMsg.id))
@@ -1128,7 +1130,7 @@ export default function AIAssistant() {
   }
 
 
-  const isLimitReached = user?.plan === "free" && usage.remaining === 0
+  const isLimitReached = usage.remaining === 0
   const remainingNum = typeof usage.remaining === "number" ? usage.remaining : 999
   const limitNum = typeof usage.limit === "number" ? usage.limit : 20
   const remainingPercent = Math.min(100, (remainingNum / limitNum) * 100)
@@ -1242,7 +1244,9 @@ export default function AIAssistant() {
                 </span>
               )}
             </div>
-            <div className="ai-title-subtitle" style={{ fontSize: 10, color: T.muted }}>Groq • Llama 3.3 70B • Ultra Fast</div>
+            <div className="ai-title-subtitle" style={{ fontSize: 10, color: T.muted }}>
+              {user?.plan === "pro" ? "DeepSeek-powered Pro AI" : "Free AI tier with provider fallbacks"}
+            </div>
           </div>
         </div>
 
@@ -1553,7 +1557,7 @@ export default function AIAssistant() {
                   Senior developer on demand. Drag & drop files, use voice input, paste code directly.
                 </p>
                 <p className="ai-empty-provider" style={{ fontSize: 10, color: T.muted, marginBottom: 24, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Brain size={9} />Powered by Llama 3.3 70B via Groq
+                  <Brain size={9} />{user?.plan === "pro" ? "Powered by DeepSeek for Pro users" : "Powered by FlowDesk AI provider routing"}
                 </p>
                 <div style={{ width: "100%", maxWidth: 660, marginBottom: 20 }}>
                   <p style={{ fontSize: 10, color: T.muted, marginBottom: 9, textTransform: "uppercase", letterSpacing: 1 }}>Quick Actions</p>
@@ -1770,9 +1774,15 @@ export default function AIAssistant() {
                 <div style={{ marginBottom: 8, padding: "9px 13px", background: "rgba(244,63,94,0.07)", border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <AlertCircle size={12} color={T.rose} />
-                    <span style={{ fontSize: 12, color: T.rose }}>Daily limit reached. Upgrade to Pro for higher AI limits.</span>
+                    <span style={{ fontSize: 12, color: T.rose }}>
+                      {user?.plan === "pro"
+                        ? "Monthly Pro AI limit reached. Your messages reset next billing cycle."
+                        : "Daily AI limit reached. Review Pro for higher monthly limits."}
+                    </span>
                   </div>
-                  <button onClick={() => toast("🚀 Pro coming soon!", { duration: 4000 })} style={{ fontSize: 11, background: T.rose, border: "none", borderRadius: 6, padding: "4px 11px", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Upgrade</button>
+                  {user?.plan !== "pro" && (
+                    <button onClick={() => navigate("/dashboard")} style={{ fontSize: 11, background: T.rose, border: "none", borderRadius: 6, padding: "4px 11px", color: "#fff", cursor: "pointer", fontWeight: 700 }}>Review Pro</button>
+                  )}
                 </div>
               )}
 
@@ -1847,7 +1857,7 @@ export default function AIAssistant() {
                   <textarea className="ai-textarea" ref={inputRef} value={input}
                     onChange={e => { setInput(e.target.value); setCharCount(e.target.value.length) }}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                    placeholder={isLimitReached ? "Daily limit reached." : "Ask anything... paste code, drop files, use voice"}
+                    placeholder={isLimitReached ? "AI message limit reached." : "Ask anything... paste code, drop files, use voice"}
                     disabled={loading || isLimitReached}
                     rows={3}
                     style={{

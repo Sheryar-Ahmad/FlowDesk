@@ -1,9 +1,11 @@
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
 from app.api.v1.ai.router import ChatRequest, SessionRename
+from app.api.v1.ai import router as ai_router
 from app.services import ai_service
 from app.services.ai_service import extract_ai_text, generate_session_title, require_ai_text
 
@@ -44,6 +46,17 @@ def test_session_rename_rejects_invalid_titles(title):
 def test_chat_request_requires_a_message():
     with pytest.raises(ValidationError):
         ChatRequest(messages=[])
+
+
+def test_pro_quota_is_numeric_and_monthly():
+    reservation = SimpleNamespace(
+        plan="pro",
+        ai_messages_used_today=0,
+        ai_messages_used_month=499,
+    )
+
+    assert ai_router.quota_limit("pro") == 500
+    assert ai_router.quota_remaining(reservation) == 1
 
 
 def test_extract_ai_text_supports_provider_content_parts():

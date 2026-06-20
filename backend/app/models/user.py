@@ -27,6 +27,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         CheckConstraint("plan IN ('free', 'pro')", name="valid_plan"),
         CheckConstraint("failed_login_count >= 0", name="failed_login_count_nonnegative"),
         CheckConstraint("ai_messages_used_today >= 0", name="ai_usage_nonnegative"),
+        CheckConstraint("ai_messages_used_month >= 0", name="ai_monthly_usage_nonnegative"),
         Index("ix_users_active_email", "email", unique=True, postgresql_where=text("deleted_at IS NULL")),
     )
 
@@ -48,6 +49,8 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     last_login_ip: Mapped[str | None] = mapped_column(INET)
     ai_messages_used_today: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     ai_messages_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ai_messages_used_month: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    ai_messages_month_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class RefreshToken(UUIDPrimaryKeyMixin, Base):

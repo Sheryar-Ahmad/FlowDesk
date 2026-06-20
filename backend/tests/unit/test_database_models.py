@@ -43,6 +43,8 @@ def test_raw_sql_service_columns_exist():
             "last_login_ip",
             "ai_messages_used_today",
             "ai_messages_reset_at",
+            "ai_messages_used_month",
+            "ai_messages_month_reset_at",
             "deleted_at",
         },
         "snippets": {

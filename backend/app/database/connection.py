@@ -139,6 +139,40 @@ async def ensure_database_schema() -> None:
                 """
             )
         )
+        await session.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS users
+                ADD COLUMN IF NOT EXISTS ai_messages_used_month INTEGER NOT NULL DEFAULT 0
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS users
+                ADD COLUMN IF NOT EXISTS ai_messages_month_reset_at TIMESTAMPTZ
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = 'ai_monthly_usage_nonnegative'
+                    ) THEN
+                        ALTER TABLE users
+                        ADD CONSTRAINT ai_monthly_usage_nonnegative
+                        CHECK (ai_messages_used_month >= 0);
+                    END IF;
+                END $$;
+                """
+            )
+        )
         await session.commit()
     logger.info("Database schema upgrades verified")
 

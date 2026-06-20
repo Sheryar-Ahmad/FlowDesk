@@ -34,7 +34,8 @@ export interface NoteSummaryResponse {
   response: string
   tokens_used: number
   model: string
-  messages_remaining: number | "unlimited"
+  messages_remaining: number
+  messages_limit: number
 }
 
 export const getNotes = async (params?: NoteQuery) => (await api.get("/notes/", { params })).data

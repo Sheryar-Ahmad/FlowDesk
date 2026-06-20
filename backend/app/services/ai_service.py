@@ -1,11 +1,22 @@
-from groq import Groq
-from app.config import get_settings
-import structlog
 import json
 import re
 
+import httpx
+import structlog
+from groq import Groq
+
+from app.config import get_settings
+from app.constants import (
+    AI_PROVIDER_MAX_INPUT_CHARS,
+    AI_PROVIDER_MAX_MESSAGE_CHARS,
+    AI_PROVIDER_MAX_OUTPUT_TOKENS,
+    FREE_TIER_AI_MESSAGES_PER_DAY,
+)
+
 logger = structlog.get_logger(__name__)
 settings = get_settings()
+DEEPSEEK_CHAT_URL = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_PRO_MODEL = "deepseek-v4-flash"
 
 
 def extract_ai_text(content) -> str:
@@ -139,6 +150,61 @@ def build_context_from_history(sessions: list) -> dict:
     }
 
 
+def intent_instruction(intent: str) -> str:
+    instructions = {
+        "fix": "\n\nIMPORTANT: User has a bug. Be systematic: 1) Identify ALL bugs 2) Explain each bug 3) Provide COMPLETE fixed code 4) Explain the fix.",
+        "security": "\n\nIMPORTANT: Security review requested. Check for: SQL injection, XSS, CSRF, authentication flaws, data exposure, insecure dependencies, race conditions.",
+        "optimize": "\n\nIMPORTANT: Optimization requested. Analyze: time complexity, space complexity, database queries, caching opportunities, algorithm efficiency.",
+        "generate": "\n\nIMPORTANT: Code generation requested. Generate COMPLETE, PRODUCTION-READY code with: error handling, logging, input validation, and tests.",
+        "review": "\n\nIMPORTANT: Code review requested. Be thorough like a senior engineer: logic, style, performance, security, maintainability, scalability.",
+    }
+    return instructions.get(intent, "")
+
+
+def trim_provider_messages(messages: list[dict]) -> list[dict]:
+    if not messages:
+        return []
+
+    system_messages = [m for m in messages[:1] if m.get("role") == "system"]
+    conversation = messages[1:] if system_messages else messages
+    total = sum(len(str(m.get("content", ""))) for m in system_messages)
+    kept: list[dict] = []
+
+    for message in reversed(conversation):
+        role = message.get("role")
+        if role not in {"user", "assistant", "system"}:
+            continue
+        content = str(message.get("content", "")).strip()
+        if not content:
+            continue
+        if len(content) > AI_PROVIDER_MAX_MESSAGE_CHARS:
+            content = content[:AI_PROVIDER_MAX_MESSAGE_CHARS].rstrip() + "\n\n[Input truncated for quota safety.]"
+
+        remaining = AI_PROVIDER_MAX_INPUT_CHARS - total
+        if remaining <= 0:
+            break
+        if len(content) > remaining:
+            content = content[:remaining].rstrip() + "\n\n[Older context truncated for quota safety.]"
+
+        kept.append({"role": role, "content": content})
+        total += len(content)
+
+    return system_messages + list(reversed(kept))
+
+
+def build_provider_messages(
+    messages: list,
+    user_context: dict | None = None,
+) -> tuple[list[dict], str]:
+    user_context = user_context or {}
+    last_user_message = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
+    intent = detect_intent(last_user_message)
+    system_prompt = build_system_prompt(user_context) + intent_instruction(intent)
+    full_messages = [{"role": "system", "content": system_prompt}]
+    full_messages.extend(messages[-20:])
+    return trim_provider_messages(full_messages), intent
+
+
 async def chat_with_ai(
     messages: list,
     user_plan: str,
@@ -150,8 +216,8 @@ async def chat_with_ai(
     user_context = user_context or {}
     session_messages = session_messages or []
 
-    if user_plan == "free" and ai_messages_used >= 20:
-        raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for unlimited.")
+    if user_plan == "free" and ai_messages_used >= FREE_TIER_AI_MESSAGES_PER_DAY:
+        raise ValueError("Free tier limit: 20 AI messages per day. Upgrade to Pro for higher limits.")
 
     if not settings.GROQ_API_KEY:
         raise ValueError("AI service not configured.")
@@ -160,32 +226,7 @@ async def chat_with_ai(
         client = Groq(api_key=settings.GROQ_API_KEY)
 
 
-        last_user_message = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-        intent = detect_intent(last_user_message)
-
-
-        system_prompt = build_system_prompt(user_context)
-
-
-        intent_instructions = {
-            "fix": "\n\nIMPORTANT: User has a bug. Be systematic: 1) Identify ALL bugs 2) Explain each bug 3) Provide COMPLETE fixed code 4) Explain the fix.",
-            "security": "\n\nIMPORTANT: Security review requested. Check for: SQL injection, XSS, CSRF, authentication flaws, data exposure, insecure dependencies, race conditions.",
-            "optimize": "\n\nIMPORTANT: Optimization requested. Analyze: time complexity, space complexity, database queries, caching opportunities, algorithm efficiency.",
-            "generate": "\n\nIMPORTANT: Code generation requested. Generate COMPLETE, PRODUCTION-READY code with: error handling, logging, input validation, and tests.",
-            "review": "\n\nIMPORTANT: Code review requested. Be thorough like a senior engineer: logic, style, performance, security, maintainability, scalability.",
-        }
-
-        if intent in intent_instructions:
-            system_prompt += intent_instructions[intent]
-
-
-        full_messages = [{"role": "system", "content": system_prompt}]
-
-
-        if session_messages:
-            full_messages.extend(session_messages[-20:])
-        else:
-            full_messages.extend(messages)
+        full_messages, intent = build_provider_messages(messages, user_context)
 
 
         message_length = len(last_user_message)
@@ -197,7 +238,7 @@ async def chat_with_ai(
         response = client.chat.completions.create(
             model=model,
             messages=full_messages,
-            max_tokens=4096,
+            max_tokens=AI_PROVIDER_MAX_OUTPUT_TOKENS,
             temperature=0.3,
             top_p=0.9,
             presence_penalty=0.1,
@@ -248,7 +289,13 @@ async def generate_session_title(messages: list) -> str:
     return title
 
 
-async def analyze_code(code: str, language: str, task: str = "explain") -> str:
+async def analyze_code(
+    code: str,
+    language: str,
+    task: str = "explain",
+    user_plan: str = "pro",
+    ai_messages_used: int = 0,
+) -> str:
     """Analyzes code for specific tasks."""
     prompts = {
         "explain": f"Explain this {language} code in detail. Cover: purpose, logic flow, key concepts, potential issues:\n\n```{language}\n{code}\n```",
@@ -260,8 +307,59 @@ async def analyze_code(code: str, language: str, task: str = "explain") -> str:
     }
 
     prompt = prompts.get(task, prompts["explain"])
-    result = await chat_with_ai([{"role": "user", "content": prompt}], "pro", 0)
+    result = await smart_ai_router(
+        [{"role": "user", "content": prompt}],
+        user_plan=user_plan,
+        ai_messages_used=ai_messages_used,
+    )
     return result["response"]
+
+
+async def chat_with_deepseek(messages: list, user_context: dict | None = None) -> dict:
+    """DeepSeek-backed Pro chat using the OpenAI-compatible HTTP API."""
+    user_context = user_context or {}
+    if not settings.DEEPSEEK_API_KEY:
+        raise ValueError("DeepSeek API key not configured.")
+
+    full_messages, intent = build_provider_messages(messages, user_context)
+    payload = {
+        "model": DEEPSEEK_PRO_MODEL,
+        "messages": full_messages,
+        "max_tokens": AI_PROVIDER_MAX_OUTPUT_TOKENS,
+        "temperature": 0.3,
+        "top_p": 0.9,
+        "stream": False,
+        "thinking": {"type": "disabled"},
+    }
+    headers = {
+        "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=45) as client:
+            response = await client.post(DEEPSEEK_CHAT_URL, headers=headers, json=payload)
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        logger.warning("DeepSeek rejected request", status=exc.response.status_code)
+        raise ValueError("DeepSeek temporarily rejected the request.") from exc
+    except httpx.HTTPError as exc:
+        logger.warning("DeepSeek request failed", error=str(exc))
+        raise ValueError("DeepSeek is temporarily unavailable.") from exc
+
+    data = response.json()
+    choices = data.get("choices") if isinstance(data, dict) else None
+    if not choices:
+        raise ValueError("DeepSeek returned no response choices.")
+    ai_response = require_ai_text(choices[0].get("message", {}).get("content"), "DeepSeek")
+    usage = data.get("usage") or {}
+
+    return {
+        "response": ai_response,
+        "tokens_used": int(usage.get("total_tokens") or 0),
+        "model": DEEPSEEK_PRO_MODEL,
+        "intent": intent,
+    }
 
 
 async def chat_with_gemini(messages: list, user_context: dict | None = None) -> dict:
@@ -273,11 +371,12 @@ async def chat_with_gemini(messages: list, user_context: dict | None = None) -> 
         raise ValueError("Gemini API key not configured.")
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    system = build_system_prompt(user_context)
-
-    full_prompt = system + "\n\n"
-    for msg in messages:
+    full_messages, intent = build_provider_messages(messages, user_context)
+    full_prompt = ""
+    for msg in full_messages:
         role = "User" if msg["role"] == "user" else "Assistant"
+        if msg["role"] == "system":
+            role = "System"
         full_prompt += f"{role}: {msg['content']}\n\n"
     full_prompt += "Assistant:"
 
@@ -287,12 +386,11 @@ async def chat_with_gemini(messages: list, user_context: dict | None = None) -> 
     )
 
     ai_response = require_ai_text(getattr(response, "text", None), "Gemini")
-    last_msg = messages[-1]["content"] if messages else ""
     return {
         "response": ai_response,
         "tokens_used": len(ai_response.split()) * 2,
         "model": "gemini-2.0-flash",
-        "intent": detect_intent(last_msg),
+        "intent": intent,
     }
 
 
@@ -311,28 +409,23 @@ async def chat_with_mistral(messages: list, user_context: dict | None = None) ->
         raise ValueError("Mistral API key not configured.")
 
     client = Client(api_key=settings.MISTRAL_API_KEY)
-    system = build_system_prompt(user_context)
-
-    full_messages = [{"role": "system", "content": system}]
-    for msg in messages:
-        full_messages.append({"role": msg["role"], "content": msg["content"]})
+    full_messages, intent = build_provider_messages(messages, user_context)
 
     response = client.chat.complete(
         model="mistral-large-latest",
         messages=full_messages,
-        max_tokens=4096,
+        max_tokens=AI_PROVIDER_MAX_OUTPUT_TOKENS,
         temperature=0.3,
     )
 
     if not response.choices:
         raise ValueError("Mistral returned no response choices.")
     ai_response = require_ai_text(response.choices[0].message.content, "Mistral")
-    last_msg = messages[-1]["content"] if messages else ""
     return {
         "response": ai_response,
         "tokens_used": getattr(response.usage, "total_tokens", 0) or 0,
         "model": "mistral-large",
-        "intent": detect_intent(last_msg),
+        "intent": intent,
     }
 
 
@@ -348,6 +441,16 @@ async def smart_ai_router(
     session_messages = session_messages or []
     errors = []
 
+
+    if user_plan == "pro":
+        try:
+            result = await chat_with_deepseek(messages, user_context)
+            result["response"] = require_ai_text(result.get("response"), "DeepSeek")
+            result["model_used"] = "deepseek/deepseek-v4-flash"
+            return result
+        except Exception as e:
+            errors.append(f"DeepSeek: {str(e)[:100]}")
+            logger.warning("DeepSeek failed, trying Groq", error=str(e)[:100])
 
     try:
         result = await chat_with_ai(

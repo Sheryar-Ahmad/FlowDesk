@@ -87,10 +87,10 @@ const FEATURES = [
   {
     icon: Bot,
     title: "AI Assistant",
-    desc: "Powered by Llama 3.3 70B. Explain, fix, refactor, and generate code with full context awareness.",
+    desc: "Provider-routed AI with DeepSeek-powered Pro access. Explain, fix, refactor, and generate code with context awareness.",
     color: "#A855F7",
     tag: "AI",
-    bullets: ["Llama 3.3 70B", "Code-aware", "Free tier"],
+    bullets: ["DeepSeek Pro", "Code-aware", "Free tier"],
   },
   {
     icon: Timer,

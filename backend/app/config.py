@@ -1,3 +1,4 @@
+import secrets
 from functools import lru_cache
 
 from pydantic import field_validator, model_validator
@@ -13,19 +14,20 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
 
-    SECRET_KEY: str = "change-this-to-a-random-secret-key"
+    SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
 
 
-    DATABASE_URL: str = "postgresql://user:password@localhost/flowdesk"
+    DATABASE_URL: str = ""
     SUPABASE_URL: str = "https://your-project.supabase.co"
     SUPABASE_KEY: str = ""
     SUPABASE_SECRET: str = ""
 
 
     GROQ_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     MISTRAL_API_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -73,10 +75,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self):
+        if not self.SECRET_KEY.strip() and self.DEBUG:
+            self.SECRET_KEY = secrets.token_urlsafe(48)
         if not self.DEBUG:
             secret = self.SECRET_KEY.strip()
-            if secret == "change-this-to-a-random-secret-key" or len(secret) < 32:
+            if len(secret) < 32:
                 raise ValueError("SECRET_KEY must contain at least 32 random characters in production.")
+            if not self.DATABASE_URL.strip():
+                raise ValueError("DATABASE_URL is required in production.")
             if not self.ALLOWED_ORIGINS:
                 raise ValueError("ALLOWED_ORIGINS must contain at least one frontend origin in production.")
             if "*" in self.ALLOWED_ORIGINS:
