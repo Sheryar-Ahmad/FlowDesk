@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { useLocation } from "react-router-dom"
 
-const DEFAULT_DESCRIPTION = "FlowDesk combines code snippets, developer notes, tasks, AI assistance, focus sessions, and code comparison in one focused workspace."
+const DEFAULT_DESCRIPTION = "FlowDesk combines code snippets, developer notes, tasks, AI assistance, focus sessions, code comparison, and a safe compiler workspace in one focused app."
 const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || "https://flowdesk.pages.dev").replace(/\/+$/, "")
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -15,6 +15,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/ai": "AI Assistant | FlowDesk",
   "/timer": "Focus Timer | FlowDesk",
   "/diff": "Code Diff | FlowDesk",
+  "/compiler": "Compiler | FlowDesk",
 }
 
 function setMeta(selector: string, attributes: Record<string, string>) {
@@ -83,6 +84,7 @@ export function Seo() {
           "AI coding assistant",
           "Focus timer",
           "Code comparison",
+          "Safe compiler workspace",
         ],
       })
       document.head.appendChild(script)

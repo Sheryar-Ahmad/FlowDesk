@@ -7,6 +7,8 @@ EXPECTED_TABLES = {
     "ai_sessions",
     "audit_logs",
     "collections",
+    "compiler_files",
+    "compiler_run_events",
     "email_verification_tokens",
     "kanban_columns",
     "note_versions",
@@ -100,6 +102,26 @@ def test_raw_sql_service_columns_exist():
             "used_at",
             "ip_address",
         },
+        "compiler_files": {
+            "user_id",
+            "title",
+            "language",
+            "code",
+            "stdin",
+            "output",
+            "is_pinned",
+            "run_count",
+            "last_run_at",
+            "deleted_at",
+        },
+        "compiler_run_events": {
+            "user_id",
+            "compiler_file_id",
+            "language",
+            "status",
+            "duration_ms",
+            "output_size",
+        },
     }
 
     for table_name, columns in required_columns.items():
@@ -115,6 +137,8 @@ def test_user_owned_tables_have_cascading_foreign_keys():
     for table_name in {
         "ai_sessions",
         "collections",
+        "compiler_files",
+        "compiler_run_events",
         "notes",
         "oauth_handoff_codes",
         "pomodoro_sessions",

@@ -17,6 +17,7 @@ const TaskBoard = lazy(() => import("./pages/tasks/TaskBoard"))
 const AIAssistant = lazy(() => import("./pages/ai/AIAssistant"))
 const FocusTimer = lazy(() => import("./pages/timer/FocusTimer"))
 const CodeDiff = lazy(() => import("./pages/diff/CodeDiff"))
+const CompilerWorkspace = lazy(() => import("./pages/compiler/CompilerWorkspace"))
 const Loading = () => (
   <div className="min-h-screen bg-gray-950 flex items-center justify-center">
     <Loader2 className="animate-spin text-indigo-500" size={32} />
@@ -48,6 +49,7 @@ function App() {
           <Route path="/ai" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
           <Route path="/timer" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
           <Route path="/diff" element={<ProtectedRoute><CodeDiff /></ProtectedRoute>} />
+          <Route path="/compiler" element={<ProtectedRoute><CompilerWorkspace /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

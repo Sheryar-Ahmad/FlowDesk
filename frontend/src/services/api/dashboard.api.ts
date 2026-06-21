@@ -8,6 +8,7 @@ export interface DashboardStats {
   snippets_total: number
   notes_total: number
   open_tasks: number
+  compiler_files_total: number
 }
 
 interface DashboardStatsResponse {

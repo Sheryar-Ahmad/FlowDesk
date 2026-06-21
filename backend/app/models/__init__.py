@@ -2,6 +2,7 @@ from app.models.ai_session import AISession
 from app.models.audit_log import AuditLog
 from app.models.base import Base
 from app.models.collection import Collection
+from app.models.compiler import CompilerFile, CompilerRunEvent
 from app.models.note import Note, NoteVersion
 from app.models.snippet import Snippet
 from app.models.subscription import PaymentWebhookEvent, Subscription
@@ -20,6 +21,8 @@ __all__ = [
     "AuditLog",
     "Base",
     "Collection",
+    "CompilerFile",
+    "CompilerRunEvent",
     "EmailVerificationToken",
     "KanbanColumn",
     "Note",

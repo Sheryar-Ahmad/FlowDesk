@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import {
-  Code2, FileText, Kanban, Bot, Timer, GitCompare,
+  Code2, FileText, Kanban, Bot, Timer, GitCompare, TerminalSquare,
   Zap, Shield, Globe,
   Check, Sparkles, X,
 } from "lucide-react"
@@ -108,11 +108,19 @@ const FEATURES = [
     tag: "Compare",
     bullets: ["Syntax highlight", "Side by side", "Instant"],
   },
+  {
+    icon: TerminalSquare,
+    title: "Compiler Workspace",
+    desc: "Save runnable files, provide stdin, review output, and keep execution history in the same developer workspace.",
+    color: "#06B6D4",
+    tag: "Run",
+    bullets: ["Saved files", "Input/output", "Safe mode"],
+  },
 ]
 
 const STATS = [
   { value: "20+", label: "Languages supported" },
-  { value: "6", label: "Integrated tools" },
+  { value: "7", label: "Integrated tools" },
   { value: "100%", label: "Free to start" },
   { value: "0", label: "Context switches" },
 ]

@@ -7,6 +7,7 @@ from app.api.v1.ai.router import router as ai_router
 from app.api.v1.timer.router import router as timer_router
 from app.api.v1.payments.router import router as payments_router
 from app.api.v1.dashboard.router import router as dashboard_router
+from app.api.v1.compiler.router import router as compiler_router
 
 api_router = APIRouter()
 
@@ -18,3 +19,4 @@ api_router.include_router(ai_router, prefix='/v1/ai', tags=['AI Assistant'])
 api_router.include_router(timer_router, prefix='/v1/timer', tags=['Focus Timer'])
 api_router.include_router(payments_router, prefix='/v1/payments', tags=['Payments'])
 api_router.include_router(dashboard_router, prefix='/v1/dashboard', tags=['Dashboard'])
+api_router.include_router(compiler_router, prefix='/v1/compiler', tags=['Compiler'])

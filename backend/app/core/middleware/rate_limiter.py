@@ -46,3 +46,6 @@ AI_LIMIT = "30/minute"
 
 
 SEARCH_LIMIT = "60/minute"
+
+
+COMPILER_LIMIT = "20/minute"

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, LogOut, FileCode, FileText, Kanban,
-  Bot, Timer, GitCompare, Zap,
+  Bot, Timer, GitCompare, Zap, TerminalSquare,
   Activity, Clock, Star, TrendingUp, RefreshCw,
 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
@@ -76,6 +76,16 @@ const features = [
     shortcut: "D",
     stat: "Instant",
   },
+  {
+    icon: TerminalSquare,
+    title: "Compiler",
+    desc: "Run saved code safely with stdin, output, and history",
+    path: "/compiler",
+    ready: true,
+    accentColor: "#06b6d4",
+    shortcut: "C",
+    stat: "0 files",
+  },
 ]
 
 const EMPTY_DASHBOARD_STATS: DashboardStats = {
@@ -86,6 +96,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
   snippets_total: 0,
   notes_total: 0,
   open_tasks: 0,
+  compiler_files_total: 0,
 }
 
 function getLocalDateKey(value = new Date()) {
@@ -114,6 +125,8 @@ function getFeatureStat(feature: typeof features[number], stats: DashboardStats)
       return `${stats.ai_sessions_today} today`
     case "/timer":
       return `${formatMinutes(stats.focus_minutes_today)} today`
+    case "/compiler":
+      return `${stats.compiler_files_total} files`
     default:
       return feature.stat
   }
@@ -389,6 +402,7 @@ export default function Dashboard() {
         const map: Record<string, string> = {
           s: "/snippets", n: "/notes", t: "/tasks",
           a: "/ai", f: "/timer", d: "/diff",
+          c: "/compiler",
         }
         const path = map[e.key.toLowerCase()]
         if (path) navigate(path)

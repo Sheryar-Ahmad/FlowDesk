@@ -70,7 +70,13 @@ async def get_dashboard_stats(
                         FROM tasks
                         WHERE user_id = :uid
                           AND status <> 'done'
-                    ) AS open_tasks
+                    ) AS open_tasks,
+                    (
+                        SELECT COUNT(*)
+                        FROM compiler_files
+                        WHERE user_id = :uid
+                          AND deleted_at IS NULL
+                    ) AS compiler_files_total
                 """
             ),
             {"uid": current_user["id"], "day": day},
@@ -87,6 +93,7 @@ async def get_dashboard_stats(
                 "snippets_total": int(stats.snippets_total or 0),
                 "notes_total": int(stats.notes_total or 0),
                 "open_tasks": int(stats.open_tasks or 0),
+                "compiler_files_total": int(stats.compiler_files_total or 0),
             },
         }
     except Exception as exc:

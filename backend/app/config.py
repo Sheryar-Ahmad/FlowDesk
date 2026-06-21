@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
 
+    COMPILER_EXECUTION_ENABLED: bool = True
+    COMPILER_TIMEOUT_SECONDS: int = 5
+    COMPILER_MAX_OUTPUT_CHARS: int = 20000
+
+
     SENTRY_DSN: str = ""
 
 
@@ -106,6 +111,13 @@ class Settings(BaseSettings):
     def validate_database_pool_numbers(cls, value: int) -> int:
         if value < 0:
             raise ValueError("Database pool settings cannot be negative.")
+        return value
+
+    @field_validator("COMPILER_TIMEOUT_SECONDS", "COMPILER_MAX_OUTPUT_CHARS")
+    @classmethod
+    def validate_compiler_limits(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("Compiler limits must be positive.")
         return value
 
     model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
