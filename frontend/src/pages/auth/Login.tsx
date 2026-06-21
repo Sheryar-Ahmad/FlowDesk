@@ -5,6 +5,7 @@ import { Code2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import toast from "react-hot-toast"
 import { googleAuthUrl } from "../../services/api/auth.api"
+import { GoogleAuthButton } from "../../components/GoogleAuthButton"
 
 const S = {
   bg:      "#080B14",
@@ -136,44 +137,7 @@ export default function Login() {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            style={{
-              width: "100%",
-              border: `1px solid ${S.border}`,
-              borderRadius: 10,
-              padding: "11px 14px",
-              background: "rgba(255,255,255,0.035)",
-              color: S.text,
-              cursor: isLoading ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              fontSize: 14,
-              fontWeight: 700,
-              fontFamily: "inherit",
-              marginBottom: 14,
-            }}
-            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)" }}
-            onMouseLeave={e => { if (!isLoading) e.currentTarget.style.borderColor = S.border }}
-          >
-            <span aria-hidden="true" style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              background: "#fff",
-              color: "#111827",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 900,
-              fontSize: 13,
-            }}>G</span>
-            Continue with Google
-          </button>
+          <GoogleAuthButton disabled={isLoading} onClick={handleGoogleLogin} />
 
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             <div style={{ height: 1, flex: 1, background: S.border }} />
