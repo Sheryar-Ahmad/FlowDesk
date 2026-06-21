@@ -25,11 +25,13 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint("plan IN ('free', 'pro')", name="valid_plan"),
+        CheckConstraint("account_status IN ('active', 'suspended', 'banned')", name="valid_account_status"),
         CheckConstraint("failed_login_count >= 0", name="failed_login_count_nonnegative"),
         CheckConstraint("ai_messages_used_today >= 0", name="ai_usage_nonnegative"),
         CheckConstraint("ai_messages_used_month >= 0", name="ai_monthly_usage_nonnegative"),
         Index("ix_users_active_email", "email", unique=True, postgresql_where=text("deleted_at IS NULL")),
         Index("ix_users_google_sub", "google_sub", unique=True, postgresql_where=text("google_sub IS NOT NULL AND deleted_at IS NULL")),
+        Index("ix_users_account_status", "account_status"),
     )
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
@@ -41,6 +43,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("FALSE"))
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     plan: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'free'"))
+    account_status: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'active'"))
+    suspended_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspension_reason: Mapped[str | None] = mapped_column(Text)
     preferences: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,

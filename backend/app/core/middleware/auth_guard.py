@@ -7,6 +7,7 @@ import structlog
 
 from app.database.connection import get_db
 from app.core.security.jwt import verify_access_token
+from app.core.security.account_status import account_is_blocked, blocked_account_message
 from app.config import get_settings
 
 logger = structlog.get_logger(__name__)
@@ -62,7 +63,8 @@ async def get_current_user(
         result = await db.execute(
             text("""
                 SELECT id, email, display_name, plan, email_verified,
-                       locked_until, deleted_at, failed_login_count
+                       locked_until, deleted_at, failed_login_count,
+                       account_status, suspended_until
                 FROM users
                 WHERE id = :user_id
             """),
@@ -94,13 +96,20 @@ async def get_current_user(
 
 
     from datetime import datetime, timezone
-    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+    now = datetime.now(timezone.utc)
+    if user.locked_until and user.locked_until > now:
         logger.warning("Locked user attempting access", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail="Account is temporarily locked. Please try again later.",
         )
 
+    if account_is_blocked(user.account_status, user.suspended_until, now=now):
+        logger.warning("Blocked user attempting access", user_id=user_id, status=user.account_status)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=blocked_account_message(user.account_status, user.suspended_until),
+        )
 
     return {
         "id": str(user.id),

@@ -1,12 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone, timedelta
+import json
 import secrets
 import structlog
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security.hashing import hash_password, verify_password, needs_rehash
 from app.core.security.jwt import create_access_token, create_refresh_token, hash_token
+from app.core.security.account_status import account_is_blocked, blocked_account_message
 from app.config import get_settings
 from app.constants import MAX_FAILED_LOGIN_ATTEMPTS, ACCOUNT_LOCK_DURATION_MINUTES
 
@@ -126,7 +128,8 @@ async def login_user(
     result = await db.execute(
         text("""
             SELECT id, email, display_name, password_hash, plan,
-                   email_verified, failed_login_count, locked_until, deleted_at
+                   email_verified, failed_login_count, locked_until, deleted_at,
+                   account_status, suspended_until
             FROM users
             WHERE email = :email AND deleted_at IS NULL
         """),
@@ -141,6 +144,22 @@ async def login_user(
 
 
     now = datetime.now(timezone.utc)
+    if account_is_blocked(user.account_status, user.suspended_until, now=now):
+        await db.execute(
+            text("""
+                INSERT INTO audit_logs (user_id, action, ip_address, metadata)
+                VALUES (:user_id, 'auth.blocked_login', :ip_address, :metadata)
+            """),
+            {
+                "user_id": str(user.id),
+                "ip_address": ip_address,
+                "metadata": json.dumps({"status": user.account_status}),
+            },
+        )
+        await db.commit()
+        logger.warning("Blocked account login attempt", user_id=str(user.id), status=user.account_status)
+        raise ValueError(blocked_account_message(user.account_status, user.suspended_until))
+
     if user.locked_until and user.locked_until > now:
         minutes_left = int((user.locked_until - now).total_seconds() / 60) + 1
         logger.warning("Login attempt on locked account", user_id=str(user.id))
@@ -274,7 +293,8 @@ async def refresh_access_token(
     token_hash = hash_token(refresh_token)
     result = await db.execute(
         text("""
-            SELECT rt.id, rt.user_id, u.email, u.display_name, u.plan, u.email_verified
+            SELECT rt.id, rt.user_id, u.email, u.display_name, u.plan, u.email_verified,
+                   u.account_status, u.suspended_until
             FROM refresh_tokens rt
             JOIN users u ON u.id = rt.user_id
             WHERE rt.token_hash = :token_hash
@@ -289,6 +309,29 @@ async def refresh_access_token(
     session = result.fetchone()
     if not session:
         raise ValueError("Your session has expired. Please sign in again.")
+
+    if account_is_blocked(session.account_status, session.suspended_until, now=now):
+        await db.execute(
+            text("""
+                UPDATE refresh_tokens
+                SET is_revoked = TRUE, revoked_at = :now, revoked_reason = 'account_restricted'
+                WHERE id = :token_id
+            """),
+            {"now": now, "token_id": str(session.id)},
+        )
+        await db.execute(
+            text("""
+                INSERT INTO audit_logs (user_id, action, resource_type, ip_address, metadata)
+                VALUES (:user_id, 'auth.blocked_refresh', 'user', :ip_address, :metadata)
+            """),
+            {
+                "user_id": str(session.user_id),
+                "ip_address": ip_address,
+                "metadata": json.dumps({"status": session.account_status}),
+            },
+        )
+        await db.commit()
+        raise ValueError(blocked_account_message(session.account_status, session.suspended_until))
 
     raw_refresh_token, new_refresh_token_hash = create_refresh_token()
     expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -465,7 +508,8 @@ async def upsert_google_user(
 
     result = await db.execute(
         text("""
-            SELECT id, email, display_name, plan, email_verified, google_sub
+            SELECT id, email, display_name, plan, email_verified, google_sub,
+                   account_status, suspended_until
             FROM users
             WHERE google_sub = :google_sub AND deleted_at IS NULL
         """),
@@ -476,7 +520,8 @@ async def upsert_google_user(
     if not user:
         result = await db.execute(
             text("""
-                SELECT id, email, display_name, plan, email_verified, google_sub
+                SELECT id, email, display_name, plan, email_verified, google_sub,
+                       account_status, suspended_until
                 FROM users
                 WHERE email = :email AND deleted_at IS NULL
             """),
@@ -485,6 +530,9 @@ async def upsert_google_user(
         user = result.fetchone()
 
     if user:
+        if account_is_blocked(user.account_status, user.suspended_until, now=now):
+            raise ValueError(blocked_account_message(user.account_status, user.suspended_until))
+
         if user.google_sub and user.google_sub != google_sub:
             raise ValueError("This email is already connected to another Google account.")
 
@@ -599,7 +647,8 @@ async def exchange_oauth_handoff_code(
     code_hash = hash_token(code)
     result = await db.execute(
         text("""
-            SELECT h.id, u.id AS user_id, u.email, u.display_name, u.plan, u.email_verified
+            SELECT h.id, u.id AS user_id, u.email, u.display_name, u.plan, u.email_verified,
+                   u.account_status, u.suspended_until
             FROM oauth_handoff_codes h
             JOIN users u ON u.id = h.user_id
             WHERE h.code_hash = :code_hash
@@ -614,6 +663,9 @@ async def exchange_oauth_handoff_code(
     handoff = result.fetchone()
     if not handoff:
         raise ValueError("Google sign-in expired. Please try again.")
+
+    if account_is_blocked(handoff.account_status, handoff.suspended_until, now=now):
+        raise ValueError(blocked_account_message(handoff.account_status, handoff.suspended_until))
 
     await db.execute(
         text("""
