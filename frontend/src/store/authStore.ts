@@ -2,6 +2,7 @@ import { create } from "zustand"
 import {
   getAuthErrorMessage,
   getCurrentUser,
+  exchangeGoogleCode,
   registerUser,
   loginUser,
   logoutUser,
@@ -27,6 +28,7 @@ interface AuthState {
 
   register: (data: RegisterData, signal?: AbortSignal) => Promise<void>
   login: (data: LoginData) => Promise<void>
+  completeGoogleLogin: (code: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   clearError: () => void
@@ -87,6 +89,29 @@ export const useAuthStore = create<AuthState>((set) => ({
       })
     } catch (err: unknown) {
       const message = getAuthErrorMessage(err, "Login failed. Please try again.")
+      set({ error: message, isLoading: false })
+      throw new Error(message, { cause: err })
+    }
+  },
+
+  completeGoogleLogin: async (code: string) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await exchangeGoogleCode(code)
+      writeAuthSession({
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        user: response.user,
+      })
+      set({
+        user: response.user,
+        accessToken: response.access_token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      })
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(err, "Google sign-in failed. Please try again.")
       set({ error: message, isLoading: false })
       throw new Error(message, { cause: err })
     }

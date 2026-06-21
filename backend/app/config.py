@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
 
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+
+
     RESEND_API_KEY: str = ""
     FROM_EMAIL: str = "noreply@flowdesk.app"
 

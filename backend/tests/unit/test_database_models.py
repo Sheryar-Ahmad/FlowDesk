@@ -11,6 +11,7 @@ EXPECTED_TABLES = {
     "kanban_columns",
     "note_versions",
     "notes",
+    "oauth_handoff_codes",
     "password_reset_tokens",
     "payment_webhook_events",
     "pomodoro_sessions",
@@ -34,6 +35,8 @@ def test_raw_sql_service_columns_exist():
         "users": {
             "email",
             "password_hash",
+            "google_sub",
+            "auth_provider",
             "display_name",
             "email_verified",
             "plan",
@@ -87,6 +90,13 @@ def test_raw_sql_service_columns_exist():
             "tokens_used",
             "model_used",
         },
+        "oauth_handoff_codes": {
+            "user_id",
+            "code_hash",
+            "expires_at",
+            "used_at",
+            "ip_address",
+        },
     }
 
     for table_name, columns in required_columns.items():
@@ -103,6 +113,7 @@ def test_user_owned_tables_have_cascading_foreign_keys():
         "ai_sessions",
         "collections",
         "notes",
+        "oauth_handoff_codes",
         "pomodoro_sessions",
         "projects",
         "refresh_tokens",

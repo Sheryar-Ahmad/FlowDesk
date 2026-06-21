@@ -2,6 +2,7 @@
 
 import axios from "axios"
 import api from "./client"
+import { API_BASE_URL } from "./config"
 import type { SessionUser } from "./authSession"
 
 
@@ -39,6 +40,14 @@ export const registerUser = async (
 
 export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
   const response = await api.post("/auth/login", data)
+  return response.data
+}
+
+export const googleAuthUrl = (next = "/dashboard") =>
+  `${API_BASE_URL}/auth/google/start?next=${encodeURIComponent(next)}`
+
+export const exchangeGoogleCode = async (code: string): Promise<AuthResponse> => {
+  const response = await api.post("/auth/google/exchange", { code })
   return response.data
 }
 

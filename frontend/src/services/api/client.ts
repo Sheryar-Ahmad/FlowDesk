@@ -68,6 +68,7 @@ apiClient.interceptors.response.use(
       && !url.includes("/auth/login")
       && !url.includes("/auth/register")
       && !url.includes("/auth/refresh")
+      && !url.includes("/auth/google/exchange")
     )
 
     if (!canRefresh) return Promise.reject(error)

@@ -36,6 +36,9 @@ GROQ_API_KEY
 DEEPSEEK_API_KEY
 MISTRAL_API_KEY
 GEMINI_API_KEY
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI
 RESEND_API_KEY
 FROM_EMAIL
 LEMON_SQUEEZY_API_KEY
@@ -58,6 +61,15 @@ LEMON_SQUEEZY_VARIANT_ID
 
 Keep `DEBUG=false`. Render supplies `PORT`; the container reads it
 automatically.
+
+For Google OAuth, create a Google OAuth web client and set the authorized
+redirect URI to:
+
+```text
+https://flowdesk-api.onrender.com/api/v1/auth/google/callback
+```
+
+Use that same value for `GOOGLE_REDIRECT_URI` in the backend environment.
 
 ## 3. Frontend
 

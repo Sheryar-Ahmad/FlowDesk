@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone, timedelta
+import secrets
 import structlog
 from sqlalchemy.exc import IntegrityError
 
@@ -378,3 +379,268 @@ async def logout_user(
 
     logger.info("User logged out", user_id=user_id)
     return True
+
+
+async def issue_session_for_user(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    email: str,
+    display_name: str,
+    plan: str,
+    email_verified: bool,
+    ip_address: str = None,
+    action: str,
+) -> dict:
+    access_token = create_access_token(user_id=user_id, email=email, plan=plan)
+    raw_refresh_token, refresh_token_hash = create_refresh_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    await db.execute(
+        text("""
+            INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address)
+            VALUES (:user_id, :token_hash, :expires_at, :ip_address)
+        """),
+        {
+            "user_id": user_id,
+            "token_hash": refresh_token_hash,
+            "expires_at": expires_at,
+            "ip_address": ip_address,
+        },
+    )
+    await db.execute(
+        text("""
+            INSERT INTO audit_logs (user_id, action, resource_type, ip_address, metadata)
+            VALUES (:user_id, :action, 'user', :ip_address, '{}')
+        """),
+        {"user_id": user_id, "action": action, "ip_address": ip_address},
+    )
+    await db.commit()
+
+    return {
+        "access_token": access_token,
+        "refresh_token": raw_refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id,
+            "email": email,
+            "display_name": display_name,
+            "plan": plan,
+            "email_verified": email_verified,
+        },
+    }
+
+
+def google_email_is_verified(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return False
+
+
+def google_display_name(profile: dict, email: str) -> str:
+    name = str(profile.get("name") or "").strip()
+    if not name:
+        name = email.split("@", 1)[0].replace(".", " ").strip().title()
+    return name[:100] or "FlowDesk User"
+
+
+async def upsert_google_user(
+    db: AsyncSession,
+    *,
+    profile: dict,
+    ip_address: str = None,
+) -> dict:
+    google_sub = str(profile.get("sub") or "").strip()
+    email = str(profile.get("email") or "").strip().lower()
+    if not google_sub or not email:
+        raise ValueError("Google did not return the required account identity.")
+    if not google_email_is_verified(profile.get("email_verified")):
+        raise ValueError("Please verify your Google email before using Continue with Google.")
+
+    display_name = google_display_name(profile, email)
+    avatar_url = str(profile.get("picture") or "").strip() or None
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        text("""
+            SELECT id, email, display_name, plan, email_verified, google_sub
+            FROM users
+            WHERE google_sub = :google_sub AND deleted_at IS NULL
+        """),
+        {"google_sub": google_sub},
+    )
+    user = result.fetchone()
+
+    if not user:
+        result = await db.execute(
+            text("""
+                SELECT id, email, display_name, plan, email_verified, google_sub
+                FROM users
+                WHERE email = :email AND deleted_at IS NULL
+            """),
+            {"email": email},
+        )
+        user = result.fetchone()
+
+    if user:
+        if user.google_sub and user.google_sub != google_sub:
+            raise ValueError("This email is already connected to another Google account.")
+
+        updated = await db.execute(
+            text("""
+                UPDATE users
+                SET google_sub = COALESCE(google_sub, :google_sub),
+                    auth_provider = 'google',
+                    display_name = COALESCE(NULLIF(:display_name, ''), display_name),
+                    avatar_url = COALESCE(:avatar_url, avatar_url),
+                    email_verified = TRUE,
+                    email_verified_at = COALESCE(email_verified_at, :now),
+                    failed_login_count = 0,
+                    locked_until = NULL,
+                    last_login_at = :now,
+                    last_login_ip = :ip_address,
+                    updated_at = :now
+                WHERE id = :user_id
+                RETURNING id, email, display_name, plan, email_verified
+            """),
+            {
+                "google_sub": google_sub,
+                "display_name": display_name,
+                "avatar_url": avatar_url,
+                "now": now,
+                "ip_address": ip_address,
+                "user_id": str(user.id),
+            },
+        )
+        row = updated.fetchone()
+        await db.commit()
+        return {
+            "id": str(row.id),
+            "email": row.email,
+            "display_name": row.display_name,
+            "plan": row.plan,
+            "email_verified": row.email_verified,
+        }
+
+    try:
+        created = await db.execute(
+            text("""
+                INSERT INTO users (
+                    email, password_hash, google_sub, auth_provider,
+                    display_name, avatar_url, email_verified, email_verified_at,
+                    plan, last_login_at, last_login_ip
+                )
+                VALUES (
+                    :email, :password_hash, :google_sub, 'google',
+                    :display_name, :avatar_url, TRUE, :now,
+                    'free', :now, :ip_address
+                )
+                RETURNING id, email, display_name, plan, email_verified
+            """),
+            {
+                "email": email,
+                "password_hash": hash_password(secrets.token_urlsafe(48)),
+                "google_sub": google_sub,
+                "display_name": display_name,
+                "avatar_url": avatar_url,
+                "now": now,
+                "ip_address": ip_address,
+            },
+        )
+        row = created.fetchone()
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ValueError("A FlowDesk account already exists for this Google email.") from exc
+
+    logger.info("Google user created", user_id=str(row.id), email=email)
+    return {
+        "id": str(row.id),
+        "email": row.email,
+        "display_name": row.display_name,
+        "plan": row.plan,
+        "email_verified": row.email_verified,
+    }
+
+
+async def create_oauth_handoff_code(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    ip_address: str = None,
+) -> str:
+    raw_code = secrets.token_urlsafe(48)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+    await db.execute(
+        text("""
+            INSERT INTO oauth_handoff_codes (user_id, code_hash, expires_at, ip_address)
+            VALUES (:user_id, :code_hash, :expires_at, :ip_address)
+        """),
+        {
+            "user_id": user_id,
+            "code_hash": hash_token(raw_code),
+            "expires_at": expires_at,
+            "ip_address": ip_address,
+        },
+    )
+    await db.commit()
+    return raw_code
+
+
+async def exchange_oauth_handoff_code(
+    db: AsyncSession,
+    *,
+    code: str,
+    ip_address: str = None,
+) -> dict:
+    now = datetime.now(timezone.utc)
+    code_hash = hash_token(code)
+    result = await db.execute(
+        text("""
+            SELECT h.id, u.id AS user_id, u.email, u.display_name, u.plan, u.email_verified
+            FROM oauth_handoff_codes h
+            JOIN users u ON u.id = h.user_id
+            WHERE h.code_hash = :code_hash
+              AND h.used_at IS NULL
+              AND h.expires_at > :now
+              AND u.deleted_at IS NULL
+              AND (u.locked_until IS NULL OR u.locked_until <= :now)
+            FOR UPDATE
+        """),
+        {"code_hash": code_hash, "now": now},
+    )
+    handoff = result.fetchone()
+    if not handoff:
+        raise ValueError("Google sign-in expired. Please try again.")
+
+    await db.execute(
+        text("""
+            UPDATE oauth_handoff_codes
+            SET used_at = :now
+            WHERE id = :handoff_id
+        """),
+        {"now": now, "handoff_id": str(handoff.id)},
+    )
+    await db.execute(
+        text("""
+            DELETE FROM oauth_handoff_codes
+            WHERE expires_at < :expired_before OR used_at < :used_before
+        """),
+        {
+            "expired_before": now - timedelta(hours=1),
+            "used_before": now - timedelta(hours=1),
+        },
+    )
+
+    return await issue_session_for_user(
+        db,
+        user_id=str(handoff.user_id),
+        email=handoff.email,
+        display_name=handoff.display_name,
+        plan=handoff.plan,
+        email_verified=handoff.email_verified,
+        ip_address=ip_address,
+        action="auth.google_login",
+    )

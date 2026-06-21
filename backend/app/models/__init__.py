@@ -9,6 +9,7 @@ from app.models.tag import SnippetTag, Tag
 from app.models.task import KanbanColumn, PomodoroSession, Project, Task
 from app.models.user import (
     EmailVerificationToken,
+    OAuthHandoffCode,
     PasswordResetToken,
     RefreshToken,
     User,
@@ -23,6 +24,7 @@ __all__ = [
     "KanbanColumn",
     "Note",
     "NoteVersion",
+    "OAuthHandoffCode",
     "PasswordResetToken",
     "PaymentWebhookEvent",
     "PomodoroSession",

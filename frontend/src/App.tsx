@@ -6,6 +6,7 @@ import { Seo } from "./components/Seo"
 const Landing = lazy(() => import("./pages/landing/Landing"))
 const Login = lazy(() => import("./pages/auth/Login"))
 const Register = lazy(() => import("./pages/auth/Register"))
+const OAuthCallback = lazy(() => import("./pages/auth/OAuthCallback"))
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"))
 const SnippetList = lazy(() => import("./pages/snippets/SnippetList"))
 const NoteEditor = lazy(() => import("./pages/notes/NoteEditor"))
@@ -27,6 +28,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/snippets" element={<ProtectedRoute><SnippetList /></ProtectedRoute>} />
           <Route path="/notes" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />

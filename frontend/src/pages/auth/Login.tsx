@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Code2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuthStore } from "../../store/authStore"
 import toast from "react-hot-toast"
+import { googleAuthUrl } from "../../services/api/auth.api"
 
 const S = {
   bg:      "#080B14",
@@ -88,6 +89,12 @@ export default function Login() {
     }
   }
 
+  const handleGoogleLogin = () => {
+    if (isLoading) return
+    clearError()
+    window.location.assign(googleAuthUrl("/dashboard"))
+  }
+
   return (
     <div style={{
       minHeight: "100dvh", background: S.bg,
@@ -128,6 +135,51 @@ export default function Login() {
               {error}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            style={{
+              width: "100%",
+              border: `1px solid ${S.border}`,
+              borderRadius: 10,
+              padding: "11px 14px",
+              background: "rgba(255,255,255,0.035)",
+              color: S.text,
+              cursor: isLoading ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: "inherit",
+              marginBottom: 14,
+            }}
+            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)" }}
+            onMouseLeave={e => { if (!isLoading) e.currentTarget.style.borderColor = S.border }}
+          >
+            <span aria-hidden="true" style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "#fff",
+              color: "#111827",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 900,
+              fontSize: 13,
+            }}>G</span>
+            Continue with Google
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div style={{ height: 1, flex: 1, background: S.border }} />
+            <span style={{ fontSize: 11, color: S.muted }}>or sign in with email</span>
+            <div style={{ height: 1, flex: 1, background: S.border }} />
+          </div>
 
           <form onSubmit={handleLogin} aria-busy={isLoading} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Field id="login-email" name="email" label="Email address" type="email" value={email}

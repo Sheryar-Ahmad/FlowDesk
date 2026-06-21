@@ -29,10 +29,13 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         CheckConstraint("ai_messages_used_today >= 0", name="ai_usage_nonnegative"),
         CheckConstraint("ai_messages_used_month >= 0", name="ai_monthly_usage_nonnegative"),
         Index("ix_users_active_email", "email", unique=True, postgresql_where=text("deleted_at IS NULL")),
+        Index("ix_users_google_sub", "google_sub", unique=True, postgresql_where=text("google_sub IS NOT NULL AND deleted_at IS NULL")),
     )
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    google_sub: Mapped[str | None] = mapped_column(String(255))
+    auth_provider: Mapped[str] = mapped_column(String(40), nullable=False, server_default=text("'password'"))
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(Text)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("FALSE"))
@@ -51,6 +54,29 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     ai_messages_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ai_messages_used_month: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     ai_messages_month_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class OAuthHandoffCode(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "oauth_handoff_codes"
+    __table_args__ = (
+        Index("ix_oauth_handoff_code_hash", "code_hash", unique=True),
+        Index("ix_oauth_handoff_user_expires", "user_id", "expires_at"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ip_address: Mapped[str | None] = mapped_column(INET)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
 
 
 class RefreshToken(UUIDPrimaryKeyMixin, Base):

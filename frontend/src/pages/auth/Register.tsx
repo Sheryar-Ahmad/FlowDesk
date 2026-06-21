@@ -8,6 +8,7 @@ import {
 import axios from "axios"
 import toast from "react-hot-toast"
 import { useAuthStore } from "../../store/authStore"
+import { googleAuthUrl } from "../../services/api/auth.api"
 
 const S = {
   bg:      "#080B14",
@@ -183,6 +184,12 @@ export default function Register() {
     }
   }
 
+  const handleGoogleRegister = () => {
+    if (isLoading) return
+    setError("")
+    window.location.assign(googleAuthUrl("/dashboard"))
+  }
+
   const updateField = (setter: (value: string) => void) => (value: string) => {
     setter(value)
     if (error) setError("")
@@ -254,6 +261,51 @@ export default function Register() {
               <XCircle size={13} /> {error}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={handleGoogleRegister}
+            disabled={isLoading}
+            style={{
+              width: "100%",
+              border: `1px solid ${S.border}`,
+              borderRadius: 10,
+              padding: "11px 14px",
+              background: "rgba(255,255,255,0.035)",
+              color: S.text,
+              cursor: isLoading ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: "inherit",
+              marginBottom: 14,
+            }}
+            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)" }}
+            onMouseLeave={e => { if (!isLoading) e.currentTarget.style.borderColor = S.border }}
+          >
+            <span aria-hidden="true" style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "#fff",
+              color: "#111827",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 900,
+              fontSize: 13,
+            }}>G</span>
+            Continue with Google
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div style={{ height: 1, flex: 1, background: S.border }} />
+            <span style={{ fontSize: 11, color: S.muted }}>or create with email</span>
+            <div style={{ height: 1, flex: 1, background: S.border }} />
+          </div>
 
           <form onSubmit={handleRegister} aria-busy={isLoading} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
