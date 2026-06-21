@@ -312,9 +312,6 @@ export default function Landing() {
   const legalDocument: LegalDocument | null = legalParam === "privacy" || legalParam === "terms"
     ? legalParam
     : null
-  const openLegalDialog = useCallback((document: LegalDocument) => {
-    setSearchParams({ legal: document }, { replace: true })
-  }, [setSearchParams])
   const closeLegalDialog = useCallback(() => {
     setSearchParams({}, { replace: true })
   }, [setSearchParams])
@@ -890,24 +887,30 @@ export default function Landing() {
           Built with purpose by developers, for developers.
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button
-            type="button"
-            onClick={() => openLegalDialog("privacy")}
-            style={{ fontSize: 12, color: "#334155", background: "none", border: 0, padding: 0, cursor: "pointer" }}
+          <Link
+            to="/legal/privacy"
+            style={{ fontSize: 12, color: "#334155", textDecoration: "none" }}
             onMouseEnter={e => (e.currentTarget.style.color = "#64748B")}
             onMouseLeave={e => (e.currentTarget.style.color = "#334155")}
           >
             Privacy
-          </button>
-          <button
-            type="button"
-            onClick={() => openLegalDialog("terms")}
-            style={{ fontSize: 12, color: "#334155", background: "none", border: 0, padding: 0, cursor: "pointer" }}
+          </Link>
+          <Link
+            to="/legal/terms"
+            style={{ fontSize: 12, color: "#334155", textDecoration: "none" }}
             onMouseEnter={e => (e.currentTarget.style.color = "#64748B")}
             onMouseLeave={e => (e.currentTarget.style.color = "#334155")}
           >
             Terms
-          </button>
+          </Link>
+          <Link
+            to="/legal/refunds"
+            style={{ fontSize: 12, color: "#334155", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#64748B")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#334155")}
+          >
+            Refunds
+          </Link>
           <a
             href="https://github.com/Sheryar-Ahmad/FlowDesk"
             target="_blank"

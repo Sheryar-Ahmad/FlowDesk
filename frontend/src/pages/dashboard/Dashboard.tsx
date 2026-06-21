@@ -1,6 +1,6 @@
 
 
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, LogOut, FileCode, FileText, Kanban,
@@ -833,7 +833,10 @@ export default function Dashboard() {
                   <span>
                     I understand FlowDesk Pro includes 500 AI messages per month,
                     uses DeepSeek-powered Pro AI, unused messages do not roll over,
-                    and refunds are generally unavailable after AI credits are used.
+                    and I agree to the{" "}
+                    <Link to="/legal/terms" style={{ color: "#818cf8", textDecoration: "none" }}>Terms</Link>
+                    {" "}and{" "}
+                    <Link to="/legal/refunds" style={{ color: "#818cf8", textDecoration: "none" }}>Refund Policy</Link>.
                   </span>
                 </label>
                 <p style={{

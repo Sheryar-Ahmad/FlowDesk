@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { Seo } from "./components/Seo"
 const Landing = lazy(() => import("./pages/landing/Landing"))
+const LegalCenter = lazy(() => import("./pages/legal/LegalCenter"))
 const Login = lazy(() => import("./pages/auth/Login"))
 const Register = lazy(() => import("./pages/auth/Register"))
 const OAuthCallback = lazy(() => import("./pages/auth/OAuthCallback"))
@@ -26,6 +27,8 @@ function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/legal" element={<LegalCenter />} />
+          <Route path="/legal/:document" element={<LegalCenter />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />

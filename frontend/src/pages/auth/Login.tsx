@@ -207,8 +207,8 @@ export default function Login() {
 
         <p style={{ textAlign: "center", fontSize: 11, color: S.faint, marginTop: 20 }}>
           By signing in you agree to our{" "}
-          <Link to="/?legal=terms" style={{ color: "#475569", textDecoration: "none" }}>Terms</Link> and{" "}
-          <Link to="/?legal=privacy" style={{ color: "#475569", textDecoration: "none" }}>Privacy Policy</Link>
+          <Link to="/legal/terms" style={{ color: "#475569", textDecoration: "none" }}>Terms</Link> and{" "}
+          <Link to="/legal/privacy" style={{ color: "#475569", textDecoration: "none" }}>Privacy Policy</Link>
         </p>
       </div>
 
