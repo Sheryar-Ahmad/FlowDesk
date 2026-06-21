@@ -18,8 +18,6 @@ type Policy = Readonly<{
   sections: PolicySection[]
 }>
 
-const SUPPORT_EMAIL = "support@flowdesk.app"
-
 const POLICIES: readonly Policy[] = [
   {
     id: "privacy",
@@ -68,7 +66,7 @@ const POLICIES: readonly Policy[] = [
         heading: "Data retention and deletion",
         body: [
           "Workspace data is kept while your account is active unless you delete it or request account deletion.",
-          `To request deletion or privacy help, contact ${SUPPORT_EMAIL}. Some payment, fraud-prevention, and security records may need to be retained where required by law or platform rules.`,
+          "Account deletion and privacy request instructions will be published before public launch. Some payment, fraud-prevention, and security records may need to be retained where required by law or platform rules.",
         ],
       },
     ],
@@ -119,7 +117,7 @@ const POLICIES: readonly Policy[] = [
       {
         heading: "Contact",
         body: [
-          `Questions about these terms can be sent to ${SUPPORT_EMAIL}.`,
+          "A dedicated contact channel will be published before public launch.",
         ],
       },
     ],
@@ -157,7 +155,7 @@ const POLICIES: readonly Policy[] = [
         heading: "Refunds",
         body: [
           "Refund requests are reviewed case by case. Digital subscriptions and AI usage create immediate operating costs, so used billing periods are generally not refundable unless required by law or approved by Lemon Squeezy.",
-          `For billing help, contact ${SUPPORT_EMAIL} with your account email and Lemon Squeezy order ID.`,
+          "Billing help instructions will be published before live subscriptions are enabled. Keep your account email and Lemon Squeezy order ID for any billing request.",
         ],
       },
       {
@@ -285,7 +283,7 @@ const POLICIES: readonly Policy[] = [
       {
         heading: "Reporting vulnerabilities",
         body: [
-          `If you believe you found a security issue, email ${SUPPORT_EMAIL} with a clear description, affected URLs, reproduction steps, and impact.`,
+          "A vulnerability reporting channel will be published before public launch. Reports should include a clear description, affected URLs, reproduction steps, and impact.",
           "Please do not publicly disclose a vulnerability before we have had a reasonable chance to investigate and fix it.",
         ],
       },
