@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react"
 import { Loader2 } from "lucide-react"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { Seo } from "./components/Seo"
+import { CookieNotice } from "./components/CookieNotice"
 const Landing = lazy(() => import("./pages/landing/Landing"))
 const LegalCenter = lazy(() => import("./pages/legal/LegalCenter"))
 const Login = lazy(() => import("./pages/auth/Login"))
@@ -24,6 +25,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-950">
       <Seo />
+      <CookieNotice />
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Landing />} />
