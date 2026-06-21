@@ -70,12 +70,12 @@ export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPw, setShowPw] = useState(false)
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore()
+  const { login, isLoading, error, clearError, isAuthenticated, isInitialized } = useAuthStore()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true })
-  }, [isAuthenticated, navigate])
+    if (isInitialized && isAuthenticated) navigate("/dashboard", { replace: true })
+  }, [isAuthenticated, isInitialized, navigate])
 
   const handleLogin = async (e: Readonly<{ preventDefault: () => void }>) => {
     e.preventDefault()

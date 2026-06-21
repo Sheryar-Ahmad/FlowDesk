@@ -1,9 +1,10 @@
 ﻿import { Routes, Route, Navigate } from "react-router-dom"
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { Seo } from "./components/Seo"
 import { CookieNotice } from "./components/CookieNotice"
+import { useAuthStore } from "./store/authStore"
 const Landing = lazy(() => import("./pages/landing/Landing"))
 const LegalCenter = lazy(() => import("./pages/legal/LegalCenter"))
 const Login = lazy(() => import("./pages/auth/Login"))
@@ -22,6 +23,12 @@ const Loading = () => (
   </div>
 )
 function App() {
+  const initializeSession = useAuthStore(state => state.initializeSession)
+
+  useEffect(() => {
+    void initializeSession()
+  }, [initializeSession])
+
   return (
     <div className="min-h-screen bg-gray-950">
       <Seo />

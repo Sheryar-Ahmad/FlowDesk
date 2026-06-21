@@ -22,6 +22,7 @@ interface AuthState {
   user: User | null
   accessToken: string | null
   isAuthenticated: boolean
+  isInitialized: boolean
   isLoading: boolean
   error: string | null
 
@@ -29,6 +30,7 @@ interface AuthState {
   register: (data: RegisterData, signal?: AbortSignal) => Promise<void>
   login: (data: LoginData) => Promise<void>
   completeGoogleLogin: (code: string) => Promise<void>
+  initializeSession: () => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   clearError: () => void
@@ -36,11 +38,13 @@ interface AuthState {
 }
 
 const storedSession = readAuthSession()
+const hasStoredSession = Boolean(storedSession)
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: storedSession?.user ?? null,
-  accessToken: storedSession?.accessToken ?? null,
-  isAuthenticated: Boolean(storedSession),
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+  isInitialized: !hasStoredSession,
   isLoading: false,
   error: null,
 
@@ -57,6 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: response.user,
         accessToken: response.access_token,
         isAuthenticated: true,
+        isInitialized: true,
         isLoading: false,
         error: null,
       })
@@ -84,6 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: response.user,
         accessToken: response.access_token,
         isAuthenticated: true,
+        isInitialized: true,
         isLoading: false,
         error: null,
       })
@@ -107,6 +113,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: response.user,
         accessToken: response.access_token,
         isAuthenticated: true,
+        isInitialized: true,
         isLoading: false,
         error: null,
       })
@@ -114,6 +121,45 @@ export const useAuthStore = create<AuthState>((set) => ({
       const message = getAuthErrorMessage(err, "Google sign-in failed. Please try again.")
       set({ error: message, isLoading: false })
       throw new Error(message, { cause: err })
+    }
+  },
+
+  initializeSession: async () => {
+    const session = readAuthSession()
+    if (!session) {
+      set({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+        isLoading: false,
+      })
+      return
+    }
+
+    set({ isLoading: true, error: null })
+    try {
+      const response = await getCurrentUser()
+      updateSessionUser(response.user)
+      const currentSession = readAuthSession()
+      set({
+        user: response.user,
+        accessToken: currentSession?.accessToken ?? session.accessToken,
+        isAuthenticated: true,
+        isInitialized: true,
+        isLoading: false,
+        error: null,
+      })
+    } catch {
+      clearAuthSession()
+      set({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+        isLoading: false,
+        error: null,
+      })
     }
   },
 
@@ -130,6 +176,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: null,
         accessToken: null,
         isAuthenticated: false,
+        isInitialized: true,
         isLoading: false,
         error: null,
       })
@@ -137,16 +184,36 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   refreshUser: async () => {
-    if (!readAuthSession()) return
+    if (!readAuthSession()) {
+      set({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+      })
+      return
+    }
 
-    const response = await getCurrentUser()
-    updateSessionUser(response.user)
-    const session = readAuthSession()
-    set({
-      user: response.user,
-      accessToken: session?.accessToken ?? null,
-      isAuthenticated: true,
-    })
+    try {
+      const response = await getCurrentUser()
+      updateSessionUser(response.user)
+      const session = readAuthSession()
+      set({
+        user: response.user,
+        accessToken: session?.accessToken ?? null,
+        isAuthenticated: true,
+        isInitialized: true,
+      })
+    } catch (err) {
+      clearAuthSession()
+      set({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+      })
+      throw err
+    }
   },
 
   clearError: () => set({ error: null }),

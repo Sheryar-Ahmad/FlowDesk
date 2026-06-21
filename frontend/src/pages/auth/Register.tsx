@@ -102,7 +102,7 @@ function strengthLabel(n: number) {
 
 export default function Register() {
   const navigate = useNavigate()
-  const { isAuthenticated, register } = useAuthStore()
+  const { isAuthenticated, isInitialized, register } = useAuthStore()
   const requestRef = useRef<AbortController | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -139,8 +139,8 @@ export default function Register() {
   }
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true })
-  }, [isAuthenticated, navigate])
+    if (isInitialized && isAuthenticated) navigate("/dashboard", { replace: true })
+  }, [isAuthenticated, isInitialized, navigate])
 
   useEffect(() => {
     if (!success) return
