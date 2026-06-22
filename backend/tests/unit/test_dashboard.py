@@ -16,6 +16,7 @@ class FakeResult:
             snippets_total=12,
             notes_total=8,
             open_tasks=5,
+            compiler_files_total=6,
         )
 
 
@@ -51,5 +52,6 @@ async def test_dashboard_stats_returns_all_counters():
             "snippets_total": 12,
             "notes_total": 8,
             "open_tasks": 5,
+            "compiler_files_total": 6,
         },
     }

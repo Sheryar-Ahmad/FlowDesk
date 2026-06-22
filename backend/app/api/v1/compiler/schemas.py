@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.constants import COMPILER_MAX_CODE_CHARS, COMPILER_MAX_STDIN_CHARS
+from app.constants import COMPILER_MAX_CODE_CHARS, COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_STDIN_CHARS
 
 
 CompilerLanguage = Literal[
@@ -22,6 +22,30 @@ CompilerLanguage = Literal[
     "ruby",
     "sql",
     "bash",
+    "kotlin",
+    "swift",
+    "dart",
+    "scala",
+    "r",
+    "perl",
+    "lua",
+    "haskell",
+    "elixir",
+    "erlang",
+    "clojure",
+    "fsharp",
+    "powershell",
+    "groovy",
+    "julia",
+    "matlab",
+    "objectivec",
+    "vb",
+    "html",
+    "css",
+    "markdown",
+    "yaml",
+    "json",
+    "xml",
 ]
 
 SUPPORTED_COMPILER_LANGUAGES: set[str] = set(CompilerLanguage.__args__)
@@ -67,11 +91,23 @@ class CompilerRunRequest(BaseModel):
     stdin: str = Field(default="", max_length=COMPILER_MAX_STDIN_CHARS)
 
 
+class CompilerTestCase(BaseModel):
+    stdin: str = Field(default="", max_length=COMPILER_MAX_STDIN_CHARS)
+    expected: str = Field(default="", max_length=COMPILER_MAX_OUTPUT_CHARS)
+
+
+class CompilerTestCaseRequest(BaseModel):
+    language: CompilerLanguage
+    code: str = Field(min_length=1, max_length=COMPILER_MAX_CODE_CHARS)
+    test_cases: list[CompilerTestCase] = Field(min_length=1, max_length=25)
+
+
 class CompilerRuntime(BaseModel):
     language: str
     label: str
     executable: bool
     reason: str | None = None
+    queue: dict[str, int] | None = None
 
 
 class CompilerFileResponse(BaseModel):
@@ -108,3 +144,27 @@ class CompilerRunResponse(BaseModel):
     truncated: bool
     language: str
     message: str | None = None
+    memory_kb: int | None = None
+    cpu_time_ms: int | None = None
+    exit_signal: int | None = None
+    warnings: list[str] = Field(default_factory=list)
+    cached: bool = False
+
+
+class CompilerRunEventResponse(BaseModel):
+    id: str
+    compiler_file_id: str | None
+    language: str
+    status: str
+    duration_ms: int
+    output_size: int
+    created_at: datetime
+
+
+class CompilerRunStatsResponse(BaseModel):
+    total_runs: int
+    successful_runs: int
+    failed_runs: int
+    timed_out_runs: int
+    avg_duration_ms: float
+    max_duration_ms: int

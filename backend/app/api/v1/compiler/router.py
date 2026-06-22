@@ -8,6 +8,7 @@ from app.api.v1.compiler.schemas import (
     CompilerFileCreate,
     CompilerFileUpdate,
     CompilerRunRequest,
+    CompilerTestCaseRequest,
 )
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import COMPILER_LIMIT, limiter
@@ -15,17 +16,28 @@ from app.database.connection import get_db
 from app.services.compiler_service import (
     create_compiler_file,
     delete_compiler_file,
+    duplicate_file,
     get_compiler_file,
+    get_run_history,
+    get_run_stats,
     list_compiler_files,
     list_runtimes,
     run_code,
     run_compiler_file,
+    run_test_cases,
     update_compiler_file,
 )
 
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+
+
+def compiler_value_error_status(exc: ValueError) -> int:
+    message = str(exc).lower()
+    if "limit reached" in message:
+        return status.HTTP_429_TOO_MANY_REQUESTS
+    return status.HTTP_400_BAD_REQUEST
 
 
 @router.get("/health")
@@ -84,7 +96,7 @@ async def create_file(
         )
         return {"success": True, "file": file}
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Create compiler file error", user_id=current_user.get("id"), error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to create compiler file.") from exc
@@ -138,6 +150,51 @@ async def delete_file(
     return {"success": True, "message": "Compiler file deleted successfully."}
 
 
+@router.post("/files/{file_id}/duplicate", status_code=status.HTTP_201_CREATED)
+@limiter.limit(COMPILER_LIMIT)
+async def duplicate_saved_file(
+    request: Request,
+    file_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        file = await duplicate_file(db, file_id, current_user["id"], current_user["plan"])
+        if not file:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compiler file not found.")
+        return {"success": True, "file": file}
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Duplicate compiler file error", user_id=current_user.get("id"), file_id=file_id, error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to duplicate compiler file.") from exc
+
+
+@router.get("/runs/history")
+@limiter.limit(COMPILER_LIMIT)
+async def run_history(
+    request: Request,
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    events = await get_run_history(db, current_user["id"], limit=limit)
+    return {"success": True, "events": events}
+
+
+@router.get("/runs/stats")
+@limiter.limit(COMPILER_LIMIT)
+async def run_stats(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    stats_data = await get_run_stats(db, current_user["id"])
+    return {"success": True, "stats": stats_data}
+
+
 @router.post("/run")
 @limiter.limit(COMPILER_LIMIT)
 async def run_inline(
@@ -157,10 +214,35 @@ async def run_inline(
         )
         return {"success": True, "result": result}
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+        raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Compiler inline run error", user_id=current_user.get("id"), error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to run code.") from exc
+
+
+@router.post("/test-cases")
+@limiter.limit(COMPILER_LIMIT)
+async def run_compiler_test_cases(
+    request: Request,
+    body: CompilerTestCaseRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        result = await run_test_cases(
+            db,
+            current_user["id"],
+            current_user["plan"],
+            language=body.language,
+            code=body.code,
+            test_cases=[case.model_dump() for case in body.test_cases],
+        )
+        return {"success": True, "result": result}
+    except ValueError as exc:
+        raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Compiler test case run error", user_id=current_user.get("id"), error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to run compiler test cases.") from exc
 
 
 @router.post("/{file_id}/run")
@@ -179,7 +261,7 @@ async def run_saved_file(
     except HTTPException:
         raise
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+        raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Compiler saved run error", user_id=current_user.get("id"), file_id=file_id, error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to run compiler file.") from exc

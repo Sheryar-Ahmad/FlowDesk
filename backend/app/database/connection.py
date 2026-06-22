@@ -227,6 +227,64 @@ async def ensure_database_schema() -> None:
                 """
             )
         )
+        await session.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS compiler_files (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    title VARCHAR(200) NOT NULL,
+                    language VARCHAR(40) NOT NULL,
+                    code TEXT NOT NULL,
+                    stdin TEXT NOT NULL DEFAULT '',
+                    output TEXT NOT NULL DEFAULT '',
+                    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+                    run_count INTEGER NOT NULL DEFAULT 0,
+                    last_run_at TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at TIMESTAMPTZ
+                )
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS compiler_files
+                    ADD COLUMN IF NOT EXISTS stdin TEXT NOT NULL DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS output TEXT NOT NULL DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+                    ADD COLUMN IF NOT EXISTS run_count INTEGER NOT NULL DEFAULT 0,
+                    ADD COLUMN IF NOT EXISTS last_run_at TIMESTAMPTZ,
+                    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS compiler_run_events (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    compiler_file_id UUID REFERENCES compiler_files(id) ON DELETE SET NULL,
+                    language VARCHAR(40) NOT NULL,
+                    status VARCHAR(40) NOT NULL,
+                    duration_ms INTEGER NOT NULL DEFAULT 0,
+                    output_size INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        await session.execute(text("CREATE INDEX IF NOT EXISTS ix_compiler_files_user_updated ON compiler_files (user_id, updated_at)"))
+        await session.execute(text("CREATE INDEX IF NOT EXISTS ix_compiler_files_user_language ON compiler_files (user_id, language)"))
+        await session.execute(text("CREATE INDEX IF NOT EXISTS ix_compiler_files_user_pinned ON compiler_files (user_id, is_pinned)"))
+        await session.execute(text("CREATE INDEX IF NOT EXISTS ix_compiler_run_events_user_created ON compiler_run_events (user_id, created_at)"))
+        await session.execute(text("CREATE INDEX IF NOT EXISTS ix_compiler_run_events_file_created ON compiler_run_events (compiler_file_id, created_at)"))
         await session.commit()
     logger.info("Database schema upgrades verified")
 
