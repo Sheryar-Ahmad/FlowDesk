@@ -531,7 +531,7 @@ export default function Landing() {
               Everything you need. Nothing you don't.
             </h2>
             <p style={{ fontSize: 16, color: "#475569", maxWidth: 480, margin: "0 auto" }}>
-              Six tools, one workspace, zero context switching.
+              Seven tools, one workspace, zero context switching.
             </p>
           </div>
 

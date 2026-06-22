@@ -223,6 +223,8 @@ async def run_inline(
             language=body.language,
             code=body.code,
             stdin=body.stdin,
+            args=body.args,
+            use_cache=body.use_cache,
         )
         return {"success": True, "result": result}
     except ValueError as exc:

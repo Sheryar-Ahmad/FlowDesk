@@ -7,6 +7,7 @@ import json
 import os
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -262,7 +263,11 @@ RUNTIME_LABELS = {
     "xml": "XML",
 }
 
-EXECUTABLE_LANGUAGES = {"python"}
+LOCAL_RUNTIME_COMMANDS = {
+    "python": ("python",),
+    "javascript": ("node",),
+    "java": ("javac", "java"),
+}
 
 PISTON_LANGUAGE_MAP = {
     "javascript": ("javascript", "main.js"),
@@ -400,6 +405,112 @@ def hash_run(language: str, code: str, stdin: str, args: list[str] | None = None
 
 def strip_ansi(text_value: str) -> str:  # 39. safe-for-display output sanitation
     return re.sub(r"\x1b\[[0-9;]*[mK]", "", text_value)
+
+
+def local_runtime_missing(language: str) -> list[str]:
+    return [command for command in LOCAL_RUNTIME_COMMANDS.get(language, ()) if not shutil.which(command)]
+
+
+def has_local_runtime(language: str) -> bool:
+    return language in LOCAL_RUNTIME_COMMANDS and not local_runtime_missing(language)
+
+
+def local_runtime_reason(language: str) -> str | None:
+    missing = local_runtime_missing(language)
+    if not missing:
+        if language == "java":
+            return "Runs locally through the installed JDK with FlowDesk timeouts."
+        if language == "javascript":
+            return "Runs locally through Node.js with FlowDesk timeouts."
+        return "Runs locally in the FlowDesk sandbox."
+    if language in LOCAL_RUNTIME_COMMANDS:
+        return f"Install {', '.join(missing)} on the backend, or configure COMPILER_PISTON_API_URL."
+    return None
+
+
+def _process_creation_flags() -> int:
+    if os.name != "nt":
+        return 0
+    return getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def _decode_process_run(
+    *,
+    returncode: int | None,
+    stdout_value: str,
+    stderr_value: str,
+    duration_ms: int,
+    max_output: int,
+    warnings: list[str] | None = None,
+) -> RunResult:
+    stdout = strip_ansi(stdout_value)
+    stderr = strip_ansi(stderr_value)
+    stdout, stdout_trunc = _truncate(stdout, max_output)
+    stderr, stderr_trunc = _truncate(stderr, max_output)
+    status = "success" if returncode == 0 else "error"
+    _bump("runs_success" if status == "success" else "runs_error")
+    return RunResult(
+        status=status,
+        stdout=stdout,
+        stderr=stderr,
+        exit_code=returncode,
+        duration_ms=duration_ms,
+        truncated=stdout_trunc or stderr_trunc,
+        warnings=warnings or [],
+    )
+
+
+def _run_process_blocking(
+    command: list[str],
+    *,
+    stdin: str,
+    cwd: str,
+    timeout_seconds: int,
+    max_output: int,
+    started: float,
+    env: dict[str, str] | None = None,
+    warnings: list[str] | None = None,
+) -> RunResult:
+    try:
+        completed = subprocess.run(
+            command,
+            input=stdin,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=env,
+            timeout=timeout_seconds,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=_process_creation_flags(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        duration_ms = round((time.perf_counter() - started) * 1000)
+        stdout, stdout_trunc = _truncate(strip_ansi(exc.stdout or ""), max_output)
+        stderr, stderr_trunc = _truncate(strip_ansi(exc.stderr or ""), max_output)
+        _bump("runs_timeout")
+        return RunResult(
+            status="timeout",
+            stdout=stdout,
+            stderr=stderr or f"Execution exceeded {timeout_seconds} seconds.",
+            exit_code=None,
+            duration_ms=duration_ms,
+            timed_out=True,
+            truncated=stdout_trunc or stderr_trunc,
+            message="Execution timed out.",
+            warnings=warnings or [],
+        )
+
+    return _decode_process_run(
+        returncode=completed.returncode,
+        stdout_value=completed.stdout,
+        stderr_value=completed.stderr,
+        duration_ms=round((time.perf_counter() - started) * 1000),
+        max_output=max_output,
+        warnings=warnings,
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -801,15 +912,19 @@ def list_runtimes() -> list[dict[str, Any]]:
     external_runner_enabled = bool(settings.COMPILER_PISTON_API_URL.strip())
     base = []
     for language, label in RUNTIME_LABELS.items():
-        is_local = language in EXECUTABLE_LANGUAGES
+        is_local = has_local_runtime(language)
         is_external = language in PISTON_LANGUAGE_MAP and external_runner_enabled
         is_executable = execution_enabled and (is_local or is_external)
         reason = None
-        if (is_local or language in PISTON_LANGUAGE_MAP) and not execution_enabled:
+        if (language in LOCAL_RUNTIME_COMMANDS or language in PISTON_LANGUAGE_MAP) and not execution_enabled:
             reason = "Compiler execution is disabled on this server."
+        elif is_local:
+            reason = local_runtime_reason(language)
         elif is_external:
             reason = "Runs through the configured isolated language runner."
-        elif not is_local:
+        else:
+            reason = local_runtime_reason(language)
+        if reason is None and not is_local:
             reason = "Editing and saving are available. Running this language needs COMPILER_PISTON_API_URL."
         base.append({
             "language": language,
@@ -995,6 +1110,135 @@ async def _execute_python(code: str, stdin: str, *, args: list[str] | None = Non
     )
 
 
+async def _execute_javascript(code: str, stdin: str, *, args: list[str] | None = None) -> RunResult:
+    node_path = shutil.which("node")
+    if not node_path:
+        return RunResult(
+            status="unsupported",
+            stdout="",
+            stderr="",
+            exit_code=None,
+            duration_ms=0,
+            message="JavaScript needs Node.js installed on the backend.",
+        )
+
+    started = time.perf_counter()
+    timeout_seconds = min(settings.COMPILER_TIMEOUT_SECONDS, COMPILER_TIMEOUT_SECONDS)
+    max_output = min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS)
+    with tempfile.TemporaryDirectory(prefix="flowdesk-node-") as temp_dir:
+        source_path = os.path.join(temp_dir, "main.js")
+        with open(source_path, "w", encoding="utf-8", newline="\n") as source_file:
+            source_file.write(code)
+        return await asyncio.to_thread(
+            _run_process_blocking,
+            [node_path, source_path, *(args or [])],
+            stdin=stdin,
+            cwd=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=started,
+            env={**os.environ, "NO_COLOR": "1"},
+        )
+
+
+def _detect_java_main_class(code: str) -> str:
+    public_match = re.search(r"\bpublic\s+class\s+([A-Za-z_$][\w$]*)", code)
+    if public_match:
+        return public_match.group(1)
+    class_match = re.search(r"\bclass\s+([A-Za-z_$][\w$]*)", code)
+    return class_match.group(1) if class_match else "Main"
+
+
+def _compile_java(
+    javac_path: str,
+    source_path: str,
+    *,
+    temp_dir: str,
+    timeout_seconds: int,
+    max_output: int,
+    started: float,
+) -> RunResult:
+    release_command = [javac_path, "-encoding", "UTF-8", "--release", "8", source_path]
+    result = _run_process_blocking(
+        release_command,
+        stdin="",
+        cwd=temp_dir,
+        timeout_seconds=timeout_seconds,
+        max_output=max_output,
+        started=started,
+        warnings=["Compiled with Java 8 bytecode for broad runtime compatibility."],
+    )
+    if result.status == "error" and "invalid flag: --release" in result.output.lower():
+        return _run_process_blocking(
+            [javac_path, "-encoding", "UTF-8", source_path],
+            stdin="",
+            cwd=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=started,
+        )
+    return result
+
+
+async def _execute_java(code: str, stdin: str, *, args: list[str] | None = None) -> RunResult:
+    javac_path = shutil.which("javac")
+    java_path = shutil.which("java")
+    missing = [name for name, path in (("javac", javac_path), ("java", java_path)) if not path]
+    if missing:
+        return RunResult(
+            status="unsupported",
+            stdout="",
+            stderr="",
+            exit_code=None,
+            duration_ms=0,
+            message=f"Java needs {', '.join(missing)} installed on the backend.",
+        )
+
+    started = time.perf_counter()
+    timeout_seconds = min(settings.COMPILER_TIMEOUT_SECONDS, COMPILER_TIMEOUT_SECONDS)
+    max_output = min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS)
+    main_class = _detect_java_main_class(code)
+    with tempfile.TemporaryDirectory(prefix="flowdesk-java-") as temp_dir:
+        source_path = os.path.join(temp_dir, f"{main_class}.java")
+        with open(source_path, "w", encoding="utf-8", newline="\n") as source_file:
+            source_file.write(code)
+
+        compile_result = await asyncio.to_thread(
+            _compile_java,
+            javac_path,
+            source_path,
+            temp_dir=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=started,
+        )
+        if compile_result.status != "success":
+            return RunResult(
+                status=compile_result.status,
+                stdout=compile_result.stdout,
+                stderr=compile_result.stderr,
+                exit_code=compile_result.exit_code,
+                duration_ms=compile_result.duration_ms,
+                timed_out=compile_result.timed_out,
+                truncated=compile_result.truncated,
+                message=compile_result.message or "Java compilation failed.",
+                warnings=compile_result.warnings,
+            )
+
+        run_started = time.perf_counter()
+        return await asyncio.to_thread(
+            _run_process_blocking,
+            [java_path, "-cp", temp_dir, main_class, *(args or [])],
+            stdin=stdin,
+            cwd=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=run_started,
+            env={**os.environ, "NO_COLOR": "1"},
+            warnings=compile_result.warnings,
+        )
+
+
 async def _execute_external_runner(language: str, code: str, stdin: str) -> RunResult:
     started = time.perf_counter()
     runner_url = settings.COMPILER_PISTON_API_URL.strip().rstrip("/")
@@ -1123,11 +1367,15 @@ async def run_code(
                                 message="Compiler execution is disabled on this server.")
         elif language == "python":
             result = await _execute_python(code, stdin, args=args)
+        elif language == "javascript" and has_local_runtime("javascript"):
+            result = await _execute_javascript(code, stdin, args=args)
+        elif language == "java" and has_local_runtime("java"):
+            result = await _execute_java(code, stdin, args=args)
         elif language in PISTON_LANGUAGE_MAP and settings.COMPILER_PISTON_API_URL.strip():
             result = await _execute_external_runner(language, code, stdin)
         else:
             result = RunResult(status="unsupported", stdout="", stderr="", exit_code=None, duration_ms=0,
-                                message=f"{language} execution needs a configured isolated runner.")
+                                message=local_runtime_reason(language) or f"{language} execution needs a configured isolated runner.")
 
     output = result.output
     await safe_record_run_event(

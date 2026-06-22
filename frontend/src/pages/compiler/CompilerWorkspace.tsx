@@ -941,7 +941,7 @@ export default function CompilerWorkspace() {
                 </button>
               </div>
             </div>
-            <pre className="min-h-36 max-h-80 overflow-auto rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
+            <pre className="min-h-36 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
               {output || runResult?.message || "Run your code to see output here."}
             </pre>
             {runResult && (

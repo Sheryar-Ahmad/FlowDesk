@@ -8,6 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-17-jdk-headless nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system flowdesk \
     && useradd --system --gid flowdesk --create-home flowdesk
 
