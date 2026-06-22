@@ -15,6 +15,8 @@ import {
   Gauge,
   History,
   Loader2,
+  Maximize2,
+  Minimize2,
   Pin,
   Play,
   Plus,
@@ -165,6 +167,8 @@ export default function CompilerWorkspace() {
   const [mobileTab, setMobileTab] = useState<MobileTab>("editor")
   const [ioTab, setIoTab] = useState<IoTab>("output")
   const [showProgramInput, setShowProgramInput] = useState(false)
+  const [terminalOpen, setTerminalOpen] = useState(false)
+  const [isFocusMode, setIsFocusMode] = useState(false)
 
   // Test-case runner state
   const [testCases, setTestCases] = useState<Array<{ stdin: string; expected: string }>>([
@@ -276,6 +280,7 @@ export default function CompilerWorkspace() {
     setTestResults(null)
     setShowProgramInput(Boolean(file.stdin.trim()))
     setIoTab(isPreviewLanguage(file.language) ? "preview" : "output")
+    setTerminalOpen(false)
     setMobileTab("editor")
   }
 
@@ -292,6 +297,7 @@ export default function CompilerWorkspace() {
     setTestResults(null)
     setShowProgramInput(false)
     setIoTab("output")
+    setTerminalOpen(false)
   }
 
   const handleLanguageChange = (nextLanguage: CompilerLanguage) => {
@@ -374,6 +380,7 @@ export default function CompilerWorkspace() {
       setRunResult(previewResult)
       setOutput(previewResult.output)
       setIoTab("preview")
+      setTerminalOpen(true)
       setMobileTab("io")
       setLastRunMode(activeId ? "saved" : "draft")
       toast.success("Preview refreshed")
@@ -383,6 +390,7 @@ export default function CompilerWorkspace() {
     setRunning(true)
     setRunResult(null)
     setIoTab("output")
+    setTerminalOpen(true)
     setMobileTab("io")
     setLastRunMode(fresh ? "fresh" : activeId ? "saved" : "draft")
     try {
@@ -464,6 +472,7 @@ export default function CompilerWorkspace() {
       }
       setRunResult(failedResult)
       setOutput(message)
+      setTerminalOpen(true)
       toast.error(message)
     } finally {
       setRunning(false)
@@ -533,6 +542,7 @@ export default function CompilerWorkspace() {
     }
     setTestRunning(true)
     setIoTab("tests")
+    setTerminalOpen(true)
     setMobileTab("io")
     try {
       const response = await runTestCases({ language, code, test_cases: cases })
@@ -551,6 +561,7 @@ export default function CompilerWorkspace() {
 
   const openHistoryTab = () => {
     setIoTab("history")
+    setTerminalOpen(true)
     setMobileTab("io")
     if (!history.length) void loadHistory()
   }
@@ -596,6 +607,12 @@ export default function CompilerWorkspace() {
   }
 
   const handleWorkspaceKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "F11") {
+      event.preventDefault()
+      setIsFocusMode(current => !current)
+      return
+    }
+
     const isModifierPressed = event.ctrlKey || event.metaKey
     if (!isModifierPressed) return
 
@@ -607,6 +624,11 @@ export default function CompilerWorkspace() {
     if (event.key === "Enter") {
       event.preventDefault()
       void runCurrentFile({ fresh: event.shiftKey })
+    }
+
+    if (event.key === "`") {
+      event.preventDefault()
+      setTerminalOpen(current => !current)
     }
   }
 
@@ -708,33 +730,42 @@ export default function CompilerWorkspace() {
   )
 
   const EditorPanel = (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px_auto]">
           <input
             value={title}
             onChange={event => setTitle(event.target.value)}
-            className="rounded-2xl border border-white/10 bg-[#0D1117] px-4 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400/50"
+            className="rounded-xl border border-white/10 bg-[#0D1117] px-4 py-2.5 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400/50"
             placeholder="File title"
             maxLength={200}
           />
           <select
             value={language}
             onChange={event => handleLanguageChange(event.target.value as CompilerLanguage)}
-            className="rounded-2xl border border-white/10 bg-[#0D1117] px-4 py-3 text-sm text-slate-200 outline-none transition focus:border-indigo-400/50"
+            className="rounded-xl border border-white/10 bg-[#0D1117] px-4 py-2.5 text-sm text-slate-200 outline-none transition focus:border-indigo-400/50"
           >
             {LANGUAGE_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setIsFocusMode(current => !current)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-xs font-semibold text-indigo-100 transition hover:bg-indigo-500/20"
+            title={isFocusMode ? "Exit fullscreen editor" : "Fullscreen editor"}
+          >
+            {isFocusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            {isFocusMode ? "Exit" : "Focus"}
+          </button>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           <button
             type="button"
             onClick={() => void togglePin()}
             disabled={!activeFile || saving}
             title="Pin"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Pin size={15} /> Pin
           </button>
@@ -743,7 +774,7 @@ export default function CompilerWorkspace() {
             onClick={() => void handleDuplicate()}
             disabled={!activeFile || saving}
             title="Duplicate"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Copy size={15} /> Clone
           </button>
@@ -752,7 +783,7 @@ export default function CompilerWorkspace() {
             onClick={() => void copyCode()}
             disabled={!code.trim()}
             title="Copy code"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Copy size={15} /> Copy
           </button>
@@ -760,7 +791,7 @@ export default function CompilerWorkspace() {
             type="button"
             onClick={loadLanguageTemplate}
             title="Load template"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
           >
             <RefreshCw size={15} /> Template
           </button>
@@ -769,15 +800,25 @@ export default function CompilerWorkspace() {
             onClick={downloadCode}
             disabled={!code.trim()}
             title="Download"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={15} /> Export
           </button>
+          {!isFocusMode && (
+            <button
+              type="button"
+              onClick={() => setTerminalOpen(current => !current)}
+              title={terminalOpen ? "Hide terminal" : "Show terminal"}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
+            >
+              <TerminalSquare size={15} /> {terminalOpen ? "Hide term" : "Terminal"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void deleteCurrentFile()}
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-3 py-3 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 size={15} /> Delete
           </button>
@@ -804,7 +845,7 @@ export default function CompilerWorkspace() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-3xl border border-white/10 bg-[#0D1117]">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#0D1117]">
         <Editor
           height="100%"
           theme="vs-dark"
@@ -1085,10 +1126,13 @@ export default function CompilerWorkspace() {
 
   return (
     <div
-      className="flex min-h-[100svh] flex-col bg-[#080B14] text-slate-100"
+      className={[
+        "flex flex-col bg-[#080B14] text-slate-100",
+        isFocusMode ? "fixed inset-0 z-50 min-h-[100svh]" : "min-h-[100svh]",
+      ].join(" ")}
       onKeyDown={handleWorkspaceKeyDown}
     >
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0D1117]/95 backdrop-blur">
+      <header className={isFocusMode ? "hidden" : "sticky top-0 z-20 border-b border-white/10 bg-[#0D1117]/95 backdrop-blur"}>
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -1175,19 +1219,35 @@ export default function CompilerWorkspace() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden p-3 sm:p-4 lg:hidden">
-        <div className="h-[calc(100svh-148px)] min-h-0 overflow-hidden">
-          {mobileTab === "files" && FileSidebar}
-          {mobileTab === "editor" && EditorPanel}
-          {mobileTab === "io" && IOPanel}
+      <main className={["flex-1 overflow-hidden lg:hidden", isFocusMode ? "p-2" : "p-3 sm:p-4"].join(" ")}>
+        <div className={[isFocusMode ? "h-[calc(100svh-16px)]" : "h-[calc(100svh-148px)]", "min-h-0 overflow-hidden"].join(" ")}>
+          {isFocusMode ? (
+            EditorPanel
+          ) : (
+            <>
+              {mobileTab === "files" && FileSidebar}
+              {mobileTab === "editor" && EditorPanel}
+              {mobileTab === "io" && IOPanel}
+            </>
+          )}
         </div>
       </main>
 
-      <main className="hidden flex-1 gap-4 p-4 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:p-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <div className="h-[calc(100svh-104px)]">{FileSidebar}</div>
-        <div className="grid h-[calc(100svh-104px)] min-w-0 grid-rows-[minmax(0,1fr)_minmax(260px,34vh)] gap-4">
+      <main
+        className={[
+          "hidden flex-1 gap-4 p-3 lg:grid lg:p-4",
+          isFocusMode ? "lg:grid-cols-1" : "lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]",
+        ].join(" ")}
+      >
+        {!isFocusMode && <div className="h-[calc(100svh-104px)]">{FileSidebar}</div>}
+        <div
+          className={[
+            "grid min-w-0 gap-3",
+            isFocusMode ? "h-[calc(100svh-24px)] grid-rows-[minmax(0,1fr)]" : terminalOpen ? "h-[calc(100svh-104px)] grid-rows-[minmax(0,1fr)_minmax(220px,28vh)]" : "h-[calc(100svh-104px)] grid-rows-[minmax(0,1fr)]",
+          ].join(" ")}
+        >
           <div className="min-h-0">{EditorPanel}</div>
-          <div className="min-h-0 overflow-hidden">{IOPanel}</div>
+          {!isFocusMode && terminalOpen && <div className="min-h-0 overflow-hidden">{IOPanel}</div>}
         </div>
       </main>
     </div>
