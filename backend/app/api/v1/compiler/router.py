@@ -8,6 +8,7 @@ from app.api.v1.compiler.schemas import (
     CompilerFileCreate,
     CompilerFileUpdate,
     CompilerRunRequest,
+    CompilerSavedRunRequest,
     CompilerTestCaseRequest,
 )
 from app.config import get_settings
@@ -263,11 +264,23 @@ async def run_compiler_test_cases(
 async def run_saved_file(
     request: Request,
     file_id: str,
+    body: CompilerSavedRunRequest | None = None,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        result = await run_compiler_file(db, current_user["id"], current_user["plan"], file_id)
+        result = await run_compiler_file(
+            db,
+            current_user["id"],
+            current_user["plan"],
+            file_id,
+            title=body.title if body else None,
+            language=body.language if body else None,
+            code=body.code if body else None,
+            stdin=body.stdin if body else None,
+            args=body.args if body else None,
+            use_cache=body.use_cache if body else True,
+        )
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compiler file not found.")
         return {"success": True, "result": result}

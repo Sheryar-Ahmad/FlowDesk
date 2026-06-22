@@ -131,6 +131,7 @@ const extensionByLanguage: Record<CompilerLanguage, string> = {
 
 type MobileTab = "files" | "editor" | "io"
 type IoTab = "output" | "tests" | "history"
+type RunIntent = { fresh?: boolean }
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
@@ -171,6 +172,17 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced
 }
 
+function parseProgramArgs(rawArgs: string): string[] {
+  const args: string[] = []
+  const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g
+  let match = pattern.exec(rawArgs)
+  while (match) {
+    args.push(match[1] ?? match[2] ?? match[3] ?? "")
+    match = pattern.exec(rawArgs)
+  }
+  return args.filter(Boolean)
+}
+
 export default function CompilerWorkspace() {
   const navigate = useNavigate()
   const [files, setFiles] = useState<CompilerFile[]>([])
@@ -180,12 +192,14 @@ export default function CompilerWorkspace() {
   const [language, setLanguage] = useState<CompilerLanguage>("python")
   const [code, setCode] = useState(languageByValue.get("python")?.template ?? "")
   const [stdin, setStdin] = useState("")
+  const [programArgs, setProgramArgs] = useState("")
   const [output, setOutput] = useState("")
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<CompilerRunResult | null>(null)
+  const [lastRunMode, setLastRunMode] = useState<"idle" | "draft" | "saved" | "fresh">("idle")
   const [mobileTab, setMobileTab] = useState<MobileTab>("editor")
   const [ioTab, setIoTab] = useState<IoTab>("output")
   const [showProgramInput, setShowProgramInput] = useState(false)
@@ -294,6 +308,7 @@ export default function CompilerWorkspace() {
     setLanguage(file.language)
     setCode(file.code)
     setStdin(file.stdin)
+    setProgramArgs("")
     setOutput(file.output)
     setRunResult(null)
     setTestResults(null)
@@ -309,6 +324,7 @@ export default function CompilerWorkspace() {
     setLanguage("python")
     setCode(option?.template ?? "")
     setStdin("")
+    setProgramArgs("")
     setOutput("")
     setRunResult(null)
     setTestResults(null)
@@ -369,38 +385,70 @@ export default function CompilerWorkspace() {
     }
   }
 
-  const runCurrentFile = async () => {
+  const runCurrentFile = async ({ fresh = false }: RunIntent = {}) => {
     if (!code.trim()) {
       toast.error("Write some code before running.")
       return
     }
+    const cleanTitle = title.trim() || makeUntitled(language)
+    const args = parseProgramArgs(programArgs)
     setRunning(true)
     setRunResult(null)
     setIoTab("output")
     setMobileTab("io")
+    setLastRunMode(fresh ? "fresh" : activeId ? "saved" : "draft")
     try {
-      const savedFile = await saveCurrentFile()
-      if (!savedFile) return
-
       let response: Awaited<ReturnType<typeof runCompilerFile>>
-      try {
-        response = await runCompilerFile(savedFile.id)
-      } catch {
-        response = await runCompilerCode({ language, code, stdin })
+      const useCache = !fresh
+
+      if (activeId) {
+        response = await runCompilerFile(activeId, {
+          title: cleanTitle,
+          language,
+          code,
+          stdin,
+          args,
+          use_cache: useCache,
+        })
+      } else {
+        response = await runCompilerCode({ language, code, stdin, args, use_cache: useCache })
       }
+
       setRunResult(response.result)
       setOutput(response.result.output || response.result.message || "")
-      // Optimistic local patch - avoids waiting on a refetch to feel snappy
-      const updatedFile: CompilerFile = {
-        ...savedFile,
-        output: response.result.output,
-        run_count: savedFile.run_count + 1,
-        last_run_at: new Date().toISOString(),
+
+      const runAt = new Date().toISOString()
+      if (activeFile) {
+        upsertLocalFile({
+          ...activeFile,
+          title: cleanTitle,
+          language,
+          code,
+          stdin,
+          output: response.result.output,
+          run_count: activeFile.run_count + 1,
+          last_run_at: runAt,
+          updated_at: runAt,
+        })
+      } else {
+        createCompilerFile({ title: cleanTitle, language, code, stdin })
+          .then(created => {
+            setActiveId(created.file.id)
+            setTitle(created.file.title)
+            upsertLocalFile({
+              ...created.file,
+              output: response.result.output,
+              run_count: 1,
+              last_run_at: runAt,
+              updated_at: runAt,
+            })
+            return updateCompilerFile(created.file.id, { output: response.result.output })
+          })
+          .catch(() => undefined)
       }
-      upsertLocalFile(updatedFile)
 
       if (response.result.status === "success") {
-        toast.success(response.result.cached ? "Code ran successfully (cached)" : "Code ran successfully")
+        toast.success(response.result.cached ? "Code ran from cache" : fresh ? "Fresh run complete" : "Code ran successfully")
       } else if (response.result.status === "unsupported" || response.result.status === "disabled") {
         toast(response.result.message ?? "Runtime unavailable right now")
       } else if (response.result.status === "timeout") {
@@ -409,7 +457,6 @@ export default function CompilerWorkspace() {
         toast.error(response.result.message ?? "Code finished with errors")
       }
 
-      // Refresh stats in the background since a new run just landed
       getRunStats().then(setStats).catch(() => undefined)
     } catch (error) {
       const message = getErrorMessage(error, "Failed to run code.")
@@ -567,7 +614,7 @@ export default function CompilerWorkspace() {
 
     if (event.key === "Enter") {
       event.preventDefault()
-      void runCurrentFile()
+      void runCurrentFile({ fresh: event.shiftKey })
     }
   }
 
@@ -584,6 +631,7 @@ export default function CompilerWorkspace() {
     }
   }, [code])
   const runtimeStatus = runtime?.executable ? "Runnable" : "Edit only"
+  const programArgsList = useMemo(() => parseProgramArgs(programArgs), [programArgs])
 
   // Shared sub-views used by both the desktop grid and mobile tabs.
 
@@ -789,16 +837,29 @@ export default function CompilerWorkspace() {
           className="flex w-full items-center justify-between gap-3 text-left"
         >
           <div>
-            <h2 className="text-sm font-bold text-white">Program input</h2>
+            <h2 className="text-sm font-bold text-white">Run inputs</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Optional. Use this only when your code reads from input() or stdin.
+              Optional stdin and command-line args for programs that read external input.
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
-            {showProgramInput ? "Hide" : "Add input"}
+            {showProgramInput ? "Hide" : "Configure"}
           </span>
         </button>
         <div className={showProgramInput ? "mt-4" : "hidden"}>
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">args</span>
+              <span className="text-xs text-slate-600">{programArgsList.length}/32</span>
+            </div>
+            <input
+              value={programArgs}
+              onChange={event => setProgramArgs(event.target.value)}
+              placeholder='Example: --name "FlowDesk" 42 (Python: read argv)'
+              className="w-full rounded-2xl border border-white/10 bg-[#0D1117] px-4 py-3 font-mono text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
+              maxLength={2000}
+            />
+          </div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">stdin</span>
             <span className="text-xs text-slate-600">{stdin.length}/12000</span>
@@ -856,6 +917,14 @@ export default function CompilerWorkspace() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => void runCurrentFile({ fresh: true })}
+                  disabled={running || saving}
+                  className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-200 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <RefreshCw size={13} /> Fresh
+                </button>
+                <button
+                  type="button"
                   onClick={clearOutput}
                   disabled={!output.trim() && !runResult}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -885,6 +954,7 @@ export default function CompilerWorkspace() {
                   <span>Memory: {Math.round(runResult.memory_kb / 1024)}MB</span>
                 )}
                 <span>Exit: {runResult.exit_code ?? "n/a"}</span>
+                {lastRunMode !== "idle" && <span>Mode: {lastRunMode}</span>}
                 {runResult.cached && <span className="text-cyan-300">Cached</span>}
                 {runResult.truncated && <span className="text-amber-300">Output truncated</span>}
                 {runResult.warnings?.map(warning => (
@@ -1034,6 +1104,16 @@ export default function CompilerWorkspace() {
             >
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
               Save
+            </button>
+            <button
+              type="button"
+              onClick={() => void runCurrentFile({ fresh: true })}
+              disabled={running || saving}
+              title="Fresh run without cache"
+              className="hidden flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex sm:flex-none"
+            >
+              <RefreshCw size={16} />
+              Fresh
             </button>
             <button
               type="button"

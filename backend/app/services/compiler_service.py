@@ -196,7 +196,7 @@ try:
     tree = ast.parse(source, filename="<flowdesk>", mode="exec")
     Guard().visit(tree)
     compiled = compile(tree, "<flowdesk>", "exec")
-    globals_dict = {"__builtins__": allowed_builtins, "__name__": "__main__"}
+    globals_dict = {"__builtins__": allowed_builtins, "__name__": "__main__", "argv": list(args)}
     original_stdin = sys.stdin
     sys.stdin = io.StringIO(stdin_value)
     try:
@@ -389,8 +389,12 @@ def estimate_complexity(code: str) -> dict[str, int]:  # 37. quick code-quality 
     }
 
 
-def hash_run(language: str, code: str, stdin: str) -> str:  # 38. cache key
-    payload = f"{language}\x00{code}\x00{stdin}".encode("utf-8")
+def hash_run(language: str, code: str, stdin: str, args: list[str] | None = None) -> str:  # 38. cache key
+    payload = json.dumps(
+        [language, code, stdin, args or []],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -1098,7 +1102,7 @@ async def run_code(
     language = normalize_language(language)
 
     # 68. result cache — identical code+stdin within TTL skips re-execution entirely (huge latency win)
-    cache_key = hash_run(language, code, stdin)
+    cache_key = hash_run(language, code, stdin, args)
     if use_cache and cache_key in _run_cache:
         expiry, cached_result = _run_cache[cache_key]
         if expiry > time.time():
@@ -1149,28 +1153,59 @@ async def run_code(
     return response
 
 
-async def run_compiler_file(db: AsyncSession, user_id: str, plan: str, file_id: str) -> dict[str, Any] | None:
+async def run_compiler_file(
+    db: AsyncSession,
+    user_id: str,
+    plan: str,
+    file_id: str,
+    *,
+    title: str | None = None,
+    language: str | None = None,
+    code: str | None = None,
+    stdin: str | None = None,
+    args: list[str] | None = None,
+    use_cache: bool = True,
+) -> dict[str, Any] | None:
     file = await get_compiler_file(db, file_id, user_id)
     if not file:
         return None
 
     lock_key = f"{user_id}:{file_id}"
     async with _file_run_locks[lock_key]:  # 72. single-flight: same file can't double-run concurrently
+        run_title = title if title is not None else file["title"]
+        run_language = language if language is not None else file["language"]
+        source_code = code if code is not None else file["code"]
+        run_stdin = stdin if stdin is not None else file["stdin"]
         result = await run_code(
             db, user_id, plan,
-            language=file["language"], code=file["code"], stdin=file["stdin"],
-            compiler_file_id=file_id,
+            language=run_language, code=source_code, stdin=run_stdin,
+            compiler_file_id=file_id, args=args, use_cache=use_cache,
         )
         try:
             await db.execute(
                 text(
                     """
                     UPDATE compiler_files
-                    SET output = :output, run_count = run_count + 1, last_run_at = CURRENT_TIMESTAMP
+                    SET title = :title,
+                        language = :language,
+                        code = :code,
+                        stdin = :stdin,
+                        output = :output,
+                        run_count = run_count + 1,
+                        last_run_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
                     WHERE id = :file_id AND user_id = :user_id AND deleted_at IS NULL
                     """
                 ),
-                {"file_id": file_id, "user_id": user_id, "output": result["output"]},
+                {
+                    "file_id": file_id,
+                    "user_id": user_id,
+                    "title": run_title,
+                    "language": normalize_language(run_language),
+                    "code": source_code,
+                    "stdin": run_stdin,
+                    "output": result["output"],
+                },
             )
         except Exception as exc:
             logger.warning("Compiler file output update skipped", file_id=file_id, error=str(exc))

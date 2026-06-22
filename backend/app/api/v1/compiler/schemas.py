@@ -89,6 +89,43 @@ class CompilerRunRequest(BaseModel):
     language: CompilerLanguage
     code: str = Field(min_length=1, max_length=COMPILER_MAX_CODE_CHARS)
     stdin: str = Field(default="", max_length=COMPILER_MAX_STDIN_CHARS)
+    args: list[str] = Field(default_factory=list, max_length=32)
+    use_cache: bool = True
+
+    @field_validator("args")
+    @classmethod
+    def clean_args(cls, value: list[str]) -> list[str]:
+        cleaned = [item.strip() for item in value if item.strip()]
+        if any(len(item) > 200 for item in cleaned):
+            raise ValueError("Each argument must be 200 characters or fewer.")
+        return cleaned
+
+
+class CompilerSavedRunRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    language: CompilerLanguage | None = None
+    code: str | None = Field(default=None, min_length=1, max_length=COMPILER_MAX_CODE_CHARS)
+    stdin: str | None = Field(default=None, max_length=COMPILER_MAX_STDIN_CHARS)
+    args: list[str] = Field(default_factory=list, max_length=32)
+    use_cache: bool = True
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        title = " ".join(value.strip().split())
+        if not title:
+            raise ValueError("Title is required.")
+        return title
+
+    @field_validator("args")
+    @classmethod
+    def clean_args(cls, value: list[str]) -> list[str]:
+        cleaned = [item.strip() for item in value if item.strip()]
+        if any(len(item) > 200 for item in cleaned):
+            raise ValueError("Each argument must be 200 characters or fewer.")
+        return cleaned
 
 
 class CompilerTestCase(BaseModel):

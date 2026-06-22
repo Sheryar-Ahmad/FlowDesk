@@ -91,6 +91,19 @@ export interface CompilerFilePayload {
   stdin?: string
 }
 
+export type CompilerRunPayload = {
+  language: CompilerLanguage
+  code: string
+  stdin?: string
+  args?: string[]
+  use_cache?: boolean
+}
+
+export type CompilerSavedRunPayload = Partial<CompilerFilePayload> & {
+  args?: string[]
+  use_cache?: boolean
+}
+
 export interface CompilerFileQuery {
   page?: number
   page_size?: number
@@ -178,16 +191,12 @@ export const duplicateCompilerFile = async (id: string) => (
   await api.post<{ success: boolean; file: CompilerFile }>(`/compiler/files/${id}/duplicate`)
 ).data
 
-export const runCompilerCode = async (data: {
-  language: CompilerLanguage
-  code: string
-  stdin?: string
-}) => (
+export const runCompilerCode = async (data: CompilerRunPayload) => (
   await api.post<{ success: boolean; result: CompilerRunResult }>("/compiler/run", data)
 ).data
 
-export const runCompilerFile = async (id: string) => (
-  await api.post<{ success: boolean; result: CompilerRunResult }>(`/compiler/${id}/run`)
+export const runCompilerFile = async (id: string, data?: CompilerSavedRunPayload) => (
+  await api.post<{ success: boolean; result: CompilerRunResult }>(`/compiler/${id}/run`, data ?? {})
 ).data
 
 export const getRunHistory = async (params?: { limit?: number }) => (
