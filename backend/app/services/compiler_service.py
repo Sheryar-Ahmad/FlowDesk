@@ -14,6 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
+import httpx
 import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -261,6 +262,35 @@ RUNTIME_LABELS = {
 }
 
 EXECUTABLE_LANGUAGES = {"python"}
+
+PISTON_LANGUAGE_MAP = {
+    "javascript": ("javascript", "main.js"),
+    "typescript": ("typescript", "main.ts"),
+    "java": ("java", "Main.java"),
+    "cpp": ("cpp", "main.cpp"),
+    "c": ("c", "main.c"),
+    "go": ("go", "main.go"),
+    "rust": ("rust", "main.rs"),
+    "csharp": ("csharp", "Main.cs"),
+    "php": ("php", "main.php"),
+    "ruby": ("ruby", "main.rb"),
+    "bash": ("bash", "main.sh"),
+    "kotlin": ("kotlin", "Main.kt"),
+    "swift": ("swift", "main.swift"),
+    "dart": ("dart", "main.dart"),
+    "scala": ("scala", "Main.scala"),
+    "r": ("r", "main.r"),
+    "perl": ("perl", "main.pl"),
+    "lua": ("lua", "main.lua"),
+    "haskell": ("haskell", "main.hs"),
+    "elixir": ("elixir", "main.exs"),
+    "erlang": ("erlang", "main.erl"),
+    "clojure": ("clojure", "main.clj"),
+    "fsharp": ("fsharp", "main.fs"),
+    "powershell": ("powershell", "main.ps1"),
+    "groovy": ("groovy", "main.groovy"),
+    "julia": ("julia", "main.jl"),
+}
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -763,14 +793,19 @@ def daily_run_limit_for_plan_(plan: str) -> int:  # alias kept for backward comp
 
 def list_runtimes() -> list[dict[str, Any]]:
     execution_enabled = bool(settings.COMPILER_EXECUTION_ENABLED)
+    external_runner_enabled = bool(settings.COMPILER_PISTON_API_URL.strip())
     base = []
     for language, label in RUNTIME_LABELS.items():
-        is_executable = language in EXECUTABLE_LANGUAGES and execution_enabled
+        is_local = language in EXECUTABLE_LANGUAGES
+        is_external = language in PISTON_LANGUAGE_MAP and external_runner_enabled
+        is_executable = execution_enabled and (is_local or is_external)
         reason = None
-        if language in EXECUTABLE_LANGUAGES and not execution_enabled:
+        if (is_local or language in PISTON_LANGUAGE_MAP) and not execution_enabled:
             reason = "Compiler execution is disabled on this server."
-        elif language not in EXECUTABLE_LANGUAGES:
-            reason = "Editing and saving are available. Running this language needs a dedicated sandbox runner."
+        elif is_external:
+            reason = "Runs through the configured isolated language runner."
+        elif not is_local:
+            reason = "Editing and saving are available. Running this language needs COMPILER_PISTON_API_URL."
         base.append({
             "language": language,
             "label": label,
@@ -871,6 +906,88 @@ async def _execute_python(code: str, stdin: str, *, args: list[str] | None = Non
     )
 
 
+async def _execute_external_runner(language: str, code: str, stdin: str) -> RunResult:
+    started = time.perf_counter()
+    runner_url = settings.COMPILER_PISTON_API_URL.strip().rstrip("/")
+    runtime = PISTON_LANGUAGE_MAP.get(language)
+    if not runner_url or not runtime:
+        return RunResult(
+            status="unsupported",
+            stdout="",
+            stderr="",
+            exit_code=None,
+            duration_ms=0,
+            message=f"{language} execution needs a configured isolated runner.",
+        )
+
+    piston_language, filename = runtime
+    timeout_seconds = min(settings.COMPILER_TIMEOUT_SECONDS, COMPILER_TIMEOUT_SECONDS)
+    memory_limit = MAX_MEMORY_MB * 1024 * 1024
+    payload = {
+        "language": piston_language,
+        "version": "*",
+        "files": [{"name": filename, "content": code}],
+        "stdin": stdin,
+        "compile_timeout": timeout_seconds * 1000,
+        "run_timeout": timeout_seconds * 1000,
+        "compile_memory_limit": memory_limit,
+        "run_memory_limit": memory_limit,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout_seconds + 10) as client:
+            response = await client.post(f"{runner_url}/api/v2/execute", json=payload)
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPError as exc:
+        logger.warning("External compiler runner failed", language=language, error=str(exc))
+        duration_ms = round((time.perf_counter() - started) * 1000)
+        return RunResult(
+            status="error",
+            stdout="",
+            stderr="",
+            exit_code=None,
+            duration_ms=duration_ms,
+            message="The external compiler runner is unavailable right now.",
+        )
+
+    compile_result = data.get("compile") or {}
+    run_result = data.get("run") or {}
+    stdout = "\n".join(
+        part for part in [
+            str(compile_result.get("stdout") or "").strip(),
+            str(run_result.get("stdout") or "").strip(),
+        ] if part
+    )
+    stderr = "\n".join(
+        part for part in [
+            str(compile_result.get("stderr") or "").strip(),
+            str(run_result.get("stderr") or "").strip(),
+        ] if part
+    )
+    stdout = strip_ansi(stdout)
+    stderr = strip_ansi(stderr)
+    stdout, stdout_trunc = _truncate(stdout, min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS))
+    stderr, stderr_trunc = _truncate(stderr, min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS))
+
+    compile_code = compile_result.get("code")
+    run_code_value = run_result.get("code")
+    exit_code = run_code_value if run_code_value is not None else compile_code
+    status = "success" if exit_code in {0, None} and not stderr else "error"
+    if compile_code not in {0, None}:
+        status = "error"
+
+    return RunResult(
+        status=status,
+        stdout=stdout,
+        stderr=stderr,
+        exit_code=exit_code if isinstance(exit_code, int) else None,
+        duration_ms=round((time.perf_counter() - started) * 1000),
+        truncated=stdout_trunc or stderr_trunc,
+        message=None if status == "success" else "Code finished with errors.",
+    )
+
+
 async def run_code(
     db: AsyncSession,
     user_id: str,
@@ -917,9 +1034,11 @@ async def run_code(
                                 message="Compiler execution is disabled on this server.")
         elif language == "python":
             result = await _execute_python(code, stdin, args=args)
+        elif language in PISTON_LANGUAGE_MAP and settings.COMPILER_PISTON_API_URL.strip():
+            result = await _execute_external_runner(language, code, stdin)
         else:
             result = RunResult(status="unsupported", stdout="", stderr="", exit_code=None, duration_ms=0,
-                                message=f"{language} execution requires a separate isolated runner.")
+                                message=f"{language} execution needs a configured isolated runner.")
 
     output = result.output
     await safe_record_run_event(

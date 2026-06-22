@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import Editor from "@monaco-editor/react"
 import axios from "axios"
@@ -9,6 +9,7 @@ import {
   Code2,
   Copy,
   Cpu,
+  Download,
   FileCode2,
   Gauge,
   History,
@@ -16,6 +17,7 @@ import {
   Pin,
   Play,
   Plus,
+  RefreshCw,
   Save,
   Search,
   ShieldCheck,
@@ -86,6 +88,46 @@ const LANGUAGE_OPTIONS: Array<{ value: CompilerLanguage; label: string; monaco: 
 ]
 
 const languageByValue = new Map(LANGUAGE_OPTIONS.map(option => [option.value, option]))
+
+const extensionByLanguage: Record<CompilerLanguage, string> = {
+  python: "py",
+  javascript: "js",
+  typescript: "ts",
+  java: "java",
+  cpp: "cpp",
+  c: "c",
+  go: "go",
+  rust: "rs",
+  csharp: "cs",
+  php: "php",
+  ruby: "rb",
+  sql: "sql",
+  bash: "sh",
+  kotlin: "kt",
+  swift: "swift",
+  dart: "dart",
+  scala: "scala",
+  r: "r",
+  perl: "pl",
+  lua: "lua",
+  haskell: "hs",
+  elixir: "exs",
+  erlang: "erl",
+  clojure: "clj",
+  fsharp: "fs",
+  powershell: "ps1",
+  groovy: "groovy",
+  julia: "jl",
+  matlab: "m",
+  objectivec: "m",
+  vb: "vb",
+  html: "html",
+  css: "css",
+  markdown: "md",
+  yaml: "yml",
+  json: "json",
+  xml: "xml",
+}
 
 type MobileTab = "files" | "editor" | "io"
 type IoTab = "output" | "tests" | "history"
@@ -480,12 +522,73 @@ export default function CompilerWorkspace() {
     toast.success("Output copied")
   }
 
+  const clearOutput = () => {
+    setOutput("")
+    setRunResult(null)
+    toast.success("Output cleared")
+  }
+
+  const copyCode = async () => {
+    if (!code.trim()) return
+    await navigator.clipboard.writeText(code)
+    toast.success("Code copied")
+  }
+
+  const loadLanguageTemplate = () => {
+    setCode(selectedLanguage?.template ?? "")
+    setRunResult(null)
+    setOutput("")
+    toast.success("Template loaded")
+  }
+
+  const downloadCode = () => {
+    const extension = extensionByLanguage[language] ?? "txt"
+    const cleanTitle = (title.trim() || makeUntitled(language))
+      .replace(/[^a-z0-9-_ ]/gi, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase()
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" })
+    const href = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = href
+    link.download = `${cleanTitle || "flowdesk-code"}.${extension}`
+    link.click()
+    URL.revokeObjectURL(href)
+  }
+
+  const handleWorkspaceKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const isModifierPressed = event.ctrlKey || event.metaKey
+    if (!isModifierPressed) return
+
+    if (event.key.toLowerCase() === "s") {
+      event.preventDefault()
+      void saveCurrentFile()
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault()
+      void runCurrentFile()
+    }
+  }
+
   const selectedLanguage = languageByValue.get(language)
+  const executableLanguageCount = useMemo(
+    () => runtimes.filter(item => item.executable).length,
+    [runtimes],
+  )
+  const codeStats = useMemo(() => {
+    const lines = code ? code.split(/\r?\n/).length : 0
+    return {
+      lines,
+      characters: code.length,
+    }
+  }, [code])
+  const runtimeStatus = runtime?.executable ? "Runnable" : "Edit only"
 
   // Shared sub-views used by both the desktop grid and mobile tabs.
 
   const FileSidebar = (
-    <aside className="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.025]">
+    <aside className="flex h-full min-h-0 flex-col rounded-3xl border border-white/10 bg-white/[0.025]">
       <div className="border-b border-white/10 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -560,9 +663,9 @@ export default function CompilerWorkspace() {
   )
 
   const EditorPanel = (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_auto_auto_auto]">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
           <input
             value={title}
             onChange={event => setTitle(event.target.value)}
@@ -579,31 +682,59 @@ export default function CompilerWorkspace() {
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
           <button
             type="button"
             onClick={() => void togglePin()}
             disabled={!activeFile || saving}
             title="Pin"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Pin size={16} />
+            <Pin size={15} /> Pin
           </button>
           <button
             type="button"
             onClick={() => void handleDuplicate()}
             disabled={!activeFile || saving}
             title="Duplicate"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Copy size={16} />
+            <Copy size={15} /> Clone
+          </button>
+          <button
+            type="button"
+            onClick={() => void copyCode()}
+            disabled={!code.trim()}
+            title="Copy code"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Copy size={15} /> Copy
+          </button>
+          <button
+            type="button"
+            onClick={loadLanguageTemplate}
+            title="Load template"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
+          >
+            <RefreshCw size={15} /> Template
+          </button>
+          <button
+            type="button"
+            onClick={downloadCode}
+            disabled={!code.trim()}
+            title="Download"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={15} /> Export
           </button>
           <button
             type="button"
             onClick={() => void deleteCurrentFile()}
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-3 py-3 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Trash2 size={16} />
+            <Trash2 size={15} /> Delete
           </button>
         </div>
 
@@ -613,7 +744,10 @@ export default function CompilerWorkspace() {
             {selectedLanguage?.label ?? language}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            Runtime: {runtime?.executable ? "available" : "saved only"}
+            Runtime: {runtimeStatus}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            {codeStats.lines} lines / {codeStats.characters} chars
           </span>
           {runtime?.queue && (
             <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
@@ -647,7 +781,7 @@ export default function CompilerWorkspace() {
   )
 
   const IOPanel = (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1">
       <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4">
         <button
           type="button"
@@ -719,14 +853,24 @@ export default function CompilerWorkspace() {
               <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${resultBadgeClasses(runResult?.status)}`}>
                 {runResult?.status ?? "idle"}
               </span>
-              <button
-                type="button"
-                onClick={() => void copyOutput()}
-                disabled={!output.trim()}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Copy size={14} /> Copy
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clearOutput}
+                  disabled={!output.trim() && !runResult}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void copyOutput()}
+                  disabled={!output.trim()}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Copy size={14} /> Copy
+                </button>
+              </div>
             </div>
             <pre className="min-h-36 max-h-80 overflow-auto rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
               {output || runResult?.message || "Run your code to see output here."}
@@ -844,7 +988,10 @@ export default function CompilerWorkspace() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#080B14] text-slate-100">
+    <div
+      className="flex min-h-[100svh] flex-col bg-[#080B14] text-slate-100"
+      onKeyDown={handleWorkspaceKeyDown}
+    >
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0D1117]/95 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -866,7 +1013,9 @@ export default function CompilerWorkspace() {
                   Safe mode
                 </span>
               </div>
-              <p className="truncate text-xs text-slate-500">Save, run, and test code inside FlowDesk</p>
+              <p className="truncate text-xs text-slate-500">
+                {LANGUAGE_OPTIONS.length} languages - {executableLanguageCount || 1} runnable now
+              </p>
             </div>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -920,8 +1069,8 @@ export default function CompilerWorkspace() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 lg:hidden">
-        <div className="h-[calc(100vh-148px)]">
+      <main className="flex-1 overflow-hidden p-3 sm:p-4 lg:hidden">
+        <div className="h-[calc(100svh-148px)] min-h-0 overflow-hidden">
           {mobileTab === "files" && FileSidebar}
           {mobileTab === "editor" && EditorPanel}
           {mobileTab === "io" && IOPanel}
@@ -929,9 +1078,9 @@ export default function CompilerWorkspace() {
       </main>
 
       <main className="hidden flex-1 gap-4 p-4 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:p-6 xl:grid-cols-[300px_minmax(0,1fr)_420px]">
-        <div className="h-[calc(100vh-104px)]">{FileSidebar}</div>
-        <div className="h-[calc(100vh-104px)] min-w-0">{EditorPanel}</div>
-        <div className="h-[calc(100vh-104px)] overflow-y-auto">{IOPanel}</div>
+        <div className="h-[calc(100svh-104px)]">{FileSidebar}</div>
+        <div className="h-[calc(100svh-104px)] min-w-0">{EditorPanel}</div>
+        <div className="h-[calc(100svh-104px)] overflow-y-auto">{IOPanel}</div>
       </main>
     </div>
   )
