@@ -7,6 +7,7 @@ import json
 import os
 import re
 import signal
+import subprocess
 import sys
 import tempfile
 import time
@@ -826,6 +827,100 @@ def _preexec_new_group():  # 59. own process group so timeout kills children too
     os.setsid()
 
 
+def _decode_python_run(
+    *,
+    returncode: int | None,
+    stdout_bytes: bytes | None,
+    stderr_bytes: bytes | None,
+    duration_ms: int,
+    warnings: list[str],
+    max_output: int,
+) -> RunResult:
+    stdout = (stdout_bytes or b"").decode("utf-8", errors="replace")
+    stderr_raw = (stderr_bytes or b"").decode("utf-8", errors="replace")
+
+    memory_kb, cpu_time_ms = None, None
+    match = re.search(r"\x00FLOWDESK_RUSAGE\x00(\d+)\x00([\d.]+)\x00", stderr_raw)
+    if match:
+        memory_kb = int(match.group(1))
+        cpu_time_ms = round(float(match.group(2)) * 1000)
+        stderr_raw = stderr_raw[: match.start()] + stderr_raw[match.end():]
+
+    stdout = strip_ansi(stdout)
+    stderr_raw = strip_ansi(stderr_raw)
+    stdout, stdout_trunc = _truncate(stdout, max_output)
+    stderr, stderr_trunc = _truncate(stderr_raw, max_output)
+
+    exit_signal = -returncode if returncode and returncode < 0 else None
+    status = "success" if returncode == 0 else "error"
+    _bump("runs_success" if status == "success" else "runs_error")
+
+    return RunResult(
+        status=status,
+        stdout=stdout,
+        stderr=stderr,
+        exit_code=returncode,
+        duration_ms=duration_ms,
+        truncated=stdout_trunc or stderr_trunc,
+        memory_kb=memory_kb,
+        cpu_time_ms=cpu_time_ms,
+        exit_signal=exit_signal,
+        warnings=warnings,
+    )
+
+
+def _execute_python_blocking(
+    *,
+    payload: str,
+    warnings: list[str],
+    started: float,
+    max_output: int,
+    timeout_seconds: int,
+) -> RunResult:
+    creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    with tempfile.TemporaryDirectory(prefix="flowdesk-compiler-") as temp_dir:
+        try:
+            completed = subprocess.run(
+                [sys.executable, "-I", "-S", "-c", PYTHON_SANDBOX],
+                input=payload.encode("utf-8"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=temp_dir,
+                env={"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"},
+                timeout=timeout_seconds,
+                check=False,
+                creationflags=creation_flags,
+            )
+        except subprocess.TimeoutExpired as exc:
+            duration_ms = round((time.perf_counter() - started) * 1000)
+            stdout = (exc.stdout or b"").decode("utf-8", errors="replace")
+            stderr = (exc.stderr or b"").decode("utf-8", errors="replace")
+            stdout, stdout_trunc = _truncate(stdout, max_output)
+            stderr, stderr_trunc = _truncate(stderr, max_output)
+            _bump("runs_timeout")
+            return RunResult(
+                status="timeout",
+                stdout=stdout,
+                stderr=stderr or f"Execution exceeded {timeout_seconds} seconds.",
+                exit_code=None,
+                duration_ms=duration_ms,
+                timed_out=True,
+                truncated=stdout_trunc or stderr_trunc,
+                message="Execution timed out.",
+                warnings=warnings,
+            )
+
+    duration_ms = round((time.perf_counter() - started) * 1000)
+    return _decode_python_run(
+        returncode=completed.returncode,
+        stdout_bytes=completed.stdout,
+        stderr_bytes=completed.stderr,
+        duration_ms=duration_ms,
+        warnings=warnings,
+        max_output=max_output,
+    )
+
+
 async def _execute_python(code: str, stdin: str, *, args: list[str] | None = None) -> RunResult:
     started = time.perf_counter()
     max_output = min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS)
@@ -839,6 +934,16 @@ async def _execute_python(code: str, stdin: str, *, args: list[str] | None = Non
     banned = scan_banned_imports(code)  # 60. pre-flight static warning (execution still sandbox-enforced)
     if banned:
         warnings.append(f"Imports flagged by static scan: {', '.join(banned)} (blocked at runtime).")
+
+    if os.name == "nt":
+        return await asyncio.to_thread(
+            _execute_python_blocking,
+            payload=payload,
+            warnings=warnings,
+            started=started,
+            max_output=max_output,
+            timeout_seconds=timeout_seconds,
+        )
 
     with tempfile.TemporaryDirectory(prefix="flowdesk-compiler-") as temp_dir:
         process = await asyncio.create_subprocess_exec(
@@ -876,33 +981,13 @@ async def _execute_python(code: str, stdin: str, *, args: list[str] | None = Non
             )
 
     duration_ms = round((time.perf_counter() - started) * 1000)
-    stdout = stdout_bytes.decode("utf-8", errors="replace")
-    stderr_raw = stderr_bytes.decode("utf-8", errors="replace")
-
-    # 63. parse the rusage marker line out of stderr (memory + cpu time)
-    memory_kb, cpu_time_ms = None, None
-    match = re.search(r"\x00FLOWDESK_RUSAGE\x00(\d+)\x00([\d.]+)\x00", stderr_raw)
-    if match:
-        memory_kb = int(match.group(1))
-        cpu_time_ms = round(float(match.group(2)) * 1000)
-        stderr_raw = stderr_raw[: match.start()] + stderr_raw[match.end():]
-
-    stderr_raw = strip_ansi(stderr_raw)  # 64. sanitize for safe frontend rendering
-    stdout = strip_ansi(stdout)
-
-    stdout, stdout_trunc = _truncate(stdout, max_output)
-    stderr, stderr_trunc = _truncate(stderr_raw, max_output)
-
-    exit_signal = -process.returncode if process.returncode and process.returncode < 0 else None  # 65
-    status = "success" if process.returncode == 0 else "error"
-    _bump("runs_success" if status == "success" else "runs_error")
-
-    return RunResult(
-        status=status, stdout=stdout, stderr=stderr,
-        exit_code=process.returncode, duration_ms=duration_ms,
-        truncated=stdout_trunc or stderr_trunc,
-        memory_kb=memory_kb, cpu_time_ms=cpu_time_ms,
-        exit_signal=exit_signal, warnings=warnings,
+    return _decode_python_run(
+        returncode=process.returncode,
+        stdout_bytes=stdout_bytes,
+        stderr_bytes=stderr_bytes,
+        duration_ms=duration_ms,
+        warnings=warnings,
+        max_output=max_output,
     )
 
 

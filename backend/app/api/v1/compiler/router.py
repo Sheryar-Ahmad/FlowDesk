@@ -10,6 +10,7 @@ from app.api.v1.compiler.schemas import (
     CompilerRunRequest,
     CompilerTestCaseRequest,
 )
+from app.config import get_settings
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import COMPILER_LIMIT, limiter
 from app.database.connection import get_db
@@ -31,6 +32,7 @@ from app.services.compiler_service import (
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+settings = get_settings()
 
 
 def compiler_value_error_status(exc: ValueError) -> int:
@@ -38,6 +40,15 @@ def compiler_value_error_status(exc: ValueError) -> int:
     if "limit reached" in message:
         return status.HTTP_429_TOO_MANY_REQUESTS
     return status.HTTP_400_BAD_REQUEST
+
+
+def compiler_internal_error_detail(exc: Exception, fallback: str) -> str:
+    if settings.DEBUG:
+        message = str(exc).strip()
+        if message:
+            return message[:800]
+        return exc.__class__.__name__
+    return fallback
 
 
 @router.get("/health")
@@ -217,7 +228,8 @@ async def run_inline(
         raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Compiler inline run error", user_id=current_user.get("id"), error=str(exc))
-        raise HTTPException(status_code=500, detail="Failed to run code.") from exc
+        detail = compiler_internal_error_detail(exc, "Failed to run code.")
+        raise HTTPException(status_code=500, detail=detail) from exc
 
 
 @router.post("/test-cases")
@@ -242,7 +254,8 @@ async def run_compiler_test_cases(
         raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Compiler test case run error", user_id=current_user.get("id"), error=str(exc))
-        raise HTTPException(status_code=500, detail="Failed to run compiler test cases.") from exc
+        detail = compiler_internal_error_detail(exc, "Failed to run compiler test cases.")
+        raise HTTPException(status_code=500, detail=detail) from exc
 
 
 @router.post("/{file_id}/run")
@@ -264,4 +277,5 @@ async def run_saved_file(
         raise HTTPException(status_code=compiler_value_error_status(exc), detail=str(exc)) from exc
     except Exception as exc:
         logger.error("Compiler saved run error", user_id=current_user.get("id"), file_id=file_id, error=str(exc))
-        raise HTTPException(status_code=500, detail="Failed to run compiler file.") from exc
+        detail = compiler_internal_error_detail(exc, "Failed to run compiler file.")
+        raise HTTPException(status_code=500, detail=detail) from exc
