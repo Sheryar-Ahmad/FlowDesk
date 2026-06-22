@@ -8,8 +8,9 @@ import {
   Beaker,
   Code2,
   Copy,
-  Cpu,
+  Cpu,  
   Download,
+  Eye,
   FileCode2,
   Gauge,
   History,
@@ -50,41 +51,11 @@ import {
 const LANGUAGE_OPTIONS: Array<{ value: CompilerLanguage; label: string; monaco: string; template: string }> = [
   { value: "python", label: "Python", monaco: "python", template: 'print("Hello from FlowDesk Compiler")\n' },
   { value: "javascript", label: "JavaScript", monaco: "javascript", template: 'console.log("Hello from FlowDesk Compiler")\n' },
-  { value: "typescript", label: "TypeScript", monaco: "typescript", template: 'const message: string = "Hello from FlowDesk Compiler"\nconsole.log(message)\n' },
   { value: "java", label: "Java", monaco: "java", template: 'class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from FlowDesk Compiler");\n  }\n}\n' },
   { value: "cpp", label: "C++", monaco: "cpp", template: '#include <iostream>\nint main() {\n  std::cout << "Hello from FlowDesk Compiler\\n";\n  return 0;\n}\n' },
   { value: "c", label: "C", monaco: "c", template: '#include <stdio.h>\nint main() {\n  printf("Hello from FlowDesk Compiler\\n");\n  return 0;\n}\n' },
-  { value: "go", label: "Go", monaco: "go", template: 'package main\n\nimport "fmt"\n\nfunc main() {\n  fmt.Println("Hello from FlowDesk Compiler")\n}\n' },
-  { value: "rust", label: "Rust", monaco: "rust", template: 'fn main() {\n    println!("Hello from FlowDesk Compiler");\n}\n' },
-  { value: "csharp", label: "C#", monaco: "csharp", template: 'using System;\n\nclass Program {\n  static void Main() {\n    Console.WriteLine("Hello from FlowDesk Compiler");\n  }\n}\n' },
-  { value: "php", label: "PHP", monaco: "php", template: '<?php\necho "Hello from FlowDesk Compiler\\n";\n' },
-  { value: "ruby", label: "Ruby", monaco: "ruby", template: 'puts "Hello from FlowDesk Compiler"\n' },
-  { value: "sql", label: "SQL", monaco: "sql", template: "SELECT 'Hello from FlowDesk Compiler' AS message;\n" },
-  { value: "bash", label: "Bash", monaco: "shell", template: 'echo "Hello from FlowDesk Compiler"\n' },
-  { value: "kotlin", label: "Kotlin", monaco: "kotlin", template: 'fun main() {\n  println("Hello from FlowDesk Compiler")\n}\n' },
-  { value: "swift", label: "Swift", monaco: "swift", template: 'print("Hello from FlowDesk Compiler")\n' },
-  { value: "dart", label: "Dart", monaco: "dart", template: 'void main() {\n  print("Hello from FlowDesk Compiler");\n}\n' },
-  { value: "scala", label: "Scala", monaco: "scala", template: 'object Main extends App {\n  println("Hello from FlowDesk Compiler")\n}\n' },
-  { value: "r", label: "R", monaco: "r", template: 'cat("Hello from FlowDesk Compiler\\n")\n' },
-  { value: "perl", label: "Perl", monaco: "perl", template: 'print "Hello from FlowDesk Compiler\\n";\n' },
-  { value: "lua", label: "Lua", monaco: "lua", template: 'print("Hello from FlowDesk Compiler")\n' },
-  { value: "haskell", label: "Haskell", monaco: "haskell", template: 'main :: IO ()\nmain = putStrLn "Hello from FlowDesk Compiler"\n' },
-  { value: "elixir", label: "Elixir", monaco: "elixir", template: 'IO.puts("Hello from FlowDesk Compiler")\n' },
-  { value: "erlang", label: "Erlang", monaco: "erlang", template: '-module(main).\n-export([main/0]).\n\nmain() -> io:format("Hello from FlowDesk Compiler~n").\n' },
-  { value: "clojure", label: "Clojure", monaco: "clojure", template: '(println "Hello from FlowDesk Compiler")\n' },
-  { value: "fsharp", label: "F#", monaco: "fsharp", template: 'printfn "Hello from FlowDesk Compiler"\n' },
-  { value: "powershell", label: "PowerShell", monaco: "powershell", template: 'Write-Output "Hello from FlowDesk Compiler"\n' },
-  { value: "groovy", label: "Groovy", monaco: "groovy", template: 'println "Hello from FlowDesk Compiler"\n' },
-  { value: "julia", label: "Julia", monaco: "julia", template: 'println("Hello from FlowDesk Compiler")\n' },
-  { value: "matlab", label: "MATLAB", monaco: "matlab", template: 'disp("Hello from FlowDesk Compiler")\n' },
-  { value: "objectivec", label: "Objective-C", monaco: "objective-c", template: '#import <Foundation/Foundation.h>\n\nint main() {\n  @autoreleasepool {\n    NSLog(@"Hello from FlowDesk Compiler");\n  }\n  return 0;\n}\n' },
-  { value: "vb", label: "Visual Basic", monaco: "vb", template: 'Module Program\n  Sub Main()\n    Console.WriteLine("Hello from FlowDesk Compiler")\n  End Sub\nEnd Module\n' },
-  { value: "html", label: "HTML", monaco: "html", template: '<!doctype html>\n<html>\n  <body>\n    <h1>Hello from FlowDesk Compiler</h1>\n  </body>\n</html>\n' },
+  { value: "html", label: "HTML", monaco: "html", template: '<!doctype html>\n<html>\n  <head>\n    <title>FlowDesk Preview</title>\n    <style>\n      body { font-family: system-ui, sans-serif; padding: 32px; }\n      h1 { color: #6366f1; }\n    </style>\n  </head>\n  <body>\n    <h1>Hello from FlowDesk Compiler</h1>\n    <p>Edit this HTML and press Run to refresh the preview.</p>\n  </body>\n</html>\n' },
   { value: "css", label: "CSS", monaco: "css", template: 'body {\n  font-family: system-ui, sans-serif;\n  color: #f8fafc;\n  background: #080b14;\n}\n' },
-  { value: "markdown", label: "Markdown", monaco: "markdown", template: '# Hello from FlowDesk Compiler\n\nWrite notes, docs, and specs here.\n' },
-  { value: "yaml", label: "YAML", monaco: "yaml", template: 'name: FlowDesk Compiler\nstatus: ready\n' },
-  { value: "json", label: "JSON", monaco: "json", template: '{\n  "message": "Hello from FlowDesk Compiler"\n}\n' },
-  { value: "xml", label: "XML", monaco: "xml", template: '<message>Hello from FlowDesk Compiler</message>\n' },
 ]
 
 const languageByValue = new Map(LANGUAGE_OPTIONS.map(option => [option.value, option]))
@@ -92,45 +63,15 @@ const languageByValue = new Map(LANGUAGE_OPTIONS.map(option => [option.value, op
 const extensionByLanguage: Record<CompilerLanguage, string> = {
   python: "py",
   javascript: "js",
-  typescript: "ts",
   java: "java",
   cpp: "cpp",
   c: "c",
-  go: "go",
-  rust: "rs",
-  csharp: "cs",
-  php: "php",
-  ruby: "rb",
-  sql: "sql",
-  bash: "sh",
-  kotlin: "kt",
-  swift: "swift",
-  dart: "dart",
-  scala: "scala",
-  r: "r",
-  perl: "pl",
-  lua: "lua",
-  haskell: "hs",
-  elixir: "exs",
-  erlang: "erl",
-  clojure: "clj",
-  fsharp: "fs",
-  powershell: "ps1",
-  groovy: "groovy",
-  julia: "jl",
-  matlab: "m",
-  objectivec: "m",
-  vb: "vb",
   html: "html",
   css: "css",
-  markdown: "md",
-  yaml: "yml",
-  json: "json",
-  xml: "xml",
 }
 
 type MobileTab = "files" | "editor" | "io"
-type IoTab = "output" | "tests" | "history"
+type IoTab = "output" | "preview" | "tests" | "history"
 type RunIntent = { fresh?: boolean }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -181,6 +122,27 @@ function parseProgramArgs(rawArgs: string): string[] {
     match = pattern.exec(rawArgs)
   }
   return args.filter(Boolean)
+}
+
+function isPreviewLanguage(language: CompilerLanguage) {
+  return language === "html" || language === "css"
+}
+
+function buildPreviewDocument(language: CompilerLanguage, source: string) {
+  if (language === "html") return source
+  return `<!doctype html>
+<html>
+  <head>
+    <style>${source}</style>
+  </head>
+  <body>
+    <main class="flowdesk-preview-card">
+      <h1>FlowDesk CSS Preview</h1>
+      <p>Your CSS is applied to this sample document.</p>
+      <button>Sample button</button>
+    </main>
+  </body>
+</html>`
 }
 
 export default function CompilerWorkspace() {
@@ -313,7 +275,7 @@ export default function CompilerWorkspace() {
     setRunResult(null)
     setTestResults(null)
     setShowProgramInput(Boolean(file.stdin.trim()))
-    setIoTab("output")
+    setIoTab(isPreviewLanguage(file.language) ? "preview" : "output")
     setMobileTab("editor")
   }
 
@@ -334,6 +296,7 @@ export default function CompilerWorkspace() {
 
   const handleLanguageChange = (nextLanguage: CompilerLanguage) => {
     setLanguage(nextLanguage)
+    setIoTab(isPreviewLanguage(nextLanguage) ? "preview" : "output")
     if (!activeFile && !code.trim()) {
       setCode(languageByValue.get(nextLanguage)?.template ?? "")
       setTitle(makeUntitled(nextLanguage))
@@ -392,6 +355,31 @@ export default function CompilerWorkspace() {
     }
     const cleanTitle = title.trim() || makeUntitled(language)
     const args = parseProgramArgs(programArgs)
+
+    if (isPreviewLanguage(language)) {
+      const previewResult: CompilerRunResult = {
+        status: "success",
+        stdout: "",
+        stderr: "",
+        output: `${languageByValue.get(language)?.label ?? language} preview refreshed.`,
+        exit_code: 0,
+        duration_ms: 0,
+        timed_out: false,
+        truncated: false,
+        language,
+        message: null,
+        warnings: [],
+        cached: false,
+      }
+      setRunResult(previewResult)
+      setOutput(previewResult.output)
+      setIoTab("preview")
+      setMobileTab("io")
+      setLastRunMode(activeId ? "saved" : "draft")
+      toast.success("Preview refreshed")
+      return
+    }
+
     setRunning(true)
     setRunResult(null)
     setIoTab("output")
@@ -530,6 +518,10 @@ export default function CompilerWorkspace() {
   }
 
   const runTests = async () => {
+    if (isPreviewLanguage(language)) {
+      toast.error("HTML and CSS use the preview panel instead of test cases.")
+      return
+    }
     if (!code.trim()) {
       toast.error("Write some code before running tests.")
       return
@@ -619,6 +611,11 @@ export default function CompilerWorkspace() {
   }
 
   const selectedLanguage = languageByValue.get(language)
+  const previewLanguage = isPreviewLanguage(language)
+  const previewDocument = useMemo(
+    () => previewLanguage ? buildPreviewDocument(language, code) : "",
+    [code, language, previewLanguage],
+  )
   const executableLanguageCount = useMemo(
     () => runtimes.filter(item => item.executable).length,
     [runtimes],
@@ -630,7 +627,7 @@ export default function CompilerWorkspace() {
       characters: code.length,
     }
   }, [code])
-  const runtimeStatus = runtime?.executable ? "Runnable" : "Edit only"
+  const runtimeStatus = previewLanguage ? "Preview" : runtime?.executable ? "Runnable" : "Edit only"
   const programArgsList = useMemo(() => parseProgramArgs(programArgs), [programArgs])
 
   // Shared sub-views used by both the desktop grid and mobile tabs.
@@ -884,18 +881,32 @@ export default function CompilerWorkspace() {
               ioTab === "output" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
             ].join(" ")}
           >
-            <TerminalSquare size={13} /> Output
+            <TerminalSquare size={13} /> Terminal
           </button>
-          <button
-            type="button"
-            onClick={() => setIoTab("tests")}
-            className={[
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              ioTab === "tests" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
-            ].join(" ")}
-          >
-            <Beaker size={13} /> Test cases
-          </button>
+          {previewLanguage && (
+            <button
+              type="button"
+              onClick={() => setIoTab("preview")}
+              className={[
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                ioTab === "preview" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
+              ].join(" ")}
+            >
+              <Eye size={13} /> Preview
+            </button>
+          )}
+          {!previewLanguage && (
+            <button
+              type="button"
+              onClick={() => setIoTab("tests")}
+              className={[
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                ioTab === "tests" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
+              ].join(" ")}
+            >
+              <Beaker size={13} /> Test cases
+            </button>
+          )}
           <button
             type="button"
             onClick={openHistoryTab}
@@ -942,7 +953,7 @@ export default function CompilerWorkspace() {
               </div>
             </div>
             <pre className="min-h-36 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
-              {output || runResult?.message || "Run your code to see output here."}
+              {output || runResult?.message || "Run your code to see terminal output here."}
             </pre>
             {runResult && (
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
@@ -963,6 +974,21 @@ export default function CompilerWorkspace() {
               </div>
             )}
           </>
+        )}
+
+        {ioTab === "preview" && previewLanguage && (
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600">
+              <span>Browser Preview</span>
+              <span>{selectedLanguage?.label ?? language}</span>
+            </div>
+            <iframe
+              title="FlowDesk browser preview"
+              srcDoc={previewDocument}
+              sandbox="allow-forms allow-modals allow-popups allow-scripts"
+              className="h-[320px] w-full bg-white sm:h-[420px]"
+            />
+          </div>
         )}
 
         {ioTab === "tests" && (
@@ -1084,7 +1110,7 @@ export default function CompilerWorkspace() {
                 </span>
               </div>
               <p className="truncate text-xs text-slate-500">
-                {LANGUAGE_OPTIONS.length} languages - {executableLanguageCount || 1} runnable now
+                {LANGUAGE_OPTIONS.length} focused languages - {executableLanguageCount || 1} ready now
               </p>
             </div>
           </div>
@@ -1132,7 +1158,7 @@ export default function CompilerWorkspace() {
           {([
             { id: "files", label: "Files", icon: FileCode2 },
             { id: "editor", label: "Editor", icon: Code2 },
-            { id: "io", label: "Run & Output", icon: TerminalSquare },
+            { id: "io", label: "Terminal", icon: TerminalSquare },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -1157,10 +1183,12 @@ export default function CompilerWorkspace() {
         </div>
       </main>
 
-      <main className="hidden flex-1 gap-4 p-4 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:p-6 xl:grid-cols-[300px_minmax(0,1fr)_420px]">
+      <main className="hidden flex-1 gap-4 p-4 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:p-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <div className="h-[calc(100svh-104px)]">{FileSidebar}</div>
-        <div className="h-[calc(100svh-104px)] min-w-0">{EditorPanel}</div>
-        <div className="h-[calc(100svh-104px)] overflow-y-auto">{IOPanel}</div>
+        <div className="grid h-[calc(100svh-104px)] min-w-0 grid-rows-[minmax(0,1fr)_minmax(260px,34vh)] gap-4">
+          <div className="min-h-0">{EditorPanel}</div>
+          <div className="min-h-0 overflow-hidden">{IOPanel}</div>
+        </div>
       </main>
     </div>
   )

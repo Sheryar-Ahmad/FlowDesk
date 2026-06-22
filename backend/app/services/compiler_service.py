@@ -56,7 +56,7 @@ BANNED_IMPORT_PATTERNS = (         # 11. defense-in-depth import blocklist
 
 LANGUAGE_ALIASES = {                # 12. auto-normalize sloppy language input
     "py": "python", "py3": "python", "js": "javascript",
-    "ts": "typescript", "c++": "cpp", "golang": "go",
+    "c++": "cpp",
 }
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -226,76 +226,28 @@ if resource is not None:
 RUNTIME_LABELS = {
     "python": "Python 3 sandbox",
     "javascript": "JavaScript",
-    "typescript": "TypeScript",
     "java": "Java",
     "cpp": "C++",
     "c": "C",
-    "go": "Go",
-    "rust": "Rust",
-    "csharp": "C#",
-    "php": "PHP",
-    "ruby": "Ruby",
-    "sql": "SQL",
-    "bash": "Bash",
-    "kotlin": "Kotlin",
-    "swift": "Swift",
-    "dart": "Dart",
-    "scala": "Scala",
-    "r": "R",
-    "perl": "Perl",
-    "lua": "Lua",
-    "haskell": "Haskell",
-    "elixir": "Elixir",
-    "erlang": "Erlang",
-    "clojure": "Clojure",
-    "fsharp": "F#",
-    "powershell": "PowerShell",
-    "groovy": "Groovy",
-    "julia": "Julia",
-    "matlab": "MATLAB",
-    "objectivec": "Objective-C",
-    "vb": "Visual Basic",
     "html": "HTML",
     "css": "CSS",
-    "markdown": "Markdown",
-    "yaml": "YAML",
-    "json": "JSON",
-    "xml": "XML",
 }
 
 LOCAL_RUNTIME_COMMANDS = {
     "python": ("python",),
     "javascript": ("node",),
     "java": ("javac", "java"),
+    "c": ("gcc",),
+    "cpp": ("g++",),
 }
+
+FRONTEND_PREVIEW_LANGUAGES = {"html", "css"}
 
 PISTON_LANGUAGE_MAP = {
     "javascript": ("javascript", "main.js"),
-    "typescript": ("typescript", "main.ts"),
     "java": ("java", "Main.java"),
     "cpp": ("cpp", "main.cpp"),
     "c": ("c", "main.c"),
-    "go": ("go", "main.go"),
-    "rust": ("rust", "main.rs"),
-    "csharp": ("csharp", "Main.cs"),
-    "php": ("php", "main.php"),
-    "ruby": ("ruby", "main.rb"),
-    "bash": ("bash", "main.sh"),
-    "kotlin": ("kotlin", "Main.kt"),
-    "swift": ("swift", "main.swift"),
-    "dart": ("dart", "main.dart"),
-    "scala": ("scala", "Main.scala"),
-    "r": ("r", "main.r"),
-    "perl": ("perl", "main.pl"),
-    "lua": ("lua", "main.lua"),
-    "haskell": ("haskell", "main.hs"),
-    "elixir": ("elixir", "main.exs"),
-    "erlang": ("erlang", "main.erl"),
-    "clojure": ("clojure", "main.clj"),
-    "fsharp": ("fsharp", "main.fs"),
-    "powershell": ("powershell", "main.ps1"),
-    "groovy": ("groovy", "main.groovy"),
-    "julia": ("julia", "main.jl"),
 }
 
 
@@ -366,9 +318,10 @@ def detect_language(code: str) -> str:  # 35. best-effort auto-detection for "pa
         "python": (r"^\s*def \w+\(.*\):", r"^\s*import \w+", r"print\("),
         "javascript": (r"\bconsole\.log\(", r"\bfunction\s+\w+\(", r"=>"),
         "java": (r"\bpublic\s+class\b", r"\bSystem\.out\.println\("),
-        "cpp": (r"#include\s*<", r"\bstd::"),
-        "go": (r"\bfunc\s+main\(\)", r"\bpackage\s+main"),
-        "rust": (r"\bfn\s+main\(\)", r"\blet\s+mut\b"),
+        "cpp": (r"#include\s*<", r"\bstd::", r"\bcout\s*<<"),
+        "c": (r"#include\s*<stdio\.h>", r"\bprintf\("),
+        "html": (r"<!doctype html", r"<html[\s>]", r"<body[\s>]"),
+        "css": (r"^\s*[.#]?[a-zA-Z][\w-]*\s*\{", r":\s*[^;]+;"),
     }
     scores = {lang: sum(bool(re.search(p, code, re.M)) for p in pats) for lang, pats in signals.items()}
     best = max(scores, key=scores.get)
@@ -420,6 +373,10 @@ def local_runtime_reason(language: str) -> str | None:
     if not missing:
         if language == "java":
             return "Runs locally through the installed JDK with FlowDesk timeouts."
+        if language == "c":
+            return "Compiles locally with GCC and runs with FlowDesk timeouts."
+        if language == "cpp":
+            return "Compiles locally with G++ and runs with FlowDesk timeouts."
         if language == "javascript":
             return "Runs locally through Node.js with FlowDesk timeouts."
         return "Runs locally in the FlowDesk sandbox."
@@ -912,11 +869,14 @@ def list_runtimes() -> list[dict[str, Any]]:
     external_runner_enabled = bool(settings.COMPILER_PISTON_API_URL.strip())
     base = []
     for language, label in RUNTIME_LABELS.items():
+        is_preview = language in FRONTEND_PREVIEW_LANGUAGES
         is_local = has_local_runtime(language)
         is_external = language in PISTON_LANGUAGE_MAP and external_runner_enabled
-        is_executable = execution_enabled and (is_local or is_external)
+        is_executable = is_preview or (execution_enabled and (is_local or is_external))
         reason = None
-        if (language in LOCAL_RUNTIME_COMMANDS or language in PISTON_LANGUAGE_MAP) and not execution_enabled:
+        if is_preview:
+            reason = "Preview renders instantly in the browser."
+        elif (language in LOCAL_RUNTIME_COMMANDS or language in PISTON_LANGUAGE_MAP) and not execution_enabled:
             reason = "Compiler execution is disabled on this server."
         elif is_local:
             reason = local_runtime_reason(language)
@@ -934,7 +894,7 @@ def list_runtimes() -> list[dict[str, Any]]:
         })
 
     for entry in base:  # 58. live queue depth surfaced per runtime
-        entry["queue"] = get_queue_stats() if entry["executable"] else None
+        entry["queue"] = get_queue_stats() if entry["executable"] and entry["language"] not in FRONTEND_PREVIEW_LANGUAGES else None
     return base
 
 
@@ -1239,6 +1199,111 @@ async def _execute_java(code: str, stdin: str, *, args: list[str] | None = None)
         )
 
 
+def _executable_path(temp_dir: str, stem: str) -> str:
+    suffix = ".exe" if os.name == "nt" else ""
+    return os.path.join(temp_dir, f"{stem}{suffix}")
+
+
+async def _execute_compiled_c_family(
+    *,
+    language: str,
+    code: str,
+    stdin: str,
+    args: list[str] | None = None,
+) -> RunResult:
+    compiler_name = "gcc" if language == "c" else "g++"
+    compiler_path = shutil.which(compiler_name)
+    if not compiler_path:
+        label = "GCC" if language == "c" else "G++"
+        return RunResult(
+            status="unsupported",
+            stdout="",
+            stderr="",
+            exit_code=None,
+            duration_ms=0,
+            message=f"{language.upper()} needs {label} installed on the backend.",
+        )
+
+    started = time.perf_counter()
+    timeout_seconds = min(settings.COMPILER_TIMEOUT_SECONDS, COMPILER_TIMEOUT_SECONDS)
+    max_output = min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS)
+    extension = "c" if language == "c" else "cpp"
+    standard = "c11" if language == "c" else "c++17"
+
+    with tempfile.TemporaryDirectory(prefix=f"flowdesk-{language}-") as temp_dir:
+        source_path = os.path.join(temp_dir, f"main.{extension}")
+        executable_path = _executable_path(temp_dir, "main")
+        with open(source_path, "w", encoding="utf-8", newline="\n") as source_file:
+            source_file.write(code)
+
+        compile_result = await asyncio.to_thread(
+            _run_process_blocking,
+            [
+                compiler_path,
+                source_path,
+                "-std=" + standard,
+                "-O2",
+                "-pipe",
+                "-Wall",
+                "-Wextra",
+                "-o",
+                executable_path,
+            ],
+            stdin="",
+            cwd=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=started,
+        )
+        if compile_result.status != "success":
+            return RunResult(
+                status=compile_result.status,
+                stdout=compile_result.stdout,
+                stderr=compile_result.stderr,
+                exit_code=compile_result.exit_code,
+                duration_ms=compile_result.duration_ms,
+                timed_out=compile_result.timed_out,
+                truncated=compile_result.truncated,
+                message=compile_result.message or f"{language.upper()} compilation failed.",
+                warnings=compile_result.warnings,
+            )
+
+        run_started = time.perf_counter()
+        run_result = await asyncio.to_thread(
+            _run_process_blocking,
+            [executable_path, *(args or [])],
+            stdin=stdin,
+            cwd=temp_dir,
+            timeout_seconds=timeout_seconds,
+            max_output=max_output,
+            started=run_started,
+            env={**os.environ, "NO_COLOR": "1"},
+            warnings=compile_result.warnings,
+        )
+        stdout, stdout_trunc = _truncate(
+            "\n".join(part for part in [compile_result.stdout.strip(), run_result.stdout.strip()] if part),
+            max_output,
+        )
+        stderr, stderr_trunc = _truncate(
+            "\n".join(part for part in [compile_result.stderr.strip(), run_result.stderr.strip()] if part),
+            max_output,
+        )
+        return RunResult(
+            status=run_result.status,
+            stdout=stdout,
+            stderr=stderr,
+            exit_code=run_result.exit_code,
+            duration_ms=round((time.perf_counter() - started) * 1000),
+            timed_out=run_result.timed_out,
+            truncated=compile_result.truncated or run_result.truncated or stdout_trunc or stderr_trunc,
+            message=run_result.message,
+            memory_kb=run_result.memory_kb,
+            cpu_time_ms=run_result.cpu_time_ms,
+            exit_signal=run_result.exit_signal,
+            warnings=[*compile_result.warnings, *run_result.warnings],
+        )
+
+
 async def _execute_external_runner(language: str, code: str, stdin: str) -> RunResult:
     started = time.perf_counter()
     runner_url = settings.COMPILER_PISTON_API_URL.strip().rstrip("/")
@@ -1371,6 +1436,8 @@ async def run_code(
             result = await _execute_javascript(code, stdin, args=args)
         elif language == "java" and has_local_runtime("java"):
             result = await _execute_java(code, stdin, args=args)
+        elif language in {"c", "cpp"} and has_local_runtime(language):
+            result = await _execute_compiled_c_family(language=language, code=code, stdin=stdin, args=args)
         elif language in PISTON_LANGUAGE_MAP and settings.COMPILER_PISTON_API_URL.strip():
             result = await _execute_external_runner(language, code, stdin)
         else:
