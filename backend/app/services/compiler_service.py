@@ -1371,7 +1371,7 @@ async def _execute_external_runner(language: str, code: str, stdin: str) -> RunR
     compile_code = compile_result.get("code")
     run_code_value = run_result.get("code")
     exit_code = run_code_value if run_code_value is not None else compile_code
-    status = "success" if exit_code in {0, None} and not stderr else "error"
+    status = "success" if exit_code in {0, None} else "error"
     if compile_code not in {0, None}:
         status = "error"
 

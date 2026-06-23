@@ -105,6 +105,13 @@ function resultBadgeClasses(status?: string) {
   }
 }
 
+function normalizeRunResult(result: CompilerRunResult): CompilerRunResult {
+  if (result.exit_code === 0 && result.status === "error") {
+    return { ...result, status: "success", message: null }
+  }
+  return result
+}
+
 // Debounce so the file list isn't re-filtered on every keystroke
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -410,8 +417,9 @@ export default function CompilerWorkspace() {
         response = await runCompilerCode({ language, code, stdin, args, use_cache: useCache })
       }
 
-      setRunResult(response.result)
-      setOutput(response.result.output || response.result.message || "")
+      const normalizedResult = normalizeRunResult(response.result)
+      setRunResult(normalizedResult)
+      setOutput(normalizedResult.output || normalizedResult.message || "")
 
       const runAt = new Date().toISOString()
       if (activeFile) {
@@ -421,7 +429,7 @@ export default function CompilerWorkspace() {
           language,
           code,
           stdin,
-          output: response.result.output,
+          output: normalizedResult.output,
           run_count: activeFile.run_count + 1,
           last_run_at: runAt,
           updated_at: runAt,
@@ -433,24 +441,24 @@ export default function CompilerWorkspace() {
             setTitle(created.file.title)
             upsertLocalFile({
               ...created.file,
-              output: response.result.output,
+              output: normalizedResult.output,
               run_count: 1,
               last_run_at: runAt,
               updated_at: runAt,
             })
-            return updateCompilerFile(created.file.id, { output: response.result.output })
+            return updateCompilerFile(created.file.id, { output: normalizedResult.output })
           })
           .catch(() => undefined)
       }
 
-      if (response.result.status === "success") {
-        toast.success(response.result.cached ? "Code ran from cache" : fresh ? "Fresh run complete" : "Code ran successfully")
-      } else if (response.result.status === "unsupported" || response.result.status === "disabled") {
-        toast(response.result.message ?? "Runtime unavailable right now")
-      } else if (response.result.status === "timeout") {
-        toast.error(response.result.message ?? "Execution timed out")
+      if (normalizedResult.status === "success") {
+        toast.success(normalizedResult.cached ? "Code ran from cache" : fresh ? "Fresh run complete" : "Code ran successfully")
+      } else if (normalizedResult.status === "unsupported" || normalizedResult.status === "disabled") {
+        toast(normalizedResult.message ?? "Runtime unavailable right now")
+      } else if (normalizedResult.status === "timeout") {
+        toast.error(normalizedResult.message ?? "Execution timed out")
       } else {
-        toast.error(response.result.message ?? "Code finished with errors")
+        toast.error(normalizedResult.message ?? "Code finished with errors")
       }
 
       getRunStats().then(setStats).catch(() => undefined)
@@ -649,6 +657,14 @@ export default function CompilerWorkspace() {
       characters: code.length,
     }
   }, [code])
+  const terminalText = useMemo(() => {
+    if (!runResult) return output || "Run your code to see terminal output here."
+    const body = output || runResult.message || ""
+    const exitText = runResult.exit_code === null || runResult.exit_code === undefined
+      ? "Process finished without an exit code"
+      : `Process finished with exit code ${runResult.exit_code}`
+    return [body, exitText].filter(Boolean).join("\n\n")
+  }, [output, runResult])
   const runtimeStatus = previewLanguage ? "Preview" : runtime?.executable ? "Runnable" : "Edit only"
   const programArgsList = useMemo(() => parseProgramArgs(programArgs), [programArgs])
 
@@ -994,7 +1010,7 @@ export default function CompilerWorkspace() {
               </div>
             </div>
             <pre className="min-h-36 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
-              {output || runResult?.message || "Run your code to see terminal output here."}
+              {terminalText}
             </pre>
             {runResult && (
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
