@@ -5,132 +5,109 @@ import axios from "axios"
 import toast from "react-hot-toast"
 import {
   ArrowLeft,
-  Beaker,
-  Code2,
-  Copy,
-  Cpu,  
-  Download,
-  Eye,
-  FileCode2,
-  Gauge,
-  History,
+  FilePlus2,
+  FolderOpen,
   Loader2,
   Maximize2,
   Minimize2,
-  Pin,
   Play,
-  Plus,
-  RefreshCw,
   Save,
-  Search,
-  ShieldCheck,
+  Settings2,
   TerminalSquare,
-  Trash2,
-  Zap,
 } from "lucide-react"
 
 import {
   createCompilerFile,
-  deleteCompilerFile,
-  duplicateCompilerFile,
   getCompilerFiles,
   getCompilerRuntimes,
-  getRunHistory,
-  getRunStats,
   runCompilerCode,
   runCompilerFile,
-  runTestCases,
   updateCompilerFile,
   type CompilerFile,
   type CompilerLanguage,
-  type CompilerRunEvent,
   type CompilerRunResult,
-  type CompilerRunStats,
   type CompilerRuntime,
-  type CompilerTestCaseResult,
 } from "../../services/api/compiler.api"
 
-const LANGUAGE_OPTIONS: Array<{ value: CompilerLanguage; label: string; monaco: string; template: string }> = [
-  { value: "python", label: "Python", monaco: "python", template: 'print("Hello from FlowDesk Compiler")\n' },
-  { value: "javascript", label: "JavaScript", monaco: "javascript", template: 'console.log("Hello from FlowDesk Compiler")\n' },
-  { value: "java", label: "Java", monaco: "java", template: 'class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from FlowDesk Compiler");\n  }\n}\n' },
-  { value: "cpp", label: "C++", monaco: "cpp", template: '#include <iostream>\nint main() {\n  std::cout << "Hello from FlowDesk Compiler\\n";\n  return 0;\n}\n' },
-  { value: "c", label: "C", monaco: "c", template: '#include <stdio.h>\nint main() {\n  printf("Hello from FlowDesk Compiler\\n");\n  return 0;\n}\n' },
-  { value: "html", label: "HTML", monaco: "html", template: '<!doctype html>\n<html>\n  <head>\n    <title>FlowDesk Preview</title>\n    <style>\n      body { font-family: system-ui, sans-serif; padding: 32px; }\n      h1 { color: #6366f1; }\n    </style>\n  </head>\n  <body>\n    <h1>Hello from FlowDesk Compiler</h1>\n    <p>Edit this HTML and press Run to refresh the preview.</p>\n  </body>\n</html>\n' },
-  { value: "css", label: "CSS", monaco: "css", template: 'body {\n  font-family: system-ui, sans-serif;\n  color: #f8fafc;\n  background: #080b14;\n}\n' },
+type LanguageOption = {
+  value: CompilerLanguage
+  label: string
+  shortLabel: string
+  filename: string
+  monaco: string
+  template: string
+}
+
+const LANGUAGE_OPTIONS: LanguageOption[] = [
+  {
+    value: "python",
+    label: "Python",
+    shortLabel: "Py",
+    filename: "main.py",
+    monaco: "python",
+    template: 'print("Hello from FlowDesk")\n',
+  },
+  {
+    value: "javascript",
+    label: "JavaScript",
+    shortLabel: "JS",
+    filename: "main.js",
+    monaco: "javascript",
+    template: 'console.log("Hello from FlowDesk")\n',
+  },
+  {
+    value: "java",
+    label: "Java",
+    shortLabel: "Java",
+    filename: "Main.java",
+    monaco: "java",
+    template: 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from FlowDesk");\n  }\n}\n',
+  },
+  {
+    value: "c",
+    label: "C",
+    shortLabel: "C",
+    filename: "main.c",
+    monaco: "c",
+    template: '#include <stdio.h>\n\nint main(void) {\n  printf("Hello from FlowDesk\\n");\n  return 0;\n}\n',
+  },
+  {
+    value: "cpp",
+    label: "C++",
+    shortLabel: "C++",
+    filename: "main.cpp",
+    monaco: "cpp",
+    template: '#include <iostream>\n\nint main() {\n  std::cout << "Hello from FlowDesk\\n";\n  return 0;\n}\n',
+  },
+  {
+    value: "html",
+    label: "HTML",
+    shortLabel: "HTML",
+    filename: "index.html",
+    monaco: "html",
+    template: '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <title>FlowDesk Preview</title>\n</head>\n<body>\n  <h1>Hello from FlowDesk</h1>\n</body>\n</html>\n',
+  },
+  {
+    value: "css",
+    label: "CSS",
+    shortLabel: "CSS",
+    filename: "styles.css",
+    monaco: "css",
+    template: 'body {\n  margin: 0;\n  padding: 2rem;\n  font-family: system-ui, sans-serif;\n  color: #111827;\n  background: #f8fafc;\n}\n',
+  },
 ]
 
 const languageByValue = new Map(LANGUAGE_OPTIONS.map(option => [option.value, option]))
-
-const extensionByLanguage: Record<CompilerLanguage, string> = {
-  python: "py",
-  javascript: "js",
-  java: "java",
-  cpp: "cpp",
-  c: "c",
-  html: "html",
-  css: "css",
-}
-
-type MobileTab = "files" | "editor" | "io"
-type IoTab = "output" | "preview" | "tests" | "history"
-type RunIntent = { fresh?: boolean }
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
     const detail = error.response?.data?.detail
     if (typeof detail === "string") return detail
+    if (detail && typeof detail === "object" && "message" in detail && typeof detail.message === "string") {
+      return detail.message
+    }
   }
   return error instanceof Error ? error.message : fallback
-}
-
-function makeUntitled(language: CompilerLanguage) {
-  const label = languageByValue.get(language)?.label ?? "Code"
-  return `Untitled ${label}`
-}
-
-function resultBadgeClasses(status?: string) {
-  switch (status) {
-    case "success":
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-    case "timeout":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-300"
-    case "unsupported":
-    case "disabled":
-      return "border-sky-500/30 bg-sky-500/10 text-sky-300"
-    case "error":
-      return "border-rose-500/30 bg-rose-500/10 text-rose-300"
-    default:
-      return "border-white/10 bg-white/5 text-slate-400"
-  }
-}
-
-function normalizeRunResult(result: CompilerRunResult): CompilerRunResult {
-  if (result.exit_code === 0 && result.status === "error") {
-    return { ...result, status: "success", message: null }
-  }
-  return result
-}
-
-// Debounce so the file list isn't re-filtered on every keystroke
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const handle = globalThis.setTimeout(() => setDebounced(value), delayMs)
-    return () => globalThis.clearTimeout(handle)
-  }, [value, delayMs])
-  return debounced
-}
-
-function parseProgramArgs(rawArgs: string): string[] {
-  const args: string[] = []
-  const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g
-  let match = pattern.exec(rawArgs)
-  while (match) {
-    args.push(match[1] ?? match[2] ?? match[3] ?? "")
-    match = pattern.exec(rawArgs)
-  }
-  return args.filter(Boolean)
 }
 
 function isPreviewLanguage(language: CompilerLanguage) {
@@ -140,18 +117,42 @@ function isPreviewLanguage(language: CompilerLanguage) {
 function buildPreviewDocument(language: CompilerLanguage, source: string) {
   if (language === "html") return source
   return `<!doctype html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
     <style>${source}</style>
   </head>
   <body>
-    <main class="flowdesk-preview-card">
+    <main>
       <h1>FlowDesk CSS Preview</h1>
-      <p>Your CSS is applied to this sample document.</p>
+      <p>Your stylesheet is applied to this sample page.</p>
       <button>Sample button</button>
     </main>
   </body>
 </html>`
+}
+
+function normalizeRunResult(result: CompilerRunResult): CompilerRunResult {
+  if (result.exit_code === 0 && result.status === "error") {
+    return { ...result, status: "success", message: null }
+  }
+  return result
+}
+
+function statusClasses(status?: CompilerRunResult["status"]) {
+  switch (status) {
+    case "success":
+      return "text-emerald-300"
+    case "error":
+    case "timeout":
+    case "rejected":
+      return "text-rose-300"
+    case "unsupported":
+    case "disabled":
+      return "text-amber-300"
+    default:
+      return "text-slate-500"
+  }
 }
 
 export default function CompilerWorkspace() {
@@ -159,70 +160,38 @@ export default function CompilerWorkspace() {
   const [files, setFiles] = useState<CompilerFile[]>([])
   const [runtimes, setRuntimes] = useState<CompilerRuntime[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [title, setTitle] = useState(makeUntitled("python"))
+  const [title, setTitle] = useState("Untitled Python")
   const [language, setLanguage] = useState<CompilerLanguage>("python")
   const [code, setCode] = useState(languageByValue.get("python")?.template ?? "")
   const [stdin, setStdin] = useState("")
-  const [programArgs, setProgramArgs] = useState("")
   const [output, setOutput] = useState("")
-  const [search, setSearch] = useState("")
+  const [runResult, setRunResult] = useState<CompilerRunResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [running, setRunning] = useState(false)
-  const [runResult, setRunResult] = useState<CompilerRunResult | null>(null)
-  const [lastRunMode, setLastRunMode] = useState<"idle" | "draft" | "saved" | "fresh">("idle")
-  const [mobileTab, setMobileTab] = useState<MobileTab>("editor")
-  const [ioTab, setIoTab] = useState<IoTab>("output")
-  const [showProgramInput, setShowProgramInput] = useState(false)
-  const [terminalOpen, setTerminalOpen] = useState(false)
-  const [isFocusMode, setIsFocusMode] = useState(false)
+  const [showInput, setShowInput] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [mobilePane, setMobilePane] = useState<"code" | "output">("code")
 
-  // Test-case runner state
-  const [testCases, setTestCases] = useState<Array<{ stdin: string; expected: string }>>([
-    { stdin: "", expected: "" },
-  ])
-  const [testResults, setTestResults] = useState<CompilerTestCaseResult | null>(null)
-  const [testRunning, setTestRunning] = useState(false)
-
-  // Run history / stats - both backed by real endpoints
-  const [history, setHistory] = useState<CompilerRunEvent[]>([])
-  const [stats, setStats] = useState<CompilerRunStats | null>(null)
-  const [historyLoading, setHistoryLoading] = useState(false)
-
-  const debouncedSearch = useDebouncedValue(search, 200)
-
-  const activeFile = useMemo(
-    () => files.find(file => file.id === activeId) ?? null,
-    [activeId, files],
+  const selectedLanguage = languageByValue.get(language) ?? LANGUAGE_OPTIONS[0]
+  const runtime = runtimes.find(item => item.language === language)
+  const previewLanguage = isPreviewLanguage(language)
+  const previewDocument = useMemo(
+    () => previewLanguage ? buildPreviewDocument(language, code) : "",
+    [code, language, previewLanguage],
   )
 
-  const runtime = useMemo(
-    () => runtimes.find(item => item.language === language),
-    [language, runtimes],
-  )
-
-  const filteredFiles = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase()
-    if (!query) return files
-    return files.filter(file => (
-      file.title.toLowerCase().includes(query)
-      || file.language.toLowerCase().includes(query)
-      || file.code.toLowerCase().includes(query)
-    ))
-  }, [files, debouncedSearch])
-
-  const isDirty = useMemo(() => {
-    if (!activeFile) {
-      return Boolean(title.trim() || code.trim() || stdin.trim())
+  const terminalText = useMemo(() => {
+    if (!runResult) return output || "Run your code to see output here."
+    const body = output || runResult.message || ""
+    let processLine = ""
+    if (runResult.status === "timeout") {
+      processLine = "Process terminated: execution timed out"
+    } else if (runResult.exit_code !== null && runResult.exit_code !== undefined) {
+      processLine = `Process finished with exit code ${runResult.exit_code}`
     }
-    return (
-      activeFile.title !== title
-      || activeFile.language !== language
-      || activeFile.code !== code
-      || activeFile.stdin !== stdin
-      || activeFile.output !== output
-    )
-  }, [activeFile, code, language, output, stdin, title])
+    return [body, processLine].filter(Boolean).join("\n\n")
+  }, [output, runResult])
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true)
@@ -231,19 +200,11 @@ export default function CompilerWorkspace() {
         getCompilerFiles({ page_size: 100 }),
         getCompilerRuntimes(),
       ])
-      setFiles(fileResponse.files)
+      const supportedFiles = fileResponse.files.filter(file => languageByValue.has(file.language))
+      setFiles(supportedFiles)
       setRuntimes(runtimeResponse.runtimes)
-      const firstFile = fileResponse.files[0]
-      if (firstFile) {
-        setActiveId(firstFile.id)
-        setTitle(firstFile.title)
-        setLanguage(firstFile.language)
-        setCode(firstFile.code)
-        setStdin(firstFile.stdin)
-        setOutput(firstFile.output)
-      }
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to load compiler workspace."))
+      toast.error(getErrorMessage(error, "Failed to load compiler."))
     } finally {
       setLoading(false)
     }
@@ -256,125 +217,85 @@ export default function CompilerWorkspace() {
     return () => globalThis.clearTimeout(timer)
   }, [loadWorkspace])
 
-  // 30-day stats: cheap, non-blocking fetch on mount
-  useEffect(() => {
-    getRunStats()
-      .then(setStats)
-      .catch(() => undefined)
-  }, [])
-
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true)
-    try {
-      const response = await getRunHistory({ limit: 50 })
-      setHistory(response.events)
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to load run history."))
-    } finally {
-      setHistoryLoading(false)
+  const selectFile = (fileId: string) => {
+    if (!fileId) {
+      startNewFile(language)
+      return
     }
-  }, [])
-
-  const selectFile = (file: CompilerFile) => {
+    const file = files.find(item => item.id === fileId)
+    if (!file) return
     setActiveId(file.id)
     setTitle(file.title)
     setLanguage(file.language)
     setCode(file.code)
     setStdin(file.stdin)
-    setProgramArgs("")
     setOutput(file.output)
     setRunResult(null)
-    setTestResults(null)
-    setShowProgramInput(Boolean(file.stdin.trim()))
-    setIoTab(isPreviewLanguage(file.language) ? "preview" : "output")
-    setTerminalOpen(false)
-    setMobileTab("editor")
+    setMobilePane("code")
   }
 
-  const startNewFile = () => {
-    const option = languageByValue.get("python")
+  const startNewFile = (nextLanguage: CompilerLanguage = "python") => {
+    const option = languageByValue.get(nextLanguage) ?? LANGUAGE_OPTIONS[0]
     setActiveId(null)
-    setTitle(makeUntitled("python"))
-    setLanguage("python")
-    setCode(option?.template ?? "")
+    setTitle(`Untitled ${option.label}`)
+    setLanguage(nextLanguage)
+    setCode(option.template)
     setStdin("")
-    setProgramArgs("")
     setOutput("")
     setRunResult(null)
-    setTestResults(null)
-    setShowProgramInput(false)
-    setIoTab("output")
-    setTerminalOpen(false)
+    setMobilePane("code")
   }
 
-  const handleLanguageChange = (nextLanguage: CompilerLanguage) => {
-    setLanguage(nextLanguage)
-    setIoTab(isPreviewLanguage(nextLanguage) ? "preview" : "output")
-    if (!activeFile && !code.trim()) {
-      setCode(languageByValue.get(nextLanguage)?.template ?? "")
-      setTitle(makeUntitled(nextLanguage))
-    }
+  const changeLanguage = (nextLanguage: CompilerLanguage) => {
+    if (nextLanguage === language) return
+    startNewFile(nextLanguage)
   }
 
-  const upsertLocalFile = (file: CompilerFile) => {
+  const upsertFile = (file: CompilerFile) => {
     setFiles(current => {
       const exists = current.some(item => item.id === file.id)
-      if (!exists) return [file, ...current]
-      return current.map(item => (item.id === file.id ? file : item))
+      return exists
+        ? current.map(item => item.id === file.id ? file : item)
+        : [file, ...current]
     })
   }
 
-  const saveCurrentFile = async () => {
-    const cleanTitle = title.trim() || makeUntitled(language)
+  const saveFile = async () => {
+    if (!code.trim()) {
+      toast.error("Write some code before saving.")
+      return null
+    }
     setSaving(true)
     try {
-      if (activeId) {
-        const response = await updateCompilerFile(activeId, {
-          title: cleanTitle,
-          language,
-          code,
-          stdin,
-          output,
-        })
-        upsertLocalFile(response.file)
-        setTitle(response.file.title)
-        toast.success("Compiler file saved")
-        return response.file
-      }
-
-      const response = await createCompilerFile({
-        title: cleanTitle,
-        language,
-        code,
-        stdin,
-      })
-      upsertLocalFile(response.file)
+      const cleanTitle = title.trim() || selectedLanguage.filename
+      const response = activeId
+        ? await updateCompilerFile(activeId, { title: cleanTitle, language, code, stdin, output })
+        : await createCompilerFile({ title: cleanTitle, language, code, stdin })
       setActiveId(response.file.id)
       setTitle(response.file.title)
-      toast.success("Compiler file created")
+      upsertFile(response.file)
+      toast.success(activeId ? "File saved" : "File created")
       return response.file
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to save compiler file."))
+      toast.error(getErrorMessage(error, "Failed to save file."))
       return null
     } finally {
       setSaving(false)
     }
   }
 
-  const runCurrentFile = async ({ fresh = false }: RunIntent = {}) => {
+  const runCode = async () => {
     if (!code.trim()) {
       toast.error("Write some code before running.")
       return
     }
-    const cleanTitle = title.trim() || makeUntitled(language)
-    const args = parseProgramArgs(programArgs)
 
-    if (isPreviewLanguage(language)) {
-      const previewResult: CompilerRunResult = {
+    if (previewLanguage) {
+      setRunResult({
         status: "success",
         stdout: "",
         stderr: "",
-        output: `${languageByValue.get(language)?.label ?? language} preview refreshed.`,
+        output: "Preview refreshed.",
         exit_code: 0,
         duration_ms: 0,
         timed_out: false,
@@ -383,88 +304,56 @@ export default function CompilerWorkspace() {
         message: null,
         warnings: [],
         cached: false,
-      }
-      setRunResult(previewResult)
-      setOutput(previewResult.output)
-      setIoTab("preview")
-      setTerminalOpen(true)
-      setMobileTab("io")
-      setLastRunMode(activeId ? "saved" : "draft")
-      toast.success("Preview refreshed")
+      })
+      setOutput("Preview refreshed.")
+      setMobilePane("output")
       return
     }
 
     setRunning(true)
-    setRunResult(null)
-    setIoTab("output")
-    setTerminalOpen(true)
-    setMobileTab("io")
-    setLastRunMode(fresh ? "fresh" : activeId ? "saved" : "draft")
+    setMobilePane("output")
     try {
-      let response: Awaited<ReturnType<typeof runCompilerFile>>
-      const useCache = !fresh
+      const response = activeId
+        ? await runCompilerFile(activeId, {
+            title: title.trim() || selectedLanguage.filename,
+            language,
+            code,
+            stdin,
+            use_cache: false,
+          })
+        : await runCompilerCode({ language, code, stdin, use_cache: false })
+
+      const result = normalizeRunResult(response.result)
+      setRunResult(result)
+      setOutput(result.output || result.message || "")
 
       if (activeId) {
-        response = await runCompilerFile(activeId, {
-          title: cleanTitle,
-          language,
-          code,
-          stdin,
-          args,
-          use_cache: useCache,
-        })
-      } else {
-        response = await runCompilerCode({ language, code, stdin, args, use_cache: useCache })
-      }
-
-      const normalizedResult = normalizeRunResult(response.result)
-      setRunResult(normalizedResult)
-      setOutput(normalizedResult.output || normalizedResult.message || "")
-
-      const runAt = new Date().toISOString()
-      if (activeFile) {
-        upsertLocalFile({
-          ...activeFile,
-          title: cleanTitle,
-          language,
-          code,
-          stdin,
-          output: normalizedResult.output,
-          run_count: activeFile.run_count + 1,
-          last_run_at: runAt,
-          updated_at: runAt,
-        })
-      } else {
-        createCompilerFile({ title: cleanTitle, language, code, stdin })
-          .then(created => {
-            setActiveId(created.file.id)
-            setTitle(created.file.title)
-            upsertLocalFile({
-              ...created.file,
-              output: normalizedResult.output,
-              run_count: 1,
-              last_run_at: runAt,
-              updated_at: runAt,
-            })
-            return updateCompilerFile(created.file.id, { output: normalizedResult.output })
+        const current = files.find(file => file.id === activeId)
+        if (current) {
+          upsertFile({
+            ...current,
+            title: title.trim() || current.title,
+            language,
+            code,
+            stdin,
+            output: result.output,
+            run_count: current.run_count + 1,
+            last_run_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
-          .catch(() => undefined)
+        }
       }
 
-      if (normalizedResult.status === "success") {
-        toast.success(normalizedResult.cached ? "Code ran from cache" : fresh ? "Fresh run complete" : "Code ran successfully")
-      } else if (normalizedResult.status === "unsupported" || normalizedResult.status === "disabled") {
-        toast(normalizedResult.message ?? "Runtime unavailable right now")
-      } else if (normalizedResult.status === "timeout") {
-        toast.error(normalizedResult.message ?? "Execution timed out")
+      if (result.status === "success") {
+        toast.success("Code ran successfully")
+      } else if (result.status === "unsupported" || result.status === "disabled") {
+        toast(result.message ?? "This runtime is unavailable.")
       } else {
-        toast.error(normalizedResult.message ?? "Code finished with errors")
+        toast.error(result.message ?? "Code finished with errors.")
       }
-
-      getRunStats().then(setStats).catch(() => undefined)
     } catch (error) {
       const message = getErrorMessage(error, "Failed to run code.")
-      const failedResult: CompilerRunResult = {
+      setRunResult({
         status: "error",
         stdout: "",
         stderr: message,
@@ -477,401 +366,102 @@ export default function CompilerWorkspace() {
         message,
         warnings: [],
         cached: false,
-      }
-      setRunResult(failedResult)
+      })
       setOutput(message)
-      setTerminalOpen(true)
       toast.error(message)
     } finally {
       setRunning(false)
     }
   }
 
-  const deleteCurrentFile = async () => {
-    if (!activeId) {
-      startNewFile()
-      return
-    }
-    setSaving(true)
-    try {
-      await deleteCompilerFile(activeId)
-      setFiles(current => current.filter(file => file.id !== activeId))
-      startNewFile()
-      toast.success("Compiler file moved to trash")
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to delete compiler file."))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const togglePin = async () => {
-    if (!activeFile) return
-    setSaving(true)
-    try {
-      const response = await updateCompilerFile(activeFile.id, { is_pinned: !activeFile.is_pinned })
-      upsertLocalFile(response.file)
-      toast.success(response.file.is_pinned ? "Pinned" : "Unpinned")
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update pin."))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDuplicate = async () => {
-    if (!activeFile) return
-    setSaving(true)
-    try {
-      const response = await duplicateCompilerFile(activeFile.id)
-      upsertLocalFile(response.file)
-      selectFile(response.file)
-      toast.success("File duplicated")
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to duplicate file."))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const runTests = async () => {
-    if (isPreviewLanguage(language)) {
-      toast.error("HTML and CSS use the preview panel instead of test cases.")
-      return
-    }
-    if (!code.trim()) {
-      toast.error("Write some code before running tests.")
-      return
-    }
-    const cases = testCases.filter(testCase => testCase.expected.trim())
-    if (!cases.length) {
-      toast.error("Add at least one test case with an expected output.")
-      return
-    }
-    setTestRunning(true)
-    setIoTab("tests")
-    setTerminalOpen(true)
-    setMobileTab("io")
-    try {
-      const response = await runTestCases({ language, code, test_cases: cases })
-      setTestResults(response)
-      if (response.failed === 0) {
-        toast.success(`All ${response.total} test cases passed`)
-      } else {
-        toast.error(`${response.passed}/${response.total} test cases passed`)
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to run test cases."))
-    } finally {
-      setTestRunning(false)
-    }
-  }
-
-  const openHistoryTab = () => {
-    setIoTab("history")
-    setTerminalOpen(true)
-    setMobileTab("io")
-    if (!history.length) void loadHistory()
-  }
-
-  const copyOutput = async () => {
-    if (!output.trim()) return
-    await navigator.clipboard.writeText(output)
-    toast.success("Output copied")
-  }
-
-  const clearOutput = () => {
-    setOutput("")
-    setRunResult(null)
-    toast.success("Output cleared")
-  }
-
-  const copyCode = async () => {
-    if (!code.trim()) return
-    await navigator.clipboard.writeText(code)
-    toast.success("Code copied")
-  }
-
-  const loadLanguageTemplate = () => {
-    setCode(selectedLanguage?.template ?? "")
-    setRunResult(null)
-    setOutput("")
-    toast.success("Template loaded")
-  }
-
-  const downloadCode = () => {
-    const extension = extensionByLanguage[language] ?? "txt"
-    const cleanTitle = (title.trim() || makeUntitled(language))
-      .replace(/[^a-z0-9-_ ]/gi, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-    const blob = new Blob([code], { type: "text/plain;charset=utf-8" })
-    const href = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = href
-    link.download = `${cleanTitle || "flowdesk-code"}.${extension}`
-    link.click()
-    URL.revokeObjectURL(href)
-  }
-
-  const handleWorkspaceKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "F11") {
       event.preventDefault()
-      setIsFocusMode(current => !current)
+      setIsFullscreen(current => !current)
       return
     }
-
-    const isModifierPressed = event.ctrlKey || event.metaKey
-    if (!isModifierPressed) return
-
+    if (!(event.ctrlKey || event.metaKey)) return
     if (event.key.toLowerCase() === "s") {
       event.preventDefault()
-      void saveCurrentFile()
+      void saveFile()
     }
-
     if (event.key === "Enter") {
       event.preventDefault()
-      void runCurrentFile({ fresh: event.shiftKey })
-    }
-
-    if (event.key === "`") {
-      event.preventDefault()
-      setTerminalOpen(current => !current)
+      void runCode()
     }
   }
 
-  const selectedLanguage = languageByValue.get(language)
-  const previewLanguage = isPreviewLanguage(language)
-  const previewDocument = useMemo(
-    () => previewLanguage ? buildPreviewDocument(language, code) : "",
-    [code, language, previewLanguage],
-  )
-  const executableLanguageCount = useMemo(
-    () => runtimes.filter(item => item.executable).length,
-    [runtimes],
-  )
-  const codeStats = useMemo(() => {
-    const lines = code ? code.split(/\r?\n/).length : 0
-    return {
-      lines,
-      characters: code.length,
-    }
-  }, [code])
-  const terminalText = useMemo(() => {
-    if (!runResult) return output || "Run your code to see terminal output here."
-    const body = output || runResult.message || ""
-    const exitText = runResult.exit_code === null || runResult.exit_code === undefined
-      ? "Process finished without an exit code"
-      : `Process finished with exit code ${runResult.exit_code}`
-    return [body, exitText].filter(Boolean).join("\n\n")
-  }, [output, runResult])
-  const runtimeStatus = previewLanguage ? "Preview" : runtime?.executable ? "Runnable" : "Edit only"
-  const programArgsList = useMemo(() => parseProgramArgs(programArgs), [programArgs])
+  const editorPane = (
+    <section className="flex min-h-0 flex-col border-white/10 bg-[#171b29] md:border-r">
+      <div className="flex min-h-12 flex-wrap items-center gap-2 border-b border-white/10 bg-[#252a35] px-3 py-2">
+        <input
+          value={title}
+          onChange={event => setTitle(event.target.value)}
+          aria-label="File name"
+          className="min-w-0 flex-1 bg-transparent px-2 text-sm font-semibold text-white outline-none"
+        />
+        <span className="hidden text-xs text-slate-500 sm:inline">{selectedLanguage.filename}</span>
+        <button
+          type="button"
+          onClick={() => setShowInput(current => !current)}
+          className={[
+            "rounded-lg border p-2 transition",
+            showInput
+              ? "border-indigo-400/40 bg-indigo-500/20 text-indigo-200"
+              : "border-white/10 text-slate-400 hover:bg-white/5 hover:text-white",
+          ].join(" ")}
+          title="Program input"
+          aria-label="Toggle program input"
+        >
+          <Settings2 size={17} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsFullscreen(current => !current)}
+          className="rounded-lg border border-white/10 p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => void runCode()}
+          disabled={running}
+          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {running ? <Loader2 className="animate-spin" size={17} /> : <Play size={17} />}
+          Run
+        </button>
+      </div>
 
-  // Shared sub-views used by both the desktop grid and mobile tabs.
-
-  const FileSidebar = (
-    <aside className="flex h-full min-h-0 flex-col rounded-3xl border border-white/10 bg-white/[0.025]">
-      <div className="border-b border-white/10 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Files</p>
-            <p className="text-sm text-slate-300">{filteredFiles.length} of {files.length}</p>
-          </div>
-          <ShieldCheck className="text-emerald-300" size={20} />
-        </div>
-        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0D1117] px-3 py-2">
-          <Search size={16} className="shrink-0 text-slate-500" />
-          <input
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="Search files..."
-            className="w-full bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-600"
+      {showInput && (
+        <div className="border-b border-white/10 bg-[#111520] p-3">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Program input
+          </label>
+          <textarea
+            value={stdin}
+            onChange={event => setStdin(event.target.value)}
+            placeholder="Only needed when your program reads input..."
+            className="h-20 w-full resize-none rounded-lg border border-white/10 bg-[#0c1019] p-3 font-mono text-sm text-slate-200 outline-none focus:border-indigo-400/50"
+            maxLength={12000}
           />
-        </div>
-      </div>
-
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-slate-500">
-            <Loader2 className="animate-spin" size={22} />
-          </div>
-        ) : filteredFiles.length ? (
-          filteredFiles.map(file => (
-            <button
-              type="button"
-              key={file.id}
-              onClick={() => selectFile(file)}
-              className={[
-                "w-full rounded-2xl border p-3 text-left transition",
-                file.id === activeId
-                  ? "border-indigo-400/40 bg-indigo-500/10"
-                  : "border-transparent bg-white/[0.025] hover:border-white/10 hover:bg-white/[0.045]",
-              ].join(" ")}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {file.is_pinned && <Pin size={12} className="shrink-0 text-amber-300" />}
-                    <p className="truncate text-sm font-semibold text-white">{file.title}</p>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300">
-                      {file.language}
-                    </span>
-                    <span className="text-[11px] text-slate-500">{file.run_count} runs</span>
-                  </div>
-                </div>
-                <FileCode2 size={16} className="mt-1 shrink-0 text-slate-500" />
-              </div>
-            </button>
-          ))
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">
-            No compiler files yet.
-          </div>
-        )}
-      </div>
-
-      {stats && (
-        <div className="border-t border-white/10 p-4 text-xs text-slate-500">
-          <p className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1"><Gauge size={12} /> Last 30 days</span>
-            <span>{stats.successful_runs}/{stats.total_runs} successful</span>
-          </p>
-          <p className="mt-1">Avg duration: {Math.round(stats.avg_duration_ms)}ms</p>
         </div>
       )}
-    </aside>
-  )
 
-  const EditorPanel = (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px_auto]">
-          <input
-            value={title}
-            onChange={event => setTitle(event.target.value)}
-            className="rounded-xl border border-white/10 bg-[#0D1117] px-4 py-2.5 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400/50"
-            placeholder="File title"
-            maxLength={200}
-          />
-          <select
-            value={language}
-            onChange={event => handleLanguageChange(event.target.value as CompilerLanguage)}
-            className="rounded-xl border border-white/10 bg-[#0D1117] px-4 py-2.5 text-sm text-slate-200 outline-none transition focus:border-indigo-400/50"
-          >
-            {LANGUAGE_OPTIONS.map(option => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setIsFocusMode(current => !current)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-xs font-semibold text-indigo-100 transition hover:bg-indigo-500/20"
-            title={isFocusMode ? "Exit fullscreen editor" : "Fullscreen editor"}
-          >
-            {isFocusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-            {isFocusMode ? "Exit" : "Focus"}
-          </button>
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
-          <button
-            type="button"
-            onClick={() => void togglePin()}
-            disabled={!activeFile || saving}
-            title="Pin"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Pin size={15} /> Pin
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDuplicate()}
-            disabled={!activeFile || saving}
-            title="Duplicate"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Copy size={15} /> Clone
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyCode()}
-            disabled={!code.trim()}
-            title="Copy code"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Copy size={15} /> Copy
-          </button>
-          <button
-            type="button"
-            onClick={loadLanguageTemplate}
-            title="Load template"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
-          >
-            <RefreshCw size={15} /> Template
-          </button>
-          <button
-            type="button"
-            onClick={downloadCode}
-            disabled={!code.trim()}
-            title="Download"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Download size={15} /> Export
-          </button>
-          {!isFocusMode && (
-            <button
-              type="button"
-              onClick={() => setTerminalOpen(current => !current)}
-              title={terminalOpen ? "Hide terminal" : "Show terminal"}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/10"
-            >
-              <TerminalSquare size={15} /> {terminalOpen ? "Hide term" : "Terminal"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => void deleteCurrentFile()}
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Trash2 size={15} /> Delete
-          </button>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            <Code2 size={13} />
-            {selectedLanguage?.label ?? language}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            Runtime: {runtimeStatus}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            {codeStats.lines} lines / {codeStats.characters} chars
-          </span>
-          {runtime?.queue && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-              <Zap size={12} /> {runtime.queue.global_slots_free}/{runtime.queue.global_slots_total} run slots free
-            </span>
-          )}
-          {runtime?.reason && <span className="text-slate-600">{runtime.reason}</span>}
-          {isDirty && <span className="text-amber-300">Unsaved changes</span>}
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#0D1117]">
+      <div className="min-h-0 flex-1">
         <Editor
           height="100%"
           theme="vs-dark"
-          language={selectedLanguage?.monaco ?? "plaintext"}
+          language={selectedLanguage.monaco}
           value={code}
           onChange={value => setCode(value ?? "")}
           options={{
             automaticLayout: true,
             fontLigatures: true,
-            fontSize: 14,
+            fontSize: 15,
+            lineHeight: 23,
             minimap: { enabled: false },
             padding: { top: 16 },
             scrollBeyondLastLine: false,
@@ -879,393 +469,181 @@ export default function CompilerWorkspace() {
           }}
         />
       </div>
-    </div>
+    </section>
   )
 
-  const IOPanel = (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4">
+  const outputPane = (
+    <section className="flex min-h-0 flex-col bg-[#151925]">
+      <div className="flex min-h-12 items-center justify-between border-b border-white/10 bg-[#252a35] px-4 py-2">
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold text-white">{previewLanguage ? "Preview" : "Output"}</h2>
+          <span className={`text-xs font-semibold uppercase ${statusClasses(runResult?.status)}`}>
+            {runResult?.status ?? "idle"}
+          </span>
+        </div>
         <button
           type="button"
-          onClick={() => setShowProgramInput(current => !current)}
-          className="flex w-full items-center justify-between gap-3 text-left"
+          onClick={() => {
+            setOutput("")
+            setRunResult(null)
+          }}
+          disabled={!output && !runResult}
+          className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <div>
-            <h2 className="text-sm font-bold text-white">Run inputs</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Optional stdin and command-line args for programs that read external input.
-            </p>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
-            {showProgramInput ? "Hide" : "Configure"}
-          </span>
+          Clear
         </button>
-        <div className={showProgramInput ? "mt-4" : "hidden"}>
-          <div className="mb-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">args</span>
-              <span className="text-xs text-slate-600">{programArgsList.length}/32</span>
-            </div>
-            <input
-              value={programArgs}
-              onChange={event => setProgramArgs(event.target.value)}
-              placeholder='Example: --name "FlowDesk" 42 (Python: read argv)'
-              className="w-full rounded-2xl border border-white/10 bg-[#0D1117] px-4 py-3 font-mono text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
-              maxLength={2000}
-            />
-          </div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">stdin</span>
-            <span className="text-xs text-slate-600">{stdin.length}/12000</span>
-          </div>
-          <textarea
-            value={stdin}
-            onChange={event => setStdin(event.target.value)}
-            placeholder="Example: text your Python input() should read..."
-            className="min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-[#0D1117] p-4 font-mono text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
-            maxLength={12000}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        {previewLanguage ? (
+          <iframe
+            title="FlowDesk preview"
+            srcDoc={previewDocument}
+            sandbox="allow-forms allow-modals allow-popups allow-scripts"
+            className="h-full min-h-[420px] w-full bg-white"
           />
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-white/5 pb-3">
-          <button
-            type="button"
-            onClick={() => setIoTab("output")}
-            className={[
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              ioTab === "output" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
-            ].join(" ")}
-          >
-            <TerminalSquare size={13} /> Terminal
-          </button>
-          {previewLanguage && (
-            <button
-              type="button"
-              onClick={() => setIoTab("preview")}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                ioTab === "preview" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
-              ].join(" ")}
-            >
-              <Eye size={13} /> Preview
-            </button>
-          )}
-          {!previewLanguage && (
-            <button
-              type="button"
-              onClick={() => setIoTab("tests")}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                ioTab === "tests" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
-              ].join(" ")}
-            >
-              <Beaker size={13} /> Test cases
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={openHistoryTab}
-            className={[
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              ioTab === "history" ? "bg-indigo-500/20 text-indigo-200" : "text-slate-500 hover:text-slate-300",
-            ].join(" ")}
-          >
-            <History size={13} /> History
-          </button>
-        </div>
-
-        {ioTab === "output" && (
-          <>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${resultBadgeClasses(runResult?.status)}`}>
-                {runResult?.status ?? "idle"}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void runCurrentFile({ fresh: true })}
-                  disabled={running || saving}
-                  className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-200 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <RefreshCw size={13} /> Fresh
-                </button>
-                <button
-                  type="button"
-                  onClick={clearOutput}
-                  disabled={!output.trim() && !runResult}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void copyOutput()}
-                  disabled={!output.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <Copy size={14} /> Copy
-                </button>
-              </div>
-            </div>
-            <pre className="min-h-36 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-white/10 bg-[#060912] p-4 text-sm leading-6 text-slate-200">
-              {terminalText}
-            </pre>
-            {runResult && (
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                <span>{runResult.duration_ms}ms</span>
-                {runResult.cpu_time_ms !== null && runResult.cpu_time_ms !== undefined && (
-                  <span className="inline-flex items-center gap-1"><Cpu size={11} /> CPU: {runResult.cpu_time_ms}ms</span>
-                )}
-                {runResult.memory_kb !== null && runResult.memory_kb !== undefined && (
-                  <span>Memory: {Math.round(runResult.memory_kb / 1024)}MB</span>
-                )}
-                <span>Exit: {runResult.exit_code ?? "n/a"}</span>
-                {lastRunMode !== "idle" && <span>Mode: {lastRunMode}</span>}
-                {runResult.cached && <span className="text-cyan-300">Cached</span>}
-                {runResult.truncated && <span className="text-amber-300">Output truncated</span>}
-                {runResult.warnings?.map(warning => (
-                  <span key={warning} className="text-amber-300">{warning}</span>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {ioTab === "preview" && previewLanguage && (
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600">
-              <span>Browser Preview</span>
-              <span>{selectedLanguage?.label ?? language}</span>
-            </div>
-            <iframe
-              title="FlowDesk browser preview"
-              srcDoc={previewDocument}
-              sandbox="allow-forms allow-modals allow-popups allow-scripts"
-              className="h-[320px] w-full bg-white sm:h-[420px]"
-            />
-          </div>
-        )}
-
-        {ioTab === "tests" && (
-          <div className="space-y-3">
-            {testCases.map((testCase, index) => (
-              <div key={index} className="grid gap-2 rounded-2xl border border-white/10 bg-[#0D1117] p-3 sm:grid-cols-2">
-                <textarea
-                  value={testCase.stdin}
-                  onChange={event => setTestCases(current =>
-                    current.map((tc, i) => (i === index ? { ...tc, stdin: event.target.value } : tc)))}
-                  placeholder={`Test ${index + 1} input`}
-                  className="min-h-16 resize-y rounded-xl border border-white/10 bg-[#060912] p-2 font-mono text-xs text-slate-200 outline-none placeholder:text-slate-600"
-                />
-                <textarea
-                  value={testCase.expected}
-                  onChange={event => setTestCases(current =>
-                    current.map((tc, i) => (i === index ? { ...tc, expected: event.target.value } : tc)))}
-                  placeholder={`Test ${index + 1} expected output`}
-                  className="min-h-16 resize-y rounded-xl border border-white/10 bg-[#060912] p-2 font-mono text-xs text-slate-200 outline-none placeholder:text-slate-600"
-                />
-              </div>
-            ))}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setTestCases(current => [...current, { stdin: "", expected: "" }])}
-                disabled={testCases.length >= 25}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 disabled:opacity-50"
-              >
-                <Plus size={13} /> Add case
-              </button>
-              <button
-                type="button"
-                onClick={() => void runTests()}
-                disabled={testRunning}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-50"
-              >
-                {testRunning ? <Loader2 className="animate-spin" size={13} /> : <Beaker size={13} />}
-                Run tests
-              </button>
-              {testResults && (
-                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                  testResults.failed === 0 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-rose-500/30 bg-rose-500/10 text-rose-300"
-                }`}>
-                  {testResults.passed}/{testResults.total} passed
-                </span>
-              )}
-            </div>
-            {testResults && (
-              <div className="space-y-2">
-                {testResults.results.map(result => (
-                  <div key={result.index} className={`rounded-xl border p-2 text-xs ${result.passed ? "border-emerald-500/20 bg-emerald-500/5" : "border-rose-500/20 bg-rose-500/5"}`}>
-                    <p className="font-semibold text-slate-200">Test {result.index + 1}: {result.passed ? "Passed" : "Failed"}</p>
-                    {!result.passed && (
-                      <p className="mt-1 text-slate-400">Expected: {result.expected || "(empty)"} - Got: {result.actual || "(empty)"}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {ioTab === "history" && (
-          <div className="space-y-2">
-            {historyLoading ? (
-              <div className="flex items-center justify-center py-8 text-slate-500">
-                <Loader2 className="animate-spin" size={20} />
-              </div>
-            ) : history.length ? (
-              history.map(event => (
-                <div key={event.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#0D1117] p-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-full border px-2 py-0.5 font-semibold ${resultBadgeClasses(event.status)}`}>
-                      {event.status}
-                    </span>
-                    <span className="text-slate-500">{event.language}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-500">
-                    {event.cached && <span className="text-cyan-300">cached</span>}
-                    <span>{event.duration_ms}ms</span>
-                    <span>{new Date(event.created_at).toLocaleString()}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500">No runs recorded yet.</p>
-            )}
-          </div>
+        ) : (
+          <pre className="min-h-full whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-slate-200">
+            {terminalText}
+          </pre>
         )}
       </div>
-    </div>
+    </section>
   )
 
   return (
     <div
       className={[
-        "flex flex-col bg-[#080B14] text-slate-100",
-        isFocusMode ? "fixed inset-0 z-50 min-h-[100svh]" : "min-h-[100svh]",
+        "flex flex-col overflow-hidden bg-[#11141d] text-slate-100",
+        isFullscreen ? "fixed inset-0 z-50 h-[100svh]" : "h-[100svh]",
       ].join(" ")}
-      onKeyDown={handleWorkspaceKeyDown}
+      onKeyDown={handleKeyDown}
     >
-      <header className={isFocusMode ? "hidden" : "sticky top-0 z-20 border-b border-white/10 bg-[#0D1117]/95 backdrop-blur"}>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
+      {!isFullscreen && (
+        <header className="flex min-h-[72px] items-center justify-between gap-3 border-b border-white/10 bg-[#0d1118] px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => navigate("/dashboard")}
-              className="rounded-xl border border-white/10 p-2 text-slate-400 transition hover:border-indigo-400/40 hover:text-white"
+              className="rounded-lg border border-white/10 p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
               aria-label="Back to dashboard"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={19} />
             </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
               <TerminalSquare size={20} />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-lg font-bold text-white">Compiler</h1>
-                <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
-                  Safe mode
-                </span>
-              </div>
+              <h1 className="truncate text-lg font-bold text-white">FlowDesk Compiler</h1>
               <p className="truncate text-xs text-slate-500">
-                {LANGUAGE_OPTIONS.length} focused languages - {executableLanguageCount || 1} ready now
+                {selectedLanguage.label} online compiler
               </p>
             </div>
           </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
+
+          <div className="flex items-center gap-2">
+            <label className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 sm:flex">
+              <FolderOpen size={16} className="text-slate-500" />
+              <select
+                value={activeId ?? ""}
+                onChange={event => selectFile(event.target.value)}
+                disabled={loading}
+                className="max-w-44 bg-transparent text-sm text-slate-300 outline-none"
+                aria-label="Saved compiler files"
+              >
+                <option value="">New file</option>
+                {files.map(file => (
+                  <option key={file.id} value={file.id}>{file.title}</option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
-              onClick={startNewFile}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-indigo-400/40 hover:bg-white/10 sm:flex-none"
+              onClick={() => startNewFile(language)}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
             >
-              <Plus size={16} /> New
+              <FilePlus2 size={17} />
+              <span className="hidden sm:inline">New</span>
             </button>
             <button
               type="button"
-              onClick={() => void saveCurrentFile()}
-              disabled={saving || !isDirty}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/30 bg-indigo-500/15 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+              onClick={() => void saveFile()}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-3 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/20 disabled:opacity-50"
             >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => void runCurrentFile({ fresh: true })}
-              disabled={running || saving}
-              title="Fresh run without cache"
-              className="hidden flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex sm:flex-none"
-            >
-              <RefreshCw size={16} />
-              Fresh
-            </button>
-            <button
-              type="button"
-              onClick={() => void runCurrentFile()}
-              disabled={running || saving}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-950/40 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
-            >
-              {running ? <Loader2 className="animate-spin" size={16} /> : <Play size={16} />}
-              Run
+              {saving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
+              <span className="hidden sm:inline">Save</span>
             </button>
           </div>
-        </div>
+        </header>
+      )}
 
-        {/* Mobile tab bar replaces the cramped fixed sidebar below lg */}
-        <div className="flex border-t border-white/5 lg:hidden">
-          {([
-            { id: "files", label: "Files", icon: FileCode2 },
-            { id: "editor", label: "Editor", icon: Code2 },
-            { id: "io", label: "Terminal", icon: TerminalSquare },
-          ] as const).map(tab => (
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <nav className="flex shrink-0 overflow-x-auto border-b border-white/10 bg-[#20242d] md:w-[72px] md:flex-col md:border-b-0 md:border-r">
+          {LANGUAGE_OPTIONS.map(option => {
+            const selected = option.value === language
+            const optionRuntime = runtimes.find(item => item.language === option.value)
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => changeLanguage(option.value)}
+                title={`${option.label}${optionRuntime?.executable ? "" : " - runtime unavailable"}`}
+                className={[
+                  "relative flex min-h-14 min-w-16 items-center justify-center border-indigo-500 text-xs font-bold transition md:min-h-16 md:min-w-0",
+                  selected
+                    ? "border-b-2 bg-indigo-600 text-white md:border-b-0 md:border-l-4"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white",
+                ].join(" ")}
+              >
+                {option.shortLabel}
+                {optionRuntime && !optionRuntime.executable && !isPreviewLanguage(option.value) && (
+                  <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                )}
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex border-b border-white/10 bg-[#20242d] md:hidden">
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setMobileTab(tab.id)}
+              onClick={() => setMobilePane("code")}
               className={[
-                "flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition",
-                mobileTab === tab.id ? "border-b-2 border-indigo-400 text-indigo-200" : "text-slate-500",
+                "flex-1 py-2.5 text-sm font-semibold",
+                mobilePane === "code" ? "bg-indigo-600 text-white" : "text-slate-400",
               ].join(" ")}
             >
-              <tab.icon size={14} /> {tab.label}
+              Code
             </button>
-          ))}
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={() => setMobilePane("output")}
+              className={[
+                "flex-1 py-2.5 text-sm font-semibold",
+                mobilePane === "output" ? "bg-indigo-600 text-white" : "text-slate-400",
+              ].join(" ")}
+            >
+              {previewLanguage ? "Preview" : "Output"}
+            </button>
+          </div>
 
-      <main className={["flex-1 overflow-hidden lg:hidden", isFocusMode ? "p-2" : "p-3 sm:p-4"].join(" ")}>
-        <div className={[isFocusMode ? "h-[calc(100svh-16px)]" : "h-[calc(100svh-148px)]", "min-h-0 overflow-hidden"].join(" ")}>
-          {isFocusMode ? (
-            EditorPanel
-          ) : (
-            <>
-              {mobileTab === "files" && FileSidebar}
-              {mobileTab === "editor" && EditorPanel}
-              {mobileTab === "io" && IOPanel}
-            </>
-          )}
-        </div>
-      </main>
+          <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,42%)]">
+            <div className={mobilePane === "code" ? "h-full" : "hidden h-full md:block"}>
+              {editorPane}
+            </div>
+            <div className={mobilePane === "output" ? "h-full" : "hidden h-full md:block"}>
+              {outputPane}
+            </div>
+          </main>
 
-      <main
-        className={[
-          "hidden flex-1 gap-4 p-3 lg:grid lg:p-4",
-          isFocusMode ? "lg:grid-cols-1" : "lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]",
-        ].join(" ")}
-      >
-        {!isFocusMode && <div className="h-[calc(100svh-104px)]">{FileSidebar}</div>}
-        <div
-          className={[
-            "grid min-w-0 gap-3",
-            isFocusMode ? "h-[calc(100svh-24px)] grid-rows-[minmax(0,1fr)]" : terminalOpen ? "h-[calc(100svh-104px)] grid-rows-[minmax(0,1fr)_minmax(220px,28vh)]" : "h-[calc(100svh-104px)] grid-rows-[minmax(0,1fr)]",
-          ].join(" ")}
-        >
-          <div className="min-h-0">{EditorPanel}</div>
-          {!isFocusMode && terminalOpen && <div className="min-h-0 overflow-hidden">{IOPanel}</div>}
+          <footer className="flex min-h-7 items-center justify-between border-t border-white/10 bg-[#0d1118] px-3 text-[11px] text-slate-500">
+            <span>{runtime?.executable || previewLanguage ? "Ready" : runtime?.reason ?? "Runtime unavailable"}</span>
+            <span className="hidden sm:inline">Ctrl+Enter Run | Ctrl+S Save | F11 Fullscreen</span>
+          </footer>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
