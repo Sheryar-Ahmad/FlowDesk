@@ -179,6 +179,7 @@ allowed_builtins["__import__"] = safe_import
 
 
 class Guard(ast.NodeVisitor):
+    allowed_dunder_names = {"__name__", "__file__"}
     blocked_names = {
         "breakpoint", "compile", "delattr", "eval", "exec", "getattr",
         "globals", "help", "locals", "open", "setattr", "vars",
@@ -186,7 +187,7 @@ class Guard(ast.NodeVisitor):
     }
 
     def visit_Name(self, node):
-        if node.id in self.blocked_names or node.id.startswith("__"):
+        if node.id in self.blocked_names or (node.id.startswith("__") and node.id not in self.allowed_dunder_names):
             raise RuntimeError(f"Use of '{node.id}' is not allowed in the FlowDesk sandbox")
         self.generic_visit(node)
 
@@ -202,7 +203,12 @@ try:
     tree = ast.parse(source, filename="<flowdesk>", mode="exec")
     Guard().visit(tree)
     compiled = compile(tree, "<flowdesk>", "exec")
-    globals_dict = {"__builtins__": allowed_builtins, "__name__": "__main__", "argv": list(args)}
+    globals_dict = {
+        "__builtins__": allowed_builtins,
+        "__file__": "<flowdesk>",
+        "__name__": "__main__",
+        "argv": list(args),
+    }
     original_stdin = sys.stdin
     sys.stdin = io.StringIO(stdin_value)
     try:
@@ -1301,7 +1307,7 @@ async def _execute_compiled_c_family(
                 compiler_path,
                 source_path,
                 "-std=" + standard,
-                "-O2",
+                "-O0",
                 "-pipe",
                 "-Wall",
                 "-Wextra",

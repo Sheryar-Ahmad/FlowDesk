@@ -88,6 +88,7 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
 ]
 
 const languageByValue = new Map(LANGUAGE_OPTIONS.map(option => [option.value, option]))
+const MAX_STDIN_CHARS = 50000
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
@@ -496,7 +497,7 @@ export default function CompilerWorkspace() {
             onChange={event => setStdin(event.target.value)}
             placeholder="Only needed when your program reads input..."
             className="h-20 w-full resize-none rounded-lg border border-white/10 bg-[#0c1019] p-3 font-mono text-sm text-slate-100 caret-cyan-300 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
-            maxLength={12000}
+            maxLength={MAX_STDIN_CHARS}
             spellCheck={false}
           />
         </div>

@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     COMPILER_EXECUTION_ENABLED: bool = True
     COMPILER_TIMEOUT_SECONDS: int = 8
-    COMPILER_MAX_OUTPUT_CHARS: int = 20000
+    COMPILER_MAX_OUTPUT_CHARS: int = 50000
     COMPILER_PISTON_API_URL: str = ""
 
 

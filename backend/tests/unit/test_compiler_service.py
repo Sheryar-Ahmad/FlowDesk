@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.api.v1.compiler.schemas import CompilerRunRequest
+from app.constants import COMPILER_MAX_CODE_CHARS, COMPILER_MAX_STDIN_CHARS
 from app.services import compiler_service
 
 
@@ -31,6 +33,35 @@ print(Student.label(), Student("FlowDesk").name)
     assert result.exit_code == 0
     assert result.stdout.strip() == "Student FlowDesk"
     assert result.stderr == ""
+
+
+@pytest.mark.asyncio
+async def test_python_main_guard_and_larger_sources_execute():
+    filler = "\n".join(f"# source filler {index:04d}" for index in range(7000))
+    result = await compiler_service._execute_python(
+        f"""
+from collections import defaultdict
+import heapq
+import math
+
+def main():
+    values = [5, 3, 7, 1]
+    heapq.heapify(values)
+    groups = defaultdict(int)
+    while values:
+        groups["total"] += heapq.heappop(values)
+    print(__name__, math.isfinite(groups["total"]), groups["total"])
+
+if __name__ == "__main__":
+    main()
+{filler}
+""".strip(),
+        "",
+    )
+
+    assert result.status == "success"
+    assert result.exit_code == 0
+    assert result.stdout.strip() == "__main__ True 16"
 
 
 @pytest.mark.asyncio
@@ -186,3 +217,14 @@ def test_process_timeout_returns_terminal_output_instead_of_raising(tmp_path):
     assert result.timed_out is True
     assert "started" in result.stdout
     assert "Execution exceeded" in result.stderr
+
+
+def test_compiler_schema_accepts_service_sized_sources():
+    request = CompilerRunRequest(
+        language="python",
+        code="print('ok')\n" + ("#" * (COMPILER_MAX_CODE_CHARS - 20)),
+        stdin="x" * COMPILER_MAX_STDIN_CHARS,
+    )
+
+    assert len(request.code) <= compiler_service.MAX_CODE_LENGTH
+    assert len(request.stdin) <= compiler_service.MAX_STDIN_LENGTH
