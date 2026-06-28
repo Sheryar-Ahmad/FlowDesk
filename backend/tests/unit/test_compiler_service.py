@@ -96,6 +96,52 @@ public class Main {
     assert result.stdout.strip() == "package-output"
 
 
+@pytest.mark.asyncio
+async def test_c_program_compiles_and_runs():
+    if not shutil.which("gcc"):
+        pytest.skip("GCC is not installed in this environment.")
+
+    result = await compiler_service._execute_compiled_c_family(
+        language="c",
+        code="""
+#include <stdio.h>
+
+int main(void) {
+    printf("c-output\\n");
+    return 0;
+}
+""".strip(),
+        stdin="",
+    )
+
+    assert result.status == "success"
+    assert result.exit_code == 0
+    assert result.stdout.strip() == "c-output"
+
+
+@pytest.mark.asyncio
+async def test_cpp_program_compiles_and_runs():
+    if not shutil.which("g++"):
+        pytest.skip("G++ is not installed in this environment.")
+
+    result = await compiler_service._execute_compiled_c_family(
+        language="cpp",
+        code="""
+#include <iostream>
+
+int main() {
+    std::cout << "cpp-output\\n";
+    return 0;
+}
+""".strip(),
+        stdin="",
+    )
+
+    assert result.status == "success"
+    assert result.exit_code == 0
+    assert result.stdout.strip() == "cpp-output"
+
+
 def test_successful_process_can_include_stderr_without_becoming_an_error():
     result = compiler_service._decode_process_run(
         returncode=0,

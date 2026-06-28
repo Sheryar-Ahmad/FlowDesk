@@ -179,16 +179,21 @@ export default function CompilerWorkspace() {
   const selectedLanguage = languageByValue.get(language) ?? LANGUAGE_OPTIONS[0]
   const runtime = runtimes.find(item => item.language === language)
   const previewLanguage = isPreviewLanguage(language)
-  const canRun = previewLanguage || runtime?.executable
+  const runtimeUnavailable = !previewLanguage && runtime !== undefined && !runtime.executable
+  const canRun = previewLanguage || loading || runtime?.executable === true
   const previewDocument = useMemo(
     () => previewLanguage ? buildPreviewDocument(language, code) : "",
     [code, language, previewLanguage],
   )
 
+  const codeStats = useMemo(() => ({
+    chars: code.length,
+    lines: Math.max(1, code.split("\n").length),
+  }), [code])
+
   const lineNumbers = useMemo(() => {
-    const count = Math.max(1, code.split("\n").length)
-    return Array.from({ length: count }, (_, index) => String(index + 1)).join("\n")
-  }, [code])
+    return Array.from({ length: codeStats.lines }, (_, index) => String(index + 1)).join("\n")
+  }, [codeStats.lines])
 
   const terminalText = useMemo(() => {
     if (running) return "Running..."
@@ -317,7 +322,7 @@ export default function CompilerWorkspace() {
       return
     }
 
-    if (!canRun) {
+    if (runtimeUnavailable) {
       const message = runtime?.reason ?? `${selectedLanguage.label} is not installed on this backend yet.`
       setRunResult({
         status: "unsupported",
@@ -434,7 +439,7 @@ export default function CompilerWorkspace() {
 
   const editorPane = (
     <section className="flex min-h-0 flex-col border-white/10 bg-[#171b29] md:border-r">
-      <div className="flex min-h-12 flex-wrap items-center gap-2 border-b border-white/10 bg-[#252a35] px-3 py-2">
+      <div className="flex min-h-12 flex-wrap items-center gap-2 border-b border-white/10 bg-gradient-to-r from-[#272c3a] to-[#1d2230] px-3 py-2">
         <input
           value={title}
           onChange={event => setTitle(event.target.value)}
@@ -443,11 +448,14 @@ export default function CompilerWorkspace() {
           placeholder={selectedLanguage.filename}
         />
         <span className="hidden text-xs text-slate-500 sm:inline">{selectedLanguage.filename}</span>
+        <span className="hidden rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-400 lg:inline">
+          {codeStats.lines} lines
+        </span>
         <button
           type="button"
           onClick={() => setShowInput(current => !current)}
           className={[
-            "rounded-lg border p-2 transition",
+            "inline-flex items-center gap-1.5 rounded-lg border p-2 transition",
             showInput
               ? "border-indigo-400/40 bg-indigo-500/20 text-indigo-200"
               : "border-white/10 text-slate-400 hover:bg-white/5 hover:text-white",
@@ -456,6 +464,7 @@ export default function CompilerWorkspace() {
           aria-label="Toggle program input"
         >
           <Settings2 size={17} />
+          <span className="hidden text-xs font-semibold md:inline">Input</span>
         </button>
         <button
           type="button"
@@ -493,7 +502,7 @@ export default function CompilerWorkspace() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#1b1f2d]">
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#1b1f2d] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <pre
           ref={lineNumbersRef}
           aria-hidden="true"
@@ -519,12 +528,17 @@ export default function CompilerWorkspace() {
 
   const outputPane = (
     <section className="flex min-h-0 flex-col bg-[#151925]">
-      <div className="flex min-h-12 items-center justify-between border-b border-white/10 bg-[#252a35] px-4 py-2">
+      <div className="flex min-h-12 items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#252a35] to-[#1a1f2c] px-4 py-2">
         <div className="flex items-center gap-3">
           <h2 className="font-semibold text-white">{previewLanguage ? "Preview" : "Output"}</h2>
           <span className={`text-xs font-semibold uppercase ${statusClasses(running ? undefined : runResult?.status)}`}>
             {running ? "running" : runResult?.status ?? "idle"}
           </span>
+          {runResult && (
+            <span className="hidden rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-400 sm:inline">
+              {runResult.duration_ms}ms
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -539,7 +553,7 @@ export default function CompilerWorkspace() {
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto bg-[#111622] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         {previewLanguage ? (
           <iframe
             title="FlowDesk preview"
@@ -675,7 +689,7 @@ export default function CompilerWorkspace() {
           <main className="min-h-0 flex-1 md:flex md:flex-row">
             <div
               className={[
-                "h-full md:min-w-0 md:flex-1",
+                "h-full md:w-1/2 md:min-w-0 md:shrink-0",
                 mobilePane === "code" ? "block" : "hidden md:block",
               ].join(" ")}
             >
@@ -683,7 +697,7 @@ export default function CompilerWorkspace() {
             </div>
             <div
               className={[
-                "h-full md:w-[38%] md:min-w-[360px] md:max-w-[640px] md:shrink-0 md:border-l md:border-white/10 xl:w-[34%]",
+                "h-full md:w-1/2 md:min-w-0 md:shrink-0 md:border-l md:border-white/10",
                 mobilePane === "output" ? "block" : "hidden md:block",
               ].join(" ")}
             >
