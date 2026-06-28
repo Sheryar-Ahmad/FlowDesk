@@ -145,20 +145,25 @@ allowed_modules = {
 }
 
 allowed_builtins = {
+    "__build_class__": __build_class__,
     "ArithmeticError": ArithmeticError, "AssertionError": AssertionError,
+    "BaseException": BaseException,
     "Exception": Exception, "IndexError": IndexError, "KeyError": KeyError,
     "LookupError": LookupError, "NameError": NameError, "RuntimeError": RuntimeError,
     "StopIteration": StopIteration, "TypeError": TypeError, "ValueError": ValueError,
     "ZeroDivisionError": ZeroDivisionError, "OverflowError": OverflowError,
     "NotImplementedError": NotImplementedError, "StopAsyncIteration": StopAsyncIteration,
-    "abs": abs, "all": all, "any": any, "bool": bool, "chr": chr, "dict": dict,
+    "abs": abs, "all": all, "any": any, "ascii": ascii, "bin": bin, "bool": bool,
+    "callable": callable, "chr": chr, "classmethod": classmethod, "dict": dict,
     "divmod": divmod, "enumerate": enumerate, "filter": filter, "float": float,
     "format": format, "frozenset": frozenset, "hash": hash, "hex": hex, "input": input,
     "int": int, "isinstance": isinstance, "issubclass": issubclass, "iter": iter,
     "len": len, "list": list, "map": map, "max": max, "min": min, "next": next,
-    "oct": oct, "ord": ord, "pow": pow, "print": print, "range": range, "repr": repr,
+    "object": object, "oct": oct, "ord": ord, "pow": pow, "print": print,
+    "property": property, "range": range, "repr": repr,
     "reversed": reversed, "round": round, "set": set, "slice": slice, "sorted": sorted,
-    "str": str, "sum": sum, "tuple": tuple, "zip": zip, "complex": complex,
+    "staticmethod": staticmethod, "str": str, "sum": sum, "super": super,
+    "tuple": tuple, "type": type, "zip": zip, "complex": complex,
     "bytes": bytes, "bytearray": bytearray, "memoryview": memoryview,
 }
 
@@ -389,6 +394,23 @@ def _process_creation_flags() -> int:
     if os.name != "nt":
         return 0
     return getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def _compiler_process_env(temp_dir: str) -> dict[str, str]:
+    env = {
+        "HOME": temp_dir,
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": os.environ.get("PATH", ""),
+        "TEMP": temp_dir,
+        "TMP": temp_dir,
+    }
+    for name in ("COMSPEC", "PATHEXT", "SYSTEMROOT", "WINDIR"):
+        value = os.environ.get(name)
+        if value:
+            env[name] = value
+    return env
 
 
 def _decode_process_run(
@@ -1097,7 +1119,7 @@ async def _execute_javascript(code: str, stdin: str, *, args: list[str] | None =
             timeout_seconds=timeout_seconds,
             max_output=max_output,
             started=started,
-            env={**os.environ, "NO_COLOR": "1"},
+            env=_compiler_process_env(temp_dir),
         )
 
 
@@ -1109,8 +1131,34 @@ def _detect_java_main_class(code: str) -> str:
     return class_match.group(1) if class_match else "Main"
 
 
+def _detect_java_package(code: str) -> str | None:
+    match = re.search(r"^\s*package\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*;", code, re.MULTILINE)
+    return match.group(1) if match else None
+
+
+def _java_runtime_release(java_path: str) -> int | None:
+    try:
+        completed = subprocess.run(
+            [java_path, "-version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=3,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=_process_creation_flags(),
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    match = re.search(r'version\s+"(?:1\.)?(\d+)', completed.stdout or "")
+    return int(match.group(1)) if match else None
+
+
 def _compile_java(
     javac_path: str,
+    java_path: str,
     source_path: str,
     *,
     temp_dir: str,
@@ -1118,7 +1166,13 @@ def _compile_java(
     max_output: int,
     started: float,
 ) -> RunResult:
-    release_command = [javac_path, "-encoding", "UTF-8", "--release", "8", source_path]
+    release = _java_runtime_release(java_path)
+    release_command = [javac_path, "-encoding", "UTF-8", "-d", temp_dir]
+    warnings = []
+    if release:
+        release_command.extend(["--release", str(release)])
+        warnings.append(f"Compiled for the installed Java {release} runtime.")
+    release_command.append(source_path)
     result = _run_process_blocking(
         release_command,
         stdin="",
@@ -1126,16 +1180,18 @@ def _compile_java(
         timeout_seconds=timeout_seconds,
         max_output=max_output,
         started=started,
-        warnings=["Compiled with Java 8 bytecode for broad runtime compatibility."],
+        env=_compiler_process_env(temp_dir),
+        warnings=warnings,
     )
     if result.status == "error" and "invalid flag: --release" in result.output.lower():
         return _run_process_blocking(
-            [javac_path, "-encoding", "UTF-8", source_path],
+            [javac_path, "-encoding", "UTF-8", "-d", temp_dir, source_path],
             stdin="",
             cwd=temp_dir,
             timeout_seconds=timeout_seconds,
             max_output=max_output,
             started=started,
+            env=_compiler_process_env(temp_dir),
         )
     return result
 
@@ -1158,6 +1214,8 @@ async def _execute_java(code: str, stdin: str, *, args: list[str] | None = None)
     timeout_seconds = min(settings.COMPILER_TIMEOUT_SECONDS, COMPILER_TIMEOUT_SECONDS)
     max_output = min(settings.COMPILER_MAX_OUTPUT_CHARS, COMPILER_MAX_OUTPUT_CHARS)
     main_class = _detect_java_main_class(code)
+    package_name = _detect_java_package(code)
+    runtime_class = f"{package_name}.{main_class}" if package_name else main_class
     with tempfile.TemporaryDirectory(prefix="flowdesk-java-") as temp_dir:
         source_path = os.path.join(temp_dir, f"{main_class}.java")
         with open(source_path, "w", encoding="utf-8", newline="\n") as source_file:
@@ -1166,6 +1224,7 @@ async def _execute_java(code: str, stdin: str, *, args: list[str] | None = None)
         compile_result = await asyncio.to_thread(
             _compile_java,
             javac_path,
+            java_path,
             source_path,
             temp_dir=temp_dir,
             timeout_seconds=timeout_seconds,
@@ -1188,13 +1247,13 @@ async def _execute_java(code: str, stdin: str, *, args: list[str] | None = None)
         run_started = time.perf_counter()
         return await asyncio.to_thread(
             _run_process_blocking,
-            [java_path, "-cp", temp_dir, main_class, *(args or [])],
+            [java_path, "-cp", temp_dir, runtime_class, *(args or [])],
             stdin=stdin,
             cwd=temp_dir,
             timeout_seconds=timeout_seconds,
             max_output=max_output,
             started=run_started,
-            env={**os.environ, "NO_COLOR": "1"},
+            env=_compiler_process_env(temp_dir),
             warnings=compile_result.warnings,
         )
 
@@ -1254,6 +1313,7 @@ async def _execute_compiled_c_family(
             timeout_seconds=timeout_seconds,
             max_output=max_output,
             started=started,
+            env=_compiler_process_env(temp_dir),
         )
         if compile_result.status != "success":
             return RunResult(
@@ -1277,7 +1337,7 @@ async def _execute_compiled_c_family(
             timeout_seconds=timeout_seconds,
             max_output=max_output,
             started=run_started,
-            env={**os.environ, "NO_COLOR": "1"},
+            env=_compiler_process_env(temp_dir),
             warnings=compile_result.warnings,
         )
         stdout, stdout_trunc = _truncate(

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import Editor from "@monaco-editor/react"
 import axios from "axios"
 import toast from "react-hot-toast"
 import {
@@ -21,7 +20,6 @@ import {
   getCompilerFiles,
   getCompilerRuntimes,
   runCompilerCode,
-  runCompilerFile,
   updateCompilerFile,
   type CompilerFile,
   type CompilerLanguage,
@@ -34,7 +32,6 @@ type LanguageOption = {
   label: string
   shortLabel: string
   filename: string
-  monaco: string
   template: string
 }
 
@@ -42,9 +39,8 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
   {
     value: "python",
     label: "Python",
-    shortLabel: "Py",
+    shortLabel: "PY",
     filename: "main.py",
-    monaco: "python",
     template: 'print("Hello from FlowDesk")\n',
   },
   {
@@ -52,15 +48,13 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     label: "JavaScript",
     shortLabel: "JS",
     filename: "main.js",
-    monaco: "javascript",
     template: 'console.log("Hello from FlowDesk")\n',
   },
   {
     value: "java",
     label: "Java",
-    shortLabel: "Java",
+    shortLabel: "JAVA",
     filename: "Main.java",
-    monaco: "java",
     template: 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from FlowDesk");\n  }\n}\n',
   },
   {
@@ -68,7 +62,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     label: "C",
     shortLabel: "C",
     filename: "main.c",
-    monaco: "c",
     template: '#include <stdio.h>\n\nint main(void) {\n  printf("Hello from FlowDesk\\n");\n  return 0;\n}\n',
   },
   {
@@ -76,7 +69,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     label: "C++",
     shortLabel: "C++",
     filename: "main.cpp",
-    monaco: "cpp",
     template: '#include <iostream>\n\nint main() {\n  std::cout << "Hello from FlowDesk\\n";\n  return 0;\n}\n',
   },
   {
@@ -84,7 +76,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     label: "HTML",
     shortLabel: "HTML",
     filename: "index.html",
-    monaco: "html",
     template: '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <title>FlowDesk Preview</title>\n</head>\n<body>\n  <h1>Hello from FlowDesk</h1>\n</body>\n</html>\n',
   },
   {
@@ -92,7 +83,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     label: "CSS",
     shortLabel: "CSS",
     filename: "styles.css",
-    monaco: "css",
     template: 'body {\n  margin: 0;\n  padding: 2rem;\n  font-family: system-ui, sans-serif;\n  color: #111827;\n  background: #f8fafc;\n}\n',
   },
 ]
@@ -103,6 +93,12 @@ function getErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
     const detail = error.response?.data?.detail
     if (typeof detail === "string") return detail
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map(item => item && typeof item === "object" && "msg" in item ? String(item.msg) : "")
+        .filter(Boolean)
+      if (messages.length) return messages.join(" ")
+    }
     if (detail && typeof detail === "object" && "message" in detail && typeof detail.message === "string") {
       return detail.message
     }
@@ -139,6 +135,12 @@ function normalizeRunResult(result: CompilerRunResult): CompilerRunResult {
   return result
 }
 
+function getRunOutput(result: CompilerRunResult) {
+  if (result.output?.trim()) return result.output
+  const streams = [result.stdout, result.stderr].filter(Boolean).join("\n").trim()
+  return streams || result.message || ""
+}
+
 function statusClasses(status?: CompilerRunResult["status"]) {
   switch (status) {
     case "success":
@@ -157,6 +159,7 @@ function statusClasses(status?: CompilerRunResult["status"]) {
 
 export default function CompilerWorkspace() {
   const navigate = useNavigate()
+  const lineNumbersRef = useRef<HTMLPreElement | null>(null)
   const [files, setFiles] = useState<CompilerFile[]>([])
   const [runtimes, setRuntimes] = useState<CompilerRuntime[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -176,12 +179,19 @@ export default function CompilerWorkspace() {
   const selectedLanguage = languageByValue.get(language) ?? LANGUAGE_OPTIONS[0]
   const runtime = runtimes.find(item => item.language === language)
   const previewLanguage = isPreviewLanguage(language)
+  const canRun = previewLanguage || runtime?.executable
   const previewDocument = useMemo(
     () => previewLanguage ? buildPreviewDocument(language, code) : "",
     [code, language, previewLanguage],
   )
 
+  const lineNumbers = useMemo(() => {
+    const count = Math.max(1, code.split("\n").length)
+    return Array.from({ length: count }, (_, index) => String(index + 1)).join("\n")
+  }, [code])
+
   const terminalText = useMemo(() => {
+    if (running) return "Running..."
     if (!runResult) return output || "Run your code to see output here."
     const body = output || runResult.message || ""
     let processLine = ""
@@ -191,7 +201,7 @@ export default function CompilerWorkspace() {
       processLine = `Process finished with exit code ${runResult.exit_code}`
     }
     return [body, processLine].filter(Boolean).join("\n\n")
-  }, [output, runResult])
+  }, [output, runResult, running])
 
   const loadWorkspace = useCallback(async () => {
     setLoading(true)
@@ -200,8 +210,7 @@ export default function CompilerWorkspace() {
         getCompilerFiles({ page_size: 100 }),
         getCompilerRuntimes(),
       ])
-      const supportedFiles = fileResponse.files.filter(file => languageByValue.has(file.language))
-      setFiles(supportedFiles)
+      setFiles(fileResponse.files.filter(file => languageByValue.has(file.language)))
       setRuntimes(runtimeResponse.runtimes)
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to load compiler."))
@@ -254,9 +263,7 @@ export default function CompilerWorkspace() {
   const upsertFile = (file: CompilerFile) => {
     setFiles(current => {
       const exists = current.some(item => item.id === file.id)
-      return exists
-        ? current.map(item => item.id === file.id ? file : item)
-        : [file, ...current]
+      return exists ? current.map(item => item.id === file.id ? file : item) : [file, ...current]
     })
   }
 
@@ -310,34 +317,47 @@ export default function CompilerWorkspace() {
       return
     }
 
+    if (!canRun) {
+      const message = runtime?.reason ?? `${selectedLanguage.label} is not installed on this backend yet.`
+      setRunResult({
+        status: "unsupported",
+        stdout: "",
+        stderr: message,
+        output: message,
+        exit_code: null,
+        duration_ms: 0,
+        timed_out: false,
+        truncated: false,
+        language,
+        message,
+        warnings: [],
+        cached: false,
+      })
+      setOutput(message)
+      setMobilePane("output")
+      toast.error(message)
+      return
+    }
+
     setRunning(true)
+    setRunResult(null)
+    setOutput("")
     setMobilePane("output")
     try {
-      const response = activeId
-        ? await runCompilerFile(activeId, {
-            title: title.trim() || selectedLanguage.filename,
-            language,
-            code,
-            stdin,
-            use_cache: false,
-          })
-        : await runCompilerCode({ language, code, stdin, use_cache: false })
-
+      const response = await runCompilerCode({ language, code, stdin, use_cache: false })
       const result = normalizeRunResult(response.result)
+      const nextOutput = getRunOutput(result)
       setRunResult(result)
-      setOutput(result.output || result.message || "")
+      setOutput(nextOutput)
 
       if (activeId) {
         const current = files.find(file => file.id === activeId)
         if (current) {
           upsertFile({
             ...current,
-            title: title.trim() || current.title,
-            language,
             code,
             stdin,
-            output: result.output,
-            run_count: current.run_count + 1,
+            output: nextOutput,
             last_run_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -374,7 +394,28 @@ export default function CompilerWorkspace() {
     }
   }
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const insertTab = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = event.currentTarget
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const nextCode = `${code.slice(0, start)}  ${code.slice(end)}`
+    setCode(nextCode)
+    requestAnimationFrame(() => {
+      textarea.selectionStart = start + 2
+      textarea.selectionEnd = start + 2
+    })
+  }
+
+  const handleEditorKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Tab") {
+      event.preventDefault()
+      insertTab(event)
+      return
+    }
+    handleShortcut(event)
+  }
+
+  const handleShortcut = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === "F11") {
       event.preventDefault()
       setIsFullscreen(current => !current)
@@ -398,7 +439,8 @@ export default function CompilerWorkspace() {
           value={title}
           onChange={event => setTitle(event.target.value)}
           aria-label="File name"
-          className="min-w-0 flex-1 bg-transparent px-2 text-sm font-semibold text-white outline-none"
+          className="min-w-40 flex-1 bg-transparent px-2 text-sm font-semibold text-white outline-none placeholder:text-slate-500"
+          placeholder={selectedLanguage.filename}
         />
         <span className="hidden text-xs text-slate-500 sm:inline">{selectedLanguage.filename}</span>
         <button
@@ -444,29 +486,32 @@ export default function CompilerWorkspace() {
             value={stdin}
             onChange={event => setStdin(event.target.value)}
             placeholder="Only needed when your program reads input..."
-            className="h-20 w-full resize-none rounded-lg border border-white/10 bg-[#0c1019] p-3 font-mono text-sm text-slate-200 outline-none focus:border-indigo-400/50"
+            className="h-20 w-full resize-none rounded-lg border border-white/10 bg-[#0c1019] p-3 font-mono text-sm text-slate-100 caret-cyan-300 outline-none placeholder:text-slate-600 focus:border-indigo-400/50"
             maxLength={12000}
+            spellCheck={false}
           />
         </div>
       )}
 
-      <div className="min-h-0 flex-1">
-        <Editor
-          height="100%"
-          theme="vs-dark"
-          language={selectedLanguage.monaco}
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#1b1f2d]">
+        <pre
+          ref={lineNumbersRef}
+          aria-hidden="true"
+          className="select-none overflow-hidden border-r border-white/10 bg-[#151925] px-4 py-4 text-right font-mono text-[15px] leading-6 text-slate-600"
+        >
+          {lineNumbers}
+        </pre>
+        <textarea
           value={code}
-          onChange={value => setCode(value ?? "")}
-          options={{
-            automaticLayout: true,
-            fontLigatures: true,
-            fontSize: 15,
-            lineHeight: 23,
-            minimap: { enabled: false },
-            padding: { top: 16 },
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
+          onChange={event => setCode(event.target.value)}
+          onKeyDown={handleEditorKeyDown}
+          onScroll={event => {
+            if (lineNumbersRef.current) lineNumbersRef.current.scrollTop = event.currentTarget.scrollTop
           }}
+          aria-label="Code editor"
+          className="min-h-full flex-1 resize-none overflow-auto bg-[#1b1f2d] p-4 font-mono text-[15px] leading-6 text-slate-50 caret-cyan-300 outline-none selection:bg-indigo-500/40 placeholder:text-slate-600"
+          placeholder={`Write your ${selectedLanguage.label} code here...`}
+          spellCheck={false}
         />
       </div>
     </section>
@@ -477,8 +522,8 @@ export default function CompilerWorkspace() {
       <div className="flex min-h-12 items-center justify-between border-b border-white/10 bg-[#252a35] px-4 py-2">
         <div className="flex items-center gap-3">
           <h2 className="font-semibold text-white">{previewLanguage ? "Preview" : "Output"}</h2>
-          <span className={`text-xs font-semibold uppercase ${statusClasses(runResult?.status)}`}>
-            {runResult?.status ?? "idle"}
+          <span className={`text-xs font-semibold uppercase ${statusClasses(running ? undefined : runResult?.status)}`}>
+            {running ? "running" : runResult?.status ?? "idle"}
           </span>
         </div>
         <button
@@ -503,7 +548,7 @@ export default function CompilerWorkspace() {
             className="h-full min-h-[420px] w-full bg-white"
           />
         ) : (
-          <pre className="min-h-full whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-slate-200">
+          <pre className="min-h-full whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-slate-100">
             {terminalText}
           </pre>
         )}
@@ -517,7 +562,7 @@ export default function CompilerWorkspace() {
         "flex flex-col overflow-hidden bg-[#11141d] text-slate-100",
         isFullscreen ? "fixed inset-0 z-50 h-[100svh]" : "h-[100svh]",
       ].join(" ")}
-      onKeyDown={handleKeyDown}
+      onKeyDown={handleShortcut}
     >
       {!isFullscreen && (
         <header className="flex min-h-[72px] items-center justify-between gap-3 border-b border-white/10 bg-[#0d1118] px-3 sm:px-5">
@@ -535,14 +580,12 @@ export default function CompilerWorkspace() {
             </div>
             <div className="min-w-0">
               <h1 className="truncate text-lg font-bold text-white">FlowDesk Compiler</h1>
-              <p className="truncate text-xs text-slate-500">
-                {selectedLanguage.label} online compiler
-              </p>
+              <p className="truncate text-xs text-slate-500">{selectedLanguage.label} online compiler</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 sm:flex">
+            <label className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 md:flex">
               <FolderOpen size={16} className="text-slate-500" />
               <select
                 value={activeId ?? ""}
@@ -588,7 +631,7 @@ export default function CompilerWorkspace() {
                 key={option.value}
                 type="button"
                 onClick={() => changeLanguage(option.value)}
-                title={`${option.label}${optionRuntime?.executable ? "" : " - runtime unavailable"}`}
+                title={`${option.label}${optionRuntime?.executable || isPreviewLanguage(option.value) ? "" : " - runtime unavailable"}`}
                 className={[
                   "relative flex min-h-14 min-w-16 items-center justify-center border-indigo-500 text-xs font-bold transition md:min-h-16 md:min-w-0",
                   selected
@@ -629,17 +672,13 @@ export default function CompilerWorkspace() {
             </button>
           </div>
 
-          <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,42%)]">
-            <div className={mobilePane === "code" ? "h-full" : "hidden h-full md:block"}>
-              {editorPane}
-            </div>
-            <div className={mobilePane === "output" ? "h-full" : "hidden h-full md:block"}>
-              {outputPane}
-            </div>
+          <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(0,1fr)_minmax(340px,38%)] xl:grid-cols-[minmax(0,1fr)_minmax(420px,34%)]">
+            <div className={mobilePane === "code" ? "h-full" : "hidden h-full md:block"}>{editorPane}</div>
+            <div className={mobilePane === "output" ? "h-full" : "hidden h-full md:block"}>{outputPane}</div>
           </main>
 
           <footer className="flex min-h-7 items-center justify-between border-t border-white/10 bg-[#0d1118] px-3 text-[11px] text-slate-500">
-            <span>{runtime?.executable || previewLanguage ? "Ready" : runtime?.reason ?? "Runtime unavailable"}</span>
+            <span>{canRun ? "Ready" : runtime?.reason ?? "Runtime unavailable"}</span>
             <span className="hidden sm:inline">Ctrl+Enter Run | Ctrl+S Save | F11 Fullscreen</span>
           </footer>
         </div>
