@@ -672,9 +672,23 @@ export default function CompilerWorkspace() {
             </button>
           </div>
 
-          <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(0,1fr)_minmax(340px,38%)] xl:grid-cols-[minmax(0,1fr)_minmax(420px,34%)]">
-            <div className={mobilePane === "code" ? "h-full" : "hidden h-full md:block"}>{editorPane}</div>
-            <div className={mobilePane === "output" ? "h-full" : "hidden h-full md:block"}>{outputPane}</div>
+          <main className="min-h-0 flex-1 md:flex md:flex-row">
+            <div
+              className={[
+                "h-full md:min-w-0 md:flex-1",
+                mobilePane === "code" ? "block" : "hidden md:block",
+              ].join(" ")}
+            >
+              {editorPane}
+            </div>
+            <div
+              className={[
+                "h-full md:w-[38%] md:min-w-[360px] md:max-w-[640px] md:shrink-0 md:border-l md:border-white/10 xl:w-[34%]",
+                mobilePane === "output" ? "block" : "hidden md:block",
+              ].join(" ")}
+            >
+              {outputPane}
+            </div>
           </main>
 
           <footer className="flex min-h-7 items-center justify-between border-t border-white/10 bg-[#0d1118] px-3 text-[11px] text-slate-500">
