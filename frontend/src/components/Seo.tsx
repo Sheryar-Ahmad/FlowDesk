@@ -1,8 +1,9 @@
 import { useEffect } from "react"
 import { useLocation } from "react-router-dom"
 
-const DEFAULT_DESCRIPTION = "FlowDesk combines code snippets, developer notes, tasks, AI assistance, focus sessions, code comparison, and a safe compiler workspace in one focused app."
-const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || "https://flowdesk.pages.dev").replace(/\/+$/, "")
+const DEFAULT_DESCRIPTION = "FlowDesk combines snippets, notes, tasks, AI assistance, focus sessions, code diff, and a safe compiler workspace in one focused developer app."
+const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || "https://flowdesk.vercel.app").replace(/\/+$/, "")
+const SITE_IMAGE = `${SITE_URL}/og-image.svg`
 
 const ROUTE_TITLES: Record<string, string> = {
   "/": "FlowDesk | Unified Developer Workspace",
@@ -46,8 +47,12 @@ export function Seo() {
     setMeta('meta[property="og:title"]', { property: "og:title", content: title })
     setMeta('meta[property="og:description"]', { property: "og:description", content: DEFAULT_DESCRIPTION })
     setMeta('meta[property="og:url"]', { property: "og:url", content: canonicalUrl })
+    setMeta('meta[property="og:image"]', { property: "og:image", content: SITE_IMAGE })
+    setMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: "FlowDesk unified developer workspace" })
+    setMeta('meta[property="og:locale"]', { property: "og:locale", content: "en_US" })
     setMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title })
     setMeta('meta[name="twitter:description"]', { name: "twitter:description", content: DEFAULT_DESCRIPTION })
+    setMeta('meta[name="twitter:image"]', { name: "twitter:image", content: SITE_IMAGE })
 
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
     if (!canonical) {
@@ -85,6 +90,9 @@ export function Seo() {
           "Focus timer",
           "Code comparison",
           "Safe compiler workspace",
+        ],
+        sameAs: [
+          "https://github.com/Sheryar-Ahmad/FlowDesk",
         ],
       })
       document.head.appendChild(script)

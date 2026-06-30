@@ -7,8 +7,9 @@ Disallow: /tasks
 Disallow: /ai
 Disallow: /timer
 Disallow: /diff
+Disallow: /compiler
 Disallow: /login
 Disallow: /register
 Disallow: /api/
 
-Sitemap: https://flowdesk.pages.dev/sitemap.xml
+Sitemap: https://flowdesk.vercel.app/sitemap.xml
