@@ -392,7 +392,7 @@ def local_runtime_reason(language: str) -> str | None:
             return "Runs locally through Node.js with FlowDesk timeouts."
         return "Runs locally in the FlowDesk sandbox."
     if language in LOCAL_RUNTIME_COMMANDS:
-        return f"Install {', '.join(missing)} on the backend, or configure COMPILER_PISTON_API_URL."
+        return f"{RUNTIME_LABELS.get(language, language).upper()} execution is not available on this server yet."
     return None
 
 
@@ -456,25 +456,31 @@ def _run_process_blocking(
     env: dict[str, str] | None = None,
     warnings: list[str] | None = None,
 ) -> RunResult:
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        env=env,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        creationflags=_process_creation_flags(),
+        start_new_session=os.name != "nt",
+    )
     try:
-        completed = subprocess.run(
-            command,
-            input=stdin,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=cwd,
-            env=env,
-            timeout=timeout_seconds,
-            check=False,
-            encoding="utf-8",
-            errors="replace",
-            creationflags=_process_creation_flags(),
-        )
-    except subprocess.TimeoutExpired as exc:
+        stdout_value, stderr_value = process.communicate(stdin, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            process.kill()
+        else:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        stdout_value, stderr_value = process.communicate()
         duration_ms = round((time.perf_counter() - started) * 1000)
-        stdout, stdout_trunc = _truncate(strip_ansi(exc.stdout or ""), max_output)
-        stderr, stderr_trunc = _truncate(strip_ansi(exc.stderr or ""), max_output)
+        stdout, stdout_trunc = _truncate(strip_ansi(stdout_value or ""), max_output)
+        stderr, stderr_trunc = _truncate(strip_ansi(stderr_value or ""), max_output)
         _bump("runs_timeout")
         return RunResult(
             status="timeout",
@@ -489,9 +495,9 @@ def _run_process_blocking(
         )
 
     return _decode_process_run(
-        returncode=completed.returncode,
-        stdout_value=completed.stdout,
-        stderr_value=completed.stderr,
+        returncode=process.returncode,
+        stdout_value=stdout_value,
+        stderr_value=stderr_value,
         duration_ms=round((time.perf_counter() - started) * 1000),
         max_output=max_output,
         warnings=warnings,
