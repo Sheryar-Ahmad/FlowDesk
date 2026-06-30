@@ -1,71 +1,73 @@
-# FlowDesk - The Unified Developer Workspace
+# FlowDesk
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-active%20development-green.svg)
-![Stack](https://img.shields.io/badge/stack-Python%20%7C%20FastAPI%20%7C%20React%20%7C%20TypeScript%20%7C%20Rust-orange.svg)
-
-> One app to replace 10 tools. Built for developers who are tired of switching between apps all day.
-
-## What is FlowDesk?
-
-FlowDesk is a unified developer workspace that combines everything a developer needs into one beautiful, fast, and intelligent application.
+FlowDesk is a unified developer workspace for saving code, writing notes, planning tasks, using AI help, comparing code, focusing work sessions, and running small-to-medium programs from one app.
 
 ## Features
 
-- Code Snippet Manager - Save and search code in 50+ languages
-- Developer Notes - Rich text notes with syntax highlighting
-- Task Board - Kanban project management
-- AI Assistant - Powered by Groq, Gemini, Mistral, and Ollama (all free)
-- API Tester - Lightweight Postman alternative
-- Focus Timer - Pomodoro productivity timer
-- README Generator - Auto-generate GitHub READMEs
-- Code Diff Viewer - Compare code side by side
+- Snippets: save, tag, search, copy, import, and export reusable code.
+- Notes: rich developer notes with templates, formatting tools, and AI summaries.
+- Tasks: project-based Kanban boards with priorities, due dates, edits, and delete actions.
+- AI Assistant: chat sessions, auto titles, rename support, provider fallbacks, and Pro limits.
+- Focus Timer: Pomodoro-style focus tracking and daily session stats.
+- Code Diff: side-by-side code comparison with mobile-friendly controls.
+- Compiler: run Python, JavaScript, Java, C, and C++ through the backend runtime, plus HTML/CSS preview.
 
-## Tech Stack
+## Stack
 
 | Layer | Technology |
-|-------|------------|
-| Backend | Python 3.12 + FastAPI |
-| Frontend | React 18 + TypeScript + Tailwind CSS |
-| Database | PostgreSQL via Supabase (free) |
-| Desktop | Tauri (Rust + React) |
-| AI Models | Groq + Gemini + Mistral + Ollama |
-| Hosting | Vercel + Render (free) |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Backend | FastAPI, Python 3.12 |
+| Database | PostgreSQL / Supabase |
+| Auth | Email/password, Google OAuth |
+| Payments | Lemon Squeezy |
+| Deployment | Vercel frontend, Render Docker backend |
 
-## Project Status
+## Local Development
 
-Currently in active development following the Spiral SDLC model.
+Prerequisites:
 
-- [x] Spiral 1 - Project foundation and structure
-- [x] Spiral 2 - Backend authentication
-- [x] Spiral 3 - Frontend UI
-- [x] Spiral 4 - Snippet Manager
-- [x] Spiral 5 - Notes System
-- [x] Spiral 6 - Task Board
-- [x] Spiral 7 - AI Assistant
-- [x] Spiral 8 - Additional features
-- [x] Spiral 9 - Payments
-- [x] Spiral 10 - API Tester
-- [ ] Spiral 11 - Desktop App
-- [ ] Spiral 12 - Launch
-
-## Getting Started
-
-### Prerequisites
 - Python 3.12+
 - Node.js 20+
-- Git
+- PostgreSQL-compatible database
+- GCC/G++, Java, and Node on the backend machine for local compiler execution
 
-### Installation
-\\\ash
+```bash
 git clone https://github.com/Sheryar-Ahmad/FlowDesk.git
 cd FlowDesk
-\\\`n
+```
+
+Backend:
+
+```bash
+cd backend
+python -m venv ../.venv
+../.venv/Scripts/python -m pip install -r requirements.txt
+../.venv/Scripts/python -m uvicorn app.main:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Production Notes
+
+- Keep secrets in platform environment variables, never in frontend code.
+- Deploy the backend with the Dockerfile so Python, Node, Java, GCC, and G++ are available.
+- Set `DATABASE_URL`, OAuth, AI provider, Lemon Squeezy, and allowed-origin variables before launch.
+- Public compiler execution is intentionally limited by code size, stdin size, output size, timeout, and daily quota.
+
+## Verification
+
+```bash
+cd frontend && npm run lint && npm run build
+cd backend && ../.venv/Scripts/python -m pytest -q
+```
+
 ## License
 
-MIT License - see LICENSE file for details.
-
-## Author
-
-Built with purpose by Sheryar Ahmad
-- GitHub: [@Sheryar-Ahmad](https://github.com/Sheryar-Ahmad)
+MIT License. See [LICENSE](LICENSE).

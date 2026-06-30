@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: FlowDesk API
+  version: 1.0.0
+  description: >
+    Public API overview for FlowDesk. The source of truth is the FastAPI app;
+    run the backend with DEBUG=true and open /docs or /openapi.json for the
+    generated schema.
+servers:
+  - url: http://localhost:8000
+    description: Local backend
+  - url: https://flowdesk-api.onrender.com
+    description: Production backend placeholder
+tags:
+  - name: Auth
+  - name: Dashboard
+  - name: Snippets
+  - name: Notes
+  - name: Tasks
+  - name: AI
+  - name: Timer
+  - name: Compiler
+  - name: Payments
+paths:
+  /health:
+    get:
+      summary: Service health check
+      tags: [System]
+      responses:
+        "200":
+          description: Backend health state
+  /api/v1/compiler/run:
+    post:
+      summary: Run inline compiler code
+      tags: [Compiler]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Execution result
+        "401":
+          description: Authentication required
+        "429":
+          description: Rate or quota limit reached
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
