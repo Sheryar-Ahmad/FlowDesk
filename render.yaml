@@ -39,6 +39,12 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: COMPILER_EXECUTION_ENABLED
+        value: "true"
+      - key: COMPILER_TIMEOUT_SECONDS
+        value: "12"
+      - key: COMPILER_MAX_OUTPUT_CHARS
+        value: "50000"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET

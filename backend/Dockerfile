@@ -12,6 +12,13 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential openjdk-17-jdk-headless nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python --version \
+    && node --version \
+    && gcc --version \
+    && g++ --version \
+    && javac -version \
+    && java -version
+
 RUN groupadd --system flowdesk \
     && useradd --system --gid flowdesk --create-home flowdesk
 

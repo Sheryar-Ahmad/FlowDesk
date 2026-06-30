@@ -41,7 +41,7 @@ class CompilerFileUpdate(BaseModel):
     language: CompilerLanguage | None = None
     code: str | None = Field(default=None, min_length=1, max_length=COMPILER_MAX_CODE_CHARS)
     stdin: str | None = Field(default=None, max_length=COMPILER_MAX_STDIN_CHARS)
-    output: str | None = Field(default=None, max_length=20000)
+    output: str | None = Field(default=None, max_length=COMPILER_MAX_OUTPUT_CHARS)
     is_pinned: bool | None = None
 
     @field_validator("title")
