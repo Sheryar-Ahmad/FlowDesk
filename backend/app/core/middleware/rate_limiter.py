@@ -5,12 +5,15 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 import structlog
 
+from app.config import get_settings
+
 logger = structlog.get_logger(__name__)
+settings = get_settings()
 
 # SlowAPI keys these burst limits by client IP.
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["200/minute"],
+    default_limits=[settings.RATE_LIMIT_DEFAULT],
 )
 
 
@@ -33,19 +36,22 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
     )
 
 
-AUTH_LIMIT = "10/minute"
+AUTH_LIMIT = settings.RATE_LIMIT_AUTH
 
 
-RESET_LIMIT = "5/hour"
+RESET_LIMIT = settings.RATE_LIMIT_PASSWORD_RESET
 
 
-API_LIMIT = "100/minute"
+API_LIMIT = settings.RATE_LIMIT_API
 
 
-AI_LIMIT = "30/minute"
+AI_LIMIT = settings.RATE_LIMIT_AI
 
 
-SEARCH_LIMIT = "60/minute"
+SEARCH_LIMIT = settings.RATE_LIMIT_SEARCH
 
 
-COMPILER_LIMIT = "20/minute"
+COMPILER_LIMIT = settings.RATE_LIMIT_COMPILER
+
+
+COMPILER_RUN_LIMIT = settings.RATE_LIMIT_COMPILER_RUN

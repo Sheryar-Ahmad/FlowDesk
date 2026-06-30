@@ -13,7 +13,7 @@ from app.api.v1.compiler.schemas import (
 )
 from app.config import get_settings
 from app.core.middleware.auth_guard import get_current_user
-from app.core.middleware.rate_limiter import COMPILER_LIMIT, limiter
+from app.core.middleware.rate_limiter import COMPILER_LIMIT, COMPILER_RUN_LIMIT, limiter
 from app.database.connection import get_db
 from app.services.compiler_service import (
     create_compiler_file,
@@ -208,7 +208,7 @@ async def run_stats(
 
 
 @router.post("/run")
-@limiter.limit(COMPILER_LIMIT)
+@limiter.limit(COMPILER_RUN_LIMIT)
 async def run_inline(
     request: Request,
     body: CompilerRunRequest,
@@ -236,7 +236,7 @@ async def run_inline(
 
 
 @router.post("/test-cases")
-@limiter.limit(COMPILER_LIMIT)
+@limiter.limit(COMPILER_RUN_LIMIT)
 async def run_compiler_test_cases(
     request: Request,
     body: CompilerTestCaseRequest,
@@ -262,7 +262,7 @@ async def run_compiler_test_cases(
 
 
 @router.post("/{file_id}/run")
-@limiter.limit(COMPILER_LIMIT)
+@limiter.limit(COMPILER_RUN_LIMIT)
 async def run_saved_file(
     request: Request,
     file_id: str,

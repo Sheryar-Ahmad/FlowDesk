@@ -38,23 +38,23 @@ settings = get_settings()
 # CONFIG / LIMITS  (features 1-10: tunable enterprise limits)
 # ──────────────────────────────────────────────────────────────────────────
 
-MAX_CODE_LENGTH = 200_000          # 1. max source size
-MAX_STDIN_LENGTH = 50_000          # 2. max stdin size
-MAX_MEMORY_MB = 128                # 3. hard memory cap per run
-MAX_CONCURRENT_RUNS_PER_USER = 2   # 4. per-user concurrency cap
-MAX_GLOBAL_CONCURRENT_RUNS = 25    # 5. global concurrency cap (protects the box)
-RUN_CACHE_TTL_SECONDS = 600        # 6. identical code+stdin → cached result
-RUN_CACHE_MAX_ENTRIES = 2000       # 7. cache eviction bound
-TRASH_RETENTION_DAYS = 30          # 8. soft-deleted files auto-purge window
-MAX_VERSIONS_PER_FILE = 50         # 9. version history cap
-TEST_CASE_MAX_COUNT = 25           # 10. bulk test-case ceiling
+MAX_CODE_LENGTH = min(settings.COMPILER_MAX_CODE_CHARS, 200_000)
+MAX_STDIN_LENGTH = min(settings.COMPILER_MAX_STDIN_CHARS, 50_000)
+MAX_MEMORY_MB = 128
+MAX_CONCURRENT_RUNS_PER_USER = max(1, min(settings.COMPILER_MAX_CONCURRENT_RUNS_PER_USER, 4))
+MAX_GLOBAL_CONCURRENT_RUNS = max(1, min(settings.COMPILER_MAX_GLOBAL_CONCURRENT_RUNS, 8))
+RUN_CACHE_MAX_ENTRIES = max(50, min(settings.COMPILER_RUN_CACHE_MAX_ENTRIES, 2000))
+RUN_CACHE_TTL_SECONDS = max(30, min(settings.COMPILER_RUN_CACHE_TTL_SECONDS, 3600))
+TRASH_RETENTION_DAYS = 30
+MAX_VERSIONS_PER_FILE = 50
+TEST_CASE_MAX_COUNT = 25
 
-BANNED_IMPORT_PATTERNS = (         # 11. defense-in-depth import blocklist
+BANNED_IMPORT_PATTERNS = (
     "os", "sys", "subprocess", "socket", "shutil", "ctypes",
     "multiprocessing", "threading", "importlib", "pickle", "marshal",
 )
 
-LANGUAGE_ALIASES = {                # 12. auto-normalize sloppy language input
+LANGUAGE_ALIASES = {
     "py": "python", "py3": "python", "js": "javascript",
     "c++": "cpp",
 }
@@ -63,24 +63,24 @@ LANGUAGE_ALIASES = {                # 12. auto-normalize sloppy language input
 # IN-MEMORY RUNTIME STATE  (features 13-17: concurrency + caching primitives)
 # ──────────────────────────────────────────────────────────────────────────
 
-_global_run_semaphore = asyncio.Semaphore(MAX_GLOBAL_CONCURRENT_RUNS)   # 13
-_user_run_locks: dict[str, asyncio.Semaphore] = defaultdict(            # 14
+_global_run_semaphore = asyncio.Semaphore(MAX_GLOBAL_CONCURRENT_RUNS)
+_user_run_locks: dict[str, asyncio.Semaphore] = defaultdict(
     lambda: asyncio.Semaphore(MAX_CONCURRENT_RUNS_PER_USER)
 )
-_file_run_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)    # 15 single-flight per file
-_run_cache: dict[str, tuple[float, dict[str, Any]]] = {}                # 16 code-hash → (expiry, result)
-_metrics = defaultdict(int)                                             # 17 prometheus-style counters
+_file_run_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+_run_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+_metrics = defaultdict(int)
 
 
 def _bump(metric: str) -> None:
     _metrics[metric] += 1
 
 
-def get_runtime_metrics() -> dict[str, int]:  # 18. health/metrics endpoint feed
+def get_runtime_metrics() -> dict[str, int]:
     return dict(_metrics)
 
 
-def get_queue_stats() -> dict[str, Any]:  # 19. live load visibility
+def get_queue_stats() -> dict[str, Any]:
     return {
         "global_slots_free": _global_run_semaphore._value,
         "global_slots_total": MAX_GLOBAL_CONCURRENT_RUNS,

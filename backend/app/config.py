@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
 
+    RATE_LIMIT_DEFAULT: str = "120/minute"
+    RATE_LIMIT_AUTH: str = "8/minute"
+    RATE_LIMIT_PASSWORD_RESET: str = "5/hour"
+    RATE_LIMIT_API: str = "80/minute"
+    RATE_LIMIT_AI: str = "8/minute"
+    RATE_LIMIT_COMPILER: str = "30/minute"
+    RATE_LIMIT_COMPILER_RUN: str = "6/minute"
+    RATE_LIMIT_SEARCH: str = "40/minute"
+
+
     LEMON_SQUEEZY_API_KEY: str = ""
     LEMON_SQUEEZY_WEBHOOK_SECRET: str = ""
     LEMON_SQUEEZY_STORE_ID: str = ""
@@ -60,7 +70,13 @@ class Settings(BaseSettings):
 
     COMPILER_EXECUTION_ENABLED: bool = True
     COMPILER_TIMEOUT_SECONDS: int = 8
+    COMPILER_MAX_CODE_CHARS: int = 200000
+    COMPILER_MAX_STDIN_CHARS: int = 50000
     COMPILER_MAX_OUTPUT_CHARS: int = 50000
+    COMPILER_MAX_GLOBAL_CONCURRENT_RUNS: int = 2
+    COMPILER_MAX_CONCURRENT_RUNS_PER_USER: int = 1
+    COMPILER_RUN_CACHE_MAX_ENTRIES: int = 300
+    COMPILER_RUN_CACHE_TTL_SECONDS: int = 600
     COMPILER_PISTON_API_URL: str = ""
 
 
@@ -114,7 +130,16 @@ class Settings(BaseSettings):
             raise ValueError("Database pool settings cannot be negative.")
         return value
 
-    @field_validator("COMPILER_TIMEOUT_SECONDS", "COMPILER_MAX_OUTPUT_CHARS")
+    @field_validator(
+        "COMPILER_TIMEOUT_SECONDS",
+        "COMPILER_MAX_CODE_CHARS",
+        "COMPILER_MAX_STDIN_CHARS",
+        "COMPILER_MAX_OUTPUT_CHARS",
+        "COMPILER_MAX_GLOBAL_CONCURRENT_RUNS",
+        "COMPILER_MAX_CONCURRENT_RUNS_PER_USER",
+        "COMPILER_RUN_CACHE_MAX_ENTRIES",
+        "COMPILER_RUN_CACHE_TTL_SECONDS",
+    )
     @classmethod
     def validate_compiler_limits(cls, value: int) -> int:
         if value < 1:
