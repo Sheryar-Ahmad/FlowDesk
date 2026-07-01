@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import ssl
 from logging.config import fileConfig
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from alembic import context
 from sqlalchemy import pool
@@ -19,13 +21,45 @@ if config.config_file_name:
 target_metadata = Base.metadata
 
 
-def database_url() -> str:
-    url = get_settings().DATABASE_URL
+def database_url(raw_url: str | None = None) -> str:
+    url = (raw_url or get_settings().DATABASE_URL).strip()
     if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://", 1)
-    return url
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    parsed = urlsplit(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.pop("sslmode", None)
+    query.pop("sslrootcert", None)
+    if (parsed.hostname or "").endswith(".pooler.supabase.com") and parsed.port == 6543:
+        query.setdefault("prepared_statement_cache_size", "0")
+
+    return urlunsplit(parsed._replace(query=urlencode(query)))
+
+
+def build_connect_args() -> dict:
+    raw_url = get_settings().DATABASE_URL.strip()
+    parsed = urlsplit(raw_url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    sslmode = query.get("sslmode", "").lower()
+    hostname = parsed.hostname or ""
+
+    connect_args = {"command_timeout": 60}
+    if sslmode == "disable":
+        return connect_args
+
+    if (
+        sslmode == "require"
+        or hostname.endswith(".supabase.co")
+        or hostname.endswith(".pooler.supabase.com")
+    ):
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = context
+
+    return connect_args
 
 
 def run_migrations_offline() -> None:
@@ -61,6 +95,7 @@ async def run_async_migrations() -> None:
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=build_connect_args(),
     )
 
     async with connectable.connect() as connection:
