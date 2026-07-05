@@ -4,7 +4,7 @@ import hmac
 import json
 import secrets
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import httpx
 from fastapi import APIRouter, Depends, Request, HTTPException, Query, status
@@ -106,6 +106,10 @@ def google_redirect_uri(request: Request) -> str:
     if configured:
         return configured
     return str(request.url_for("google_callback"))
+
+
+def google_state_cookie_secure(request: Request) -> bool:
+    return urlsplit(google_redirect_uri(request)).scheme == "https"
 
 
 async def exchange_google_authorization_code(code: str, redirect_uri: str) -> str:
@@ -276,10 +280,7 @@ async def google_start(
 ):
     """Starts the Google OAuth flow."""
     if not google_oauth_configured():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google sign-in is not configured yet.",
-        )
+        return oauth_error_redirect("Google sign-in is not configured yet.")
 
     next_url = safe_next_path(next_path)
     nonce = secrets.token_urlsafe(32)
@@ -306,7 +307,7 @@ async def google_start(
         nonce,
         max_age=GOOGLE_STATE_TTL_SECONDS,
         httponly=True,
-        secure=not settings.DEBUG,
+        secure=google_state_cookie_secure(request),
         samesite="lax",
     )
     return response

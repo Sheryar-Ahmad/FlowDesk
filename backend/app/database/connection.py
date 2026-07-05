@@ -162,6 +162,7 @@ async def check_db_connection() -> bool:
 async def ensure_database_schema() -> None:
     """Apply small idempotent schema upgrades required by the current app."""
     async with AsyncSessionLocal() as session:
+        await session.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
         await session.execute(
             text(
                 """
@@ -227,7 +228,55 @@ async def ensure_database_schema() -> None:
                 """
             )
         )
-        await session.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        await session.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS users
+                    ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255),
+                    ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40) NOT NULL DEFAULT 'password'
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub
+                ON users (google_sub)
+                WHERE google_sub IS NOT NULL AND deleted_at IS NULL
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS oauth_handoff_codes (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    code_hash VARCHAR(64) NOT NULL,
+                    expires_at TIMESTAMPTZ NOT NULL,
+                    used_at TIMESTAMPTZ,
+                    ip_address INET,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_oauth_handoff_code_hash
+                ON oauth_handoff_codes (code_hash)
+                """
+            )
+        )
+        await session.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_oauth_handoff_user_expires
+                ON oauth_handoff_codes (user_id, expires_at)
+                """
+            )
+        )
         await session.execute(
             text(
                 """

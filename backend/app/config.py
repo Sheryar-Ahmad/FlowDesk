@@ -1,8 +1,13 @@
 import secrets
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+PROJECT_DIR = BACKEND_DIR.parent
+ENV_FILES = (PROJECT_DIR / ".env", BACKEND_DIR / ".env")
 
 
 class Settings(BaseSettings):
@@ -146,7 +151,7 @@ class Settings(BaseSettings):
             raise ValueError("Compiler limits must be positive.")
         return value
 
-    model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
+    model_config = {"env_file": ENV_FILES, "case_sensitive": True, "extra": "ignore"}
 
 
 @lru_cache()
