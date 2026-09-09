@@ -210,23 +210,31 @@ async def save_ai_session(
     return str(new_session.id), session_title
 
 
+def get_utc_midnight_boundaries(dt: datetime | None = None) -> tuple[datetime, datetime]:
+    """Returns today's UTC midnight (start of day) and tomorrow's UTC midnight (next reset)."""
+    now = dt or datetime.now(timezone.utc)
+    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    next_midnight = today_midnight + timedelta(days=1)
+    return today_midnight, next_midnight
+
+
 async def reserve_ai_message(db: AsyncSession, user_id: str):
     """Atomically reserves one AI request before contacting a provider."""
     now = datetime.now(timezone.utc)
-    reset_before = now.replace(microsecond=0) - timedelta(days=1)
+    today_midnight, _ = get_utc_midnight_boundaries(now)
     monthly_reset_at = now + timedelta(days=30)
     result = await db.execute(
         text("""
             UPDATE users
             SET ai_messages_used_today = CASE
                     WHEN plan = 'pro' THEN ai_messages_used_today
-                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at < :today_midnight
                         THEN 1
                     ELSE ai_messages_used_today + 1
                 END,
                 ai_messages_reset_at = CASE
                     WHEN plan = 'pro' THEN ai_messages_reset_at
-                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                    WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at < :today_midnight
                         THEN :now
                     ELSE ai_messages_reset_at
                 END,
@@ -255,7 +263,7 @@ async def reserve_ai_message(db: AsyncSession, user_id: str):
                   OR (
                       plan <> 'pro'
                       AND CASE
-                          WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at <= :reset_before
+                          WHEN ai_messages_reset_at IS NULL OR ai_messages_reset_at < :today_midnight
                               THEN 0
                           ELSE ai_messages_used_today
                       END < :free_limit
@@ -268,7 +276,7 @@ async def reserve_ai_message(db: AsyncSession, user_id: str):
         {
             "uid": user_id,
             "now": now,
-            "reset_before": reset_before,
+            "today_midnight": today_midnight,
             "monthly_reset_at": monthly_reset_at,
             "free_limit": FREE_TIER_AI_MESSAGES_PER_DAY,
             "pro_limit": PRO_TIER_AI_MESSAGES_PER_MONTH,
@@ -672,6 +680,7 @@ async def get_usage(
 ):
     """Get AI usage stats."""
     now = datetime.now(timezone.utc)
+    today_midnight, next_midnight = get_utc_midnight_boundaries(now)
     result = await db.execute(
         text("""
             SELECT ai_messages_used_today, ai_messages_reset_at,
@@ -683,7 +692,6 @@ async def get_usage(
     user = result.fetchone()
     used_today = user.ai_messages_used_today or 0
     used_month = user.ai_messages_used_month or 0
-
 
     if user.plan == "pro" and user.ai_messages_month_reset_at:
         monthly_reset = user.ai_messages_month_reset_at
@@ -702,17 +710,18 @@ async def get_usage(
             )
             await db.commit()
 
-    if user.plan != "pro" and user.ai_messages_reset_at:
+    if user.plan != "pro":
         reset_at = user.ai_messages_reset_at
-        if hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
+        if reset_at is not None and hasattr(reset_at, "tzinfo") and reset_at.tzinfo is None:
             reset_at = reset_at.replace(tzinfo=timezone.utc)
-        if (now - reset_at).total_seconds() >= 86400:
-            used_today = 0
-            await db.execute(
-                text("UPDATE users SET ai_messages_used_today=0, ai_messages_reset_at=NOW() WHERE id=:uid"),
-                {"uid": current_user["id"]}
-            )
-            await db.commit()
+        if reset_at is None or reset_at < today_midnight:
+            if used_today != 0:
+                used_today = 0
+                await db.execute(
+                    text("UPDATE users SET ai_messages_used_today=0 WHERE id=:uid"),
+                    {"uid": current_user["id"]}
+                )
+                await db.commit()
 
     return {
         "success": True,
@@ -723,7 +732,7 @@ async def get_usage(
             0,
             quota_limit(user.plan) - (used_month if user.plan == "pro" else used_today),
         ),
-        "reset_at": user.ai_messages_month_reset_at if user.plan == "pro" else user.ai_messages_reset_at,
+        "reset_at": user.ai_messages_month_reset_at if user.plan == "pro" else next_midnight,
         "plan": user.plan,
     }
 
