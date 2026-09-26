@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 0 */4 * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/keep-database-awake.yml"
 
 permissions:
   contents: read
@@ -17,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      BACKEND_URL: ${{ vars.BACKEND_URL || vars.VITE_API_URL || 'https://flowdesk-api.onrender.com' }}
+      BACKEND_URL: ${{ vars.BACKEND_URL || vars.VITE_API_URL || 'https://sheryahmadkhan-flowdesk-api.hf.space' }}
     steps:
       - name: Ping database with cold-start retries
         shell: bash
@@ -29,15 +33,31 @@ jobs:
             https://*) ;;
             *) echo "BACKEND_URL must use HTTPS" >&2; exit 1 ;;
           esac
-          curl --fail-with-body --silent --show-error \
+
+          response_code="$(curl --silent --show-error \
             --connect-timeout 20 --max-time 90 \
             --retry 4 --retry-delay 15 --retry-all-errors \
-            "${base}/health/ping-db" --output ping.json
+            --output ping.json --write-out '%{http_code}' \
+            "${base}/health/ping-db")"
+
+          if [ "$response_code" = "404" ]; then
+            echo "Dedicated database ping is not deployed; using the database-backed health endpoint."
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 20 --max-time 90 \
+              --retry 4 --retry-delay 15 --retry-all-errors \
+              "${base}/health" --output ping.json
+          elif [ "$response_code" != "200" ]; then
+            echo "Database ping returned HTTP ${response_code}." >&2
+            exit 1
+          fi
+
           python - <<'PY'
           import json
           with open("ping.json", encoding="utf-8") as response:
               payload = json.load(response)
-          if payload.get("status") != "ok" or not payload.get("timestamp"):
+          dedicated_ping_ok = payload.get("status") == "ok" and payload.get("timestamp")
+          health_ping_ok = payload.get("status") == "healthy" and payload.get("database") == "connected"
+          if not (dedicated_ping_ok or health_ping_ok):
               raise SystemExit("Unexpected database ping response")
-          print("Database ping succeeded at", payload["timestamp"])
+          print("Database ping succeeded", payload.get("timestamp", "through /health"))
           PY
