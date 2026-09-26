@@ -11,6 +11,8 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://flowdesk_test:flowdesk_test@127.0.0.1:5432/flowdesk_test
     defaults:
       run:
         working-directory: backend
