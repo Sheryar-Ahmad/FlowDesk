@@ -958,7 +958,12 @@ def _decode_python_run(
     if match:
         memory_kb = int(match.group(1))
         cpu_time_ms = round(float(match.group(2)) * 1000)
-        stderr_raw = stderr_raw[: match.start()] + stderr_raw[match.end():]
+        marker_end = match.end()
+        if stderr_raw[marker_end:marker_end + 2] == "\r\n":
+            marker_end += 2
+        elif stderr_raw[marker_end:marker_end + 1] in {"\r", "\n"}:
+            marker_end += 1
+        stderr_raw = stderr_raw[: match.start()] + stderr_raw[marker_end:]
 
     stdout = strip_ansi(stdout)
     stderr_raw = strip_ansi(stderr_raw)

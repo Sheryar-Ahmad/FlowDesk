@@ -35,6 +35,21 @@ print(Student.label(), Student("FlowDesk").name)
     assert result.stderr == ""
 
 
+def test_python_resource_marker_does_not_leave_internal_newline():
+    result = compiler_service._decode_python_run(
+        returncode=0,
+        stdout_bytes=b"done\n",
+        stderr_bytes=b"\x00FLOWDESK_RUSAGE\x001024\x000.25\x00\n",
+        duration_ms=10,
+        warnings=[],
+        max_output=1000,
+    )
+
+    assert result.stderr == ""
+    assert result.memory_kb == 1024
+    assert result.cpu_time_ms == 250
+
+
 @pytest.mark.asyncio
 async def test_python_main_guard_and_larger_sources_execute():
     filler = "\n".join(f"# source filler {index:04d}" for index in range(7000))
