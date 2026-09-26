@@ -66,6 +66,7 @@ if __name__ == "__main__":
 
 @pytest.mark.asyncio
 async def test_run_code_returns_stdout_in_output(monkeypatch):
+    monkeypatch.setattr(compiler_service.settings, "DEBUG", True)
     monkeypatch.setattr(compiler_service, "count_runs_today", AsyncMock(return_value=0))
     monkeypatch.setattr(compiler_service, "safe_record_run_event", AsyncMock())
 

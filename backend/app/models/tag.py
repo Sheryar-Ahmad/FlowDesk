@@ -35,4 +35,5 @@ class SnippetTag(Base):
         PG_UUID(as_uuid=True),
         ForeignKey("tags.id", ondelete="CASCADE"),
         primary_key=True,
+        index=True,
     )

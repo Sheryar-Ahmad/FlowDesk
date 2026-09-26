@@ -1,11 +1,14 @@
+import asyncio
+from datetime import datetime, timezone
+
 import sentry_sdk
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 
@@ -15,6 +18,7 @@ from app.database.connection import (
     check_db_connection,
     close_db_connection,
     ensure_database_schema,
+    engine,
 )
 from app.core.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from app.core.middleware.error_handler import (
@@ -116,6 +120,24 @@ async def health_check():
         "version": settings.APP_VERSION,
         "database": "connected" if db_healthy else "disconnected",
     }
+
+
+@app.get("/health/ping-db", tags=["System"])
+@limiter.limit("12/minute")
+async def ping_database(request: Request):
+    """Exercise the database without exposing application data or credentials."""
+    async def query_database():
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+
+    try:
+        await asyncio.wait_for(query_database(), timeout=10)
+    except Exception as error:
+        logger.warning("Database keep-alive failed", error_type=type(error).__name__)
+        raise HTTPException(status_code=503, detail="Database temporarily unavailable.") from error
+    timestamp = datetime.now(timezone.utc).isoformat()
+    logger.info("Database keep-alive succeeded", timestamp=timestamp)
+    return {"status": "ok", "timestamp": timestamp}
 
 
 @app.get("/", tags=["System"])

@@ -33,7 +33,6 @@ async def create_note(db: AsyncSession, user_id: str, plan: str, title: str, con
         RETURNING id, user_id, title, content, content_text, word_count, created_at, updated_at
     """), {"uid": user_id, "title": title, "content": content_json, "ct": content_text, "wc": word_count})
     note = r.fetchone()
-    await db.commit()
 
     await db.execute(text("INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata) VALUES (:u,'note.create','note',:r,'{}')"), {"u": user_id, "r": str(note.id)})
     await db.commit()
@@ -82,7 +81,6 @@ async def update_note(db: AsyncSession, note_id: str, user_id: str, updates: dic
 
 async def delete_note(db: AsyncSession, note_id: str, user_id: str) -> bool:
     r = await db.execute(text("UPDATE notes SET deleted_at=NOW() WHERE id=:id AND user_id=:u AND deleted_at IS NULL"), {"id": note_id, "u": user_id})
-    await db.commit()
     deleted = r.rowcount > 0
     if deleted:
         await db.execute(text("INSERT INTO audit_logs (user_id,action,resource_type,resource_id,metadata) VALUES (:u,'note.delete','note',:r,'{}')"), {"u": user_id, "r": note_id})

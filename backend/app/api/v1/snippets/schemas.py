@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
 from datetime import datetime
 import re
@@ -93,6 +93,14 @@ class SnippetUpdate(BaseModel):
     is_pinned: Optional[bool] = None
     tags: Optional[List[str]] = None
     collection_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_updates(self):
+        for field in ("title", "code", "language", "description", "tags"):
+            value = getattr(self, field)
+            if value is not None:
+                setattr(self, field, getattr(SnippetCreate, f"validate_{field}")(value))
+        return self
 
 
 class SnippetResponse(BaseModel):

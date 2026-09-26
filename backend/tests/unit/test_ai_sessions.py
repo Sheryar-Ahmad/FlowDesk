@@ -88,12 +88,16 @@ def test_smart_router_falls_back_after_empty_provider_response(monkeypatch):
     )
 
     assert result["response"] == "Fallback worked"
-    assert result["model_used"] == "google/gemini-2.0-flash"
+    assert result["model_used"] == f"google/{ai_service.settings.GEMINI_MODEL}"
 
 
-def test_utc_midnight_boundaries():
+@pytest.mark.parametrize("hours, expired", [(23.999, False), (24, True), (48, True)])
+def test_rolling_quota_window(hours, expired):
+    from datetime import datetime, timedelta, timezone
+    now = datetime(2026, 9, 26, 12, tzinfo=timezone.utc)
+    assert ai_router.quota_window_expired(now - timedelta(hours=hours), now) is expired
+
+
+def test_missing_reset_starts_a_new_window():
     from datetime import datetime, timezone
-    dt = datetime(2026, 9, 9, 14, 30, 0, tzinfo=timezone.utc)
-    today_midnight, next_midnight = ai_router.get_utc_midnight_boundaries(dt)
-    assert today_midnight == datetime(2026, 9, 9, 0, 0, 0, tzinfo=timezone.utc)
-    assert next_midnight == datetime(2026, 9, 10, 0, 0, 0, tzinfo=timezone.utc)
+    assert ai_router.quota_window_expired(None, datetime.now(timezone.utc))

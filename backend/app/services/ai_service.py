@@ -1,9 +1,10 @@
+import asyncio
 import json
 import re
 
 import httpx
 import structlog
-from groq import Groq
+from groq import AsyncGroq
 
 from app.config import get_settings
 from app.constants import (
@@ -17,6 +18,10 @@ logger = structlog.get_logger(__name__)
 settings = get_settings()
 DEEPSEEK_CHAT_URL = "https://api.deepseek.com/chat/completions"
 DEEPSEEK_PRO_MODEL = "deepseek-v4-flash"
+
+
+class AIUnavailableError(ValueError):
+    """All configured providers failed without a usable response."""
 
 
 def extract_ai_text(content) -> str:
@@ -223,27 +228,22 @@ async def chat_with_ai(
         raise ValueError("AI service not configured.")
 
     try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
 
 
         full_messages, intent = build_provider_messages(messages, user_context)
 
 
-        message_length = len(last_user_message)
-        if message_length > 500 or intent in ["security", "review", "optimize"]:
-            model = "llama-3.3-70b-versatile"
-        else:
-            model = "llama-3.3-70b-versatile"
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=full_messages,
-            max_tokens=AI_PROVIDER_MAX_OUTPUT_TOKENS,
-            temperature=0.3,
-            top_p=0.9,
-            presence_penalty=0.1,
-            frequency_penalty=0.1,
-        )
+        model = "llama-3.3-70b-versatile"
+        async with AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=12, max_retries=0) as client:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=full_messages,
+                max_tokens=AI_PROVIDER_MAX_OUTPUT_TOKENS,
+                temperature=0.3,
+                top_p=0.9,
+                presence_penalty=0.1,
+                frequency_penalty=0.1,
+            )
 
         if not response.choices:
             raise ValueError("Groq returned no response choices.")
@@ -337,7 +337,7 @@ async def chat_with_deepseek(messages: list, user_context: dict | None = None) -
     }
 
     try:
-        async with httpx.AsyncClient(timeout=45) as client:
+        async with httpx.AsyncClient(timeout=12) as client:
             response = await client.post(DEEPSEEK_CHAT_URL, headers=headers, json=payload)
             response.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -363,68 +363,56 @@ async def chat_with_deepseek(messages: list, user_context: dict | None = None) -
 
 
 async def chat_with_gemini(messages: list, user_context: dict | None = None) -> dict:
-    """Gemini fallback using new google-genai package."""
-    from google import genai
-    user_context = user_context or {}
-
+    """Use Gemini's REST API without requiring an optional SDK."""
     if not settings.GEMINI_API_KEY:
         raise ValueError("Gemini API key not configured.")
-
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
     full_messages, intent = build_provider_messages(messages, user_context)
-    full_prompt = ""
-    for msg in full_messages:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        if msg["role"] == "system":
-            role = "System"
-        full_prompt += f"{role}: {msg['content']}\n\n"
-    full_prompt += "Assistant:"
-
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=full_prompt,
-    )
-
-    ai_response = require_ai_text(getattr(response, "text", None), "Gemini")
+    payload = {
+        "systemInstruction": {"parts": [{"text": full_messages[0]["content"]}]},
+        "contents": [
+            {"role": "model" if m["role"] == "assistant" else "user",
+             "parts": [{"text": m["content"]}]}
+            for m in full_messages[1:]
+        ],
+        "generationConfig": {"maxOutputTokens": AI_PROVIDER_MAX_OUTPUT_TOKENS},
+    }
+    async with httpx.AsyncClient(timeout=12) as client:
+        response = await client.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent",
+            headers={"x-goog-api-key": settings.GEMINI_API_KEY}, json=payload,
+        )
+        response.raise_for_status()
+    data = response.json()
+    candidates = data.get("candidates") or []
+    content = candidates[0].get("content", {}).get("parts") if candidates else None
     return {
-        "response": ai_response,
-        "tokens_used": len(ai_response.split()) * 2,
-        "model": "gemini-2.0-flash",
+        "response": require_ai_text(content, "Gemini"),
+        "tokens_used": (data.get("usageMetadata") or {}).get("totalTokenCount", 0),
+        "model": settings.GEMINI_MODEL,
         "intent": intent,
     }
 
 
 async def chat_with_mistral(messages: list, user_context: dict | None = None) -> dict:
-    """Mistral fallback - free tier available."""
-    user_context = user_context or {}
-    try:
-        from mistralai import Client
-    except ImportError:
-        try:
-            from mistralai import Mistral as Client
-        except ImportError as exc:
-            raise ImportError("mistralai package must expose Client or Mistral") from exc
-
+    """Use Mistral's REST API with a bounded asynchronous request."""
     if not settings.MISTRAL_API_KEY:
         raise ValueError("Mistral API key not configured.")
-
-    client = Client(api_key=settings.MISTRAL_API_KEY)
     full_messages, intent = build_provider_messages(messages, user_context)
-
-    response = client.chat.complete(
-        model="mistral-large-latest",
-        messages=full_messages,
-        max_tokens=AI_PROVIDER_MAX_OUTPUT_TOKENS,
-        temperature=0.3,
-    )
-
-    if not response.choices:
-        raise ValueError("Mistral returned no response choices.")
-    ai_response = require_ai_text(response.choices[0].message.content, "Mistral")
+    async with httpx.AsyncClient(timeout=12) as client:
+        response = await client.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}"},
+            json={"model": "mistral-large-latest", "messages": full_messages,
+                  "max_tokens": AI_PROVIDER_MAX_OUTPUT_TOKENS, "temperature": 0.3},
+        )
+        response.raise_for_status()
+    data = response.json()
+    choices = data.get("choices") or []
+    content = choices[0].get("message", {}).get("content") if choices else None
     return {
-        "response": ai_response,
-        "tokens_used": getattr(response.usage, "total_tokens", 0) or 0,
-        "model": "mistral-large",
+        "response": require_ai_text(content, "Mistral"),
+        "tokens_used": (data.get("usage") or {}).get("total_tokens", 0),
+        "model": "mistral-large-latest",
         "intent": intent,
     }
 
@@ -444,7 +432,7 @@ async def smart_ai_router(
 
     if user_plan == "pro":
         try:
-            result = await chat_with_deepseek(messages, user_context)
+            result = await asyncio.wait_for(chat_with_deepseek(messages, user_context), timeout=12)
             result["response"] = require_ai_text(result.get("response"), "DeepSeek")
             result["model_used"] = "deepseek/deepseek-v4-flash"
             return result
@@ -453,13 +441,13 @@ async def smart_ai_router(
             logger.warning("DeepSeek failed, trying Groq", error=str(e)[:100])
 
     try:
-        result = await chat_with_ai(
+        result = await asyncio.wait_for(chat_with_ai(
             messages=messages,
             user_plan=user_plan,
             ai_messages_used=ai_messages_used,
             user_context=user_context,
             session_messages=session_messages,
-        )
+        ), timeout=12)
         result["response"] = require_ai_text(result.get("response"), "Groq")
         result["model_used"] = "groq/llama-3.3-70b"
         return result
@@ -469,9 +457,9 @@ async def smart_ai_router(
 
 
     try:
-        result = await chat_with_gemini(messages, user_context)
+        result = await asyncio.wait_for(chat_with_gemini(messages, user_context), timeout=12)
         result["response"] = require_ai_text(result.get("response"), "Gemini")
-        result["model_used"] = "google/gemini-2.0-flash"
+        result["model_used"] = f"google/{settings.GEMINI_MODEL}"
         return result
     except Exception as e:
         errors.append(f"Gemini: {str(e)[:100]}")
@@ -479,7 +467,7 @@ async def smart_ai_router(
 
 
     try:
-        result = await chat_with_mistral(messages, user_context)
+        result = await asyncio.wait_for(chat_with_mistral(messages, user_context), timeout=12)
         result["response"] = require_ai_text(result.get("response"), "Mistral")
         result["model_used"] = "mistral/mistral-large"
         return result
@@ -487,4 +475,4 @@ async def smart_ai_router(
         errors.append(f"Mistral: {str(e)[:100]}")
         logger.error("All AI models failed", errors=errors)
 
-    raise ValueError("All AI models temporarily unavailable. Please try again in a few minutes.")
+    raise AIUnavailableError("All AI models temporarily unavailable. Please try again in a few minutes.")

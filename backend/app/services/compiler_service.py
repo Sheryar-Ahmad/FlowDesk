@@ -255,6 +255,7 @@ LOCAL_RUNTIME_COMMANDS = {
 FRONTEND_PREVIEW_LANGUAGES = {"html", "css"}
 
 PISTON_LANGUAGE_MAP = {
+    "python": ("python", "main.py"),
     "javascript": ("javascript", "main.js"),
     "java": ("java", "Main.java"),
     "cpp": ("cpp", "main.cpp"),
@@ -904,7 +905,7 @@ def list_runtimes() -> list[dict[str, Any]]:
     base = []
     for language, label in RUNTIME_LABELS.items():
         is_preview = language in FRONTEND_PREVIEW_LANGUAGES
-        is_local = has_local_runtime(language)
+        is_local = settings.DEBUG and has_local_runtime(language)
         is_external = language in PISTON_LANGUAGE_MAP and external_runner_enabled
         is_executable = is_preview or (execution_enabled and (is_local or is_external))
         reason = None
@@ -1376,7 +1377,7 @@ async def _execute_compiled_c_family(
         )
 
 
-async def _execute_external_runner(language: str, code: str, stdin: str) -> RunResult:
+async def _execute_external_runner(language: str, code: str, stdin: str, *, args: list[str] | None = None) -> RunResult:
     started = time.perf_counter()
     runner_url = settings.COMPILER_PISTON_API_URL.strip().rstrip("/")
     runtime = PISTON_LANGUAGE_MAP.get(language)
@@ -1398,6 +1399,7 @@ async def _execute_external_runner(language: str, code: str, stdin: str) -> RunR
         "version": "*",
         "files": [{"name": filename, "content": code}],
         "stdin": stdin,
+        "args": args or [],
         "compile_timeout": timeout_seconds * 1000,
         "run_timeout": timeout_seconds * 1000,
         "compile_memory_limit": memory_limit,
@@ -1482,6 +1484,12 @@ async def run_code(
 
     language = normalize_language(language)
 
+    # Untrusted programs must never share the production API filesystem/network.
+    if not settings.DEBUG and not settings.COMPILER_PISTON_API_URL.strip():
+        return {"status": "disabled", "stdout": "", "stderr": "", "output": "",
+                "exit_code": None, "duration_ms": 0, "cached": False,
+                "message": "Code execution requires a configured isolated runner."}
+
     # 68. result cache — identical code+stdin within TTL skips re-execution entirely (huge latency win)
     cache_key = hash_run(language, code, stdin, args)
     if use_cache and cache_key in _run_cache:
@@ -1502,6 +1510,12 @@ async def run_code(
         if not settings.COMPILER_EXECUTION_ENABLED:
             result = RunResult(status="disabled", stdout="", stderr="", exit_code=None, duration_ms=0,
                                 message="Compiler execution is disabled on this server.")
+        elif not settings.DEBUG:
+            if language in PISTON_LANGUAGE_MAP:
+                result = await _execute_external_runner(language, code, stdin, args=args)
+            else:
+                result = RunResult(status="unsupported", stdout="", stderr="", exit_code=None,
+                                   duration_ms=0, message="This language is unavailable on the isolated runner.")
         elif language == "python":
             result = await _execute_python(code, stdin, args=args)
         elif language == "javascript" and has_local_runtime("javascript"):
@@ -1511,7 +1525,7 @@ async def run_code(
         elif language in {"c", "cpp"} and has_local_runtime(language):
             result = await _execute_compiled_c_family(language=language, code=code, stdin=stdin, args=args)
         elif language in PISTON_LANGUAGE_MAP and settings.COMPILER_PISTON_API_URL.strip():
-            result = await _execute_external_runner(language, code, stdin)
+            result = await _execute_external_runner(language, code, stdin, args=args)
         else:
             result = RunResult(status="unsupported", stdout="", stderr="", exit_code=None, duration_ms=0,
                                 message=local_runtime_reason(language) or f"{language} execution needs a configured isolated runner.")

@@ -719,8 +719,8 @@ export default function AIAssistant() {
     try {
       const { data } = await api.get("/ai/usage")
       setUsage(data)
-    } catch (error) {
-      console.error("Failed to load AI usage", error)
+    } catch {
+      toast.error("Could not load AI usage. Reload to try again.", { id: "ai-usage-error" })
     }
   }, [])
 
@@ -735,8 +735,8 @@ export default function AIAssistant() {
             && typeof session.updated_at === "string")
         : []
       setSessions(nextSessions)
-    } catch (error) {
-      console.error("Failed to load AI sessions", error)
+    } catch {
+      toast.error("Could not load conversations. Reload to try again.", { id: "ai-sessions-error" })
     }
   }, [])
 
@@ -850,6 +850,10 @@ export default function AIAssistant() {
       toast.error("Message is too long. Keep it under 20,000 characters.")
       return
     }
+    if (currentSessionId && messages.filter(message => message.role === "user").length >= 20) {
+      toast.error("This conversation has reached 20 messages. Start a new conversation.")
+      return
+    }
     sendingRef.current = true
     const controller = new AbortController()
     chatRequestRef.current = controller
@@ -937,7 +941,7 @@ export default function AIAssistant() {
         : err instanceof Error ? err.message : ""
       if (detail.includes("All AI models") || detail.includes("temporarily unavailable")) {
         toast.error("⚠️ All AI services busy. Try again in 1-2 hours.", { duration: 8000 })
-        setUsage(prev => ({ ...prev, remaining: 0, used_today: typeof prev.limit === "number" ? prev.limit : 20 }))
+        void loadUsage()
       } else if (detail.includes("limit")) {
         toast.error("AI message limit reached.", { duration: 5000 })
         setUsage(prev => ({ ...prev, remaining: 0 }))
@@ -952,7 +956,7 @@ export default function AIAssistant() {
         inputRef.current?.focus()
       }
     }
-  }, [currentSessionId, input, loadSessions, messages, playPing])
+  }, [currentSessionId, input, loadSessions, loadUsage, messages, playPing])
 
 
   const toggleVoice = useCallback(() => {

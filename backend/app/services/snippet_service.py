@@ -40,6 +40,11 @@ async def create_snippet(
             raise ValueError(f"Free tier limit reached: {FREE_TIER_SNIPPET_LIMIT} snippets maximum. Upgrade to Pro for unlimited snippets.")
 
 
+    if collection_id:
+        owned = await db.execute(text("SELECT 1 FROM collections WHERE id=:cid AND user_id=:uid"),
+                                 {"cid": collection_id, "uid": user_id})
+        if not owned.scalar():
+            raise ValueError("Collection not found.")
     result = await db.execute(
         text("""
             INSERT INTO snippets (user_id, title, code, language, description, is_public, collection_id)
@@ -58,7 +63,6 @@ async def create_snippet(
         }
     )
     snippet = result.fetchone()
-    await db.commit()
 
 
     saved_tags = []
@@ -75,7 +79,6 @@ async def create_snippet(
                 {"user_id": user_id, "name": tag_name}
             )
             tag = tag_result.fetchone()
-            await db.commit()
 
 
             await db.execute(
@@ -86,7 +89,6 @@ async def create_snippet(
                 """),
                 {"snippet_id": str(snippet.id), "tag_id": str(tag.id)}
             )
-            await db.commit()
             saved_tags.append(tag.name)
 
 
@@ -299,9 +301,18 @@ async def update_snippet(
             update_fields.append(f"{field} = :{field}")
             params[field] = updates[field]
 
-    if not update_fields:
+    if not update_fields and "tags" not in updates and "collection_id" not in updates:
         return existing
 
+    if "collection_id" in updates:
+        collection_id = updates["collection_id"]
+        if collection_id:
+            owned = await db.execute(text("SELECT 1 FROM collections WHERE id=:cid AND user_id=:uid"),
+                                     {"cid": collection_id, "uid": user_id})
+            if not owned.scalar():
+                raise ValueError("Collection not found.")
+        update_fields.append("collection_id=:collection_id")
+        params["collection_id"] = collection_id
     update_fields.append("updated_at = NOW()")
     query = text(f"""
         UPDATE snippets
@@ -309,6 +320,15 @@ async def update_snippet(
         WHERE id = :snippet_id AND user_id = :user_id AND deleted_at IS NULL
     """)
     await db.execute(query, params)
+    if "tags" in updates:
+        await db.execute(text("DELETE FROM snippet_tags WHERE snippet_id=:sid"), {"sid": snippet_id})
+        for name in updates["tags"] or []:
+            tag_result = await db.execute(text("""
+                INSERT INTO tags (user_id, name) VALUES (:uid, :name)
+                ON CONFLICT (user_id, name) DO UPDATE SET name=EXCLUDED.name RETURNING id
+            """), {"uid": user_id, "name": name})
+            await db.execute(text("INSERT INTO snippet_tags (snippet_id, tag_id) VALUES (:sid, :tid)"),
+                             {"sid": snippet_id, "tid": tag_result.scalar()})
     await db.commit()
 
     logger.info("Snippet updated", snippet_id=snippet_id, user_id=user_id)
@@ -329,8 +349,6 @@ async def delete_snippet(
         """),
         {"snippet_id": snippet_id, "user_id": user_id}
     )
-    await db.commit()
-
     deleted = result.rowcount > 0
     if deleted:
         await db.execute(

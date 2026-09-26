@@ -26,6 +26,7 @@ class Snippet(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     collection_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("collections.id", ondelete="SET NULL"),
+        index=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)

@@ -833,6 +833,10 @@ export default function SnippetList() {
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error("Title is required"); return }
     if (!form.code.trim()) { toast.error("Code is required"); return }
+    if (form.title.trim().length > 200) { toast.error("Title must be 200 characters or less"); return }
+    if (form.code.length > 500000) { toast.error("Code must be 500,000 characters or less"); return }
+    if ((form.description?.length || 0) > 1000) { toast.error("Description must be 1,000 characters or less"); return }
+    if ((form.tags?.length || 0) > 10) { toast.error("Use at most 10 tags"); return }
     setSaving(true)
     try {
       const result = await createSnippet(form)
@@ -846,6 +850,12 @@ export default function SnippetList() {
 
   const handleUpdate = async () => {
     if (!selectedSnippet) return
+    if (!form.title.trim()) { toast.error("Title is required"); return }
+    if (!form.code.trim()) { toast.error("Code is required"); return }
+    if (form.title.trim().length > 200) { toast.error("Title must be 200 characters or less"); return }
+    if (form.code.length > 500000) { toast.error("Code must be 500,000 characters or less"); return }
+    if ((form.description?.length || 0) > 1000) { toast.error("Description must be 1,000 characters or less"); return }
+    if ((form.tags?.length || 0) > 10) { toast.error("Use at most 10 tags"); return }
     setSaving(true)
     try {
       const result = await updateSnippet(selectedSnippet.id, form)

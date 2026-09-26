@@ -24,6 +24,7 @@ class Collection(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     parent_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("collections.id", ondelete="CASCADE"),
+        index=True,
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)

@@ -1,0 +1,43 @@
+name: Keep database awake
+
+on:
+  schedule:
+    - cron: '0 0 */4 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BACKEND_URL: ${{ vars.BACKEND_URL || vars.VITE_API_URL || 'https://flowdesk-api.onrender.com' }}
+    steps:
+      - name: Ping database with cold-start retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${BACKEND_URL%/}"
+          base="${base%/api/v1}"
+          case "$base" in
+            https://*) ;;
+            *) echo "BACKEND_URL must use HTTPS" >&2; exit 1 ;;
+          esac
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 20 --max-time 90 \
+            --retry 4 --retry-delay 15 --retry-all-errors \
+            "${base}/health/ping-db" --output ping.json
+          python - <<'PY'
+          import json
+          with open("ping.json", encoding="utf-8") as response:
+              payload = json.load(response)
+          if payload.get("status") != "ok" or not payload.get("timestamp"):
+              raise SystemExit("Unexpected database ping response")
+          print("Database ping succeeded at", payload["timestamp"])
+          PY

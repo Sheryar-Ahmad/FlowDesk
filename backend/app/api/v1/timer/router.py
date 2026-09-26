@@ -47,7 +47,7 @@ async def get_stats(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        today = str(date.today())
+        today = date.today()
         r1 = await db.execute(
             text("SELECT COUNT(*) as sessions, COALESCE(SUM(duration_minutes), 0) as minutes FROM pomodoro_sessions WHERE user_id=:uid AND session_date=:today AND completed=TRUE"),
             {"uid": current_user["id"], "today": today}

@@ -664,6 +664,10 @@ export default function NoteEditor() {
     revision: number,
   ) => {
     const persistedTitle = noteTitle.trim() || "Untitled Note"
+    if (persistedTitle.length > 300) {
+      toast.error("Note title must be 300 characters or less", { id: "note-title-error" })
+      throw new Error("Note title is too long")
+    }
     const data = await updateNote(noteId, {
       title: persistedTitle,
       content: content as Record<string, unknown>,

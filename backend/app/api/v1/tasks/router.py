@@ -5,7 +5,7 @@ import structlog
 from app.database.connection import get_db
 from app.core.middleware.auth_guard import get_current_user
 from app.core.middleware.rate_limiter import limiter, API_LIMIT
-from app.api.v1.tasks.schemas import ProjectCreate, ProjectUpdate, TaskCreate, TaskUpdate
+from app.api.v1.tasks.schemas import ColumnCreate, ProjectCreate, ProjectUpdate, TaskCreate, TaskUpdate
 from app.services.task_service import (
     create_project, get_projects, get_project_by_id, update_project, delete_project,
     get_columns, create_column, create_task, get_tasks, update_task, delete_task
@@ -65,12 +65,8 @@ async def list_columns(request: Request, project_id: str, current_user: dict = D
 
 @router.post("/projects/{project_id}/columns", status_code=201)
 @limiter.limit(API_LIMIT)
-async def add_column(request: Request, project_id: str, body: dict, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    name = str(body.get("name", "")).strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Column name required.")
-    if len(name) > 100:
-        raise HTTPException(status_code=400, detail="Column name too long.")
+async def add_column(request: Request, project_id: str, body: ColumnCreate, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    name = body.name
     try:
         column = await create_column(db, project_id, current_user["id"], name)
         return {"success": True, "column": column}

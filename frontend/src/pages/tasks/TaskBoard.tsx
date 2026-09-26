@@ -1511,6 +1511,7 @@ export default function TaskBoard() {
 
   const handleCreateProject = async () => {
     if (!projectName.trim()) { toast.error("Name required"); return }
+    if (projectName.trim().length > 200) { toast.error("Project name must be 200 characters or less"); return }
     setSaving(true)
     try {
       const data = await createProject({ name: projectName, color: projectColor })
@@ -1551,6 +1552,7 @@ export default function TaskBoard() {
   }
 
   const handleCreateTask = async () => {
+    if (taskForm.title.trim().length > 300) { toast.error("Task title must be 300 characters or less"); return }
     if (!taskForm.title.trim() || !selectedProject) {
       toast.error("Task title is required")
       return
@@ -1579,6 +1581,7 @@ export default function TaskBoard() {
   }
 
   const handleUpdateTaskForm = async () => {
+    if (taskForm.title.trim().length > 300) { toast.error("Task title must be 300 characters or less"); return }
     if (!editingTask || !taskForm.title.trim()) {
       toast.error("Task title is required")
       return

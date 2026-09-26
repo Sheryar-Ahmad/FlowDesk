@@ -99,12 +99,15 @@ async def update(
     db: AsyncSession = Depends(get_db),
 ):
     """Updates an existing snippet."""
-    snippet = await update_snippet(
-        db=db,
-        snippet_id=snippet_id,
-        user_id=current_user["id"],
-        updates=body.model_dump(exclude_none=True),
-    )
+    try:
+        snippet = await update_snippet(
+            db=db,
+            snippet_id=snippet_id,
+            user_id=current_user["id"],
+            updates=body.model_dump(exclude_unset=True),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
     if not snippet:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snippet not found.")
     return {"success": True, "snippet": snippet}

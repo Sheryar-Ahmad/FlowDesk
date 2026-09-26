@@ -4,8 +4,8 @@ services:
     runtime: docker
     plan: free
     rootDir: backend
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:
@@ -38,6 +38,10 @@ services:
       - key: MISTRAL_API_KEY
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: "gemini-3.5-flash-lite"
+      - key: COMPILER_PISTON_API_URL
         sync: false
       - key: COMPILER_EXECUTION_ENABLED
         value: "true"

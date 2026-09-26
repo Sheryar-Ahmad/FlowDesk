@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
     MISTRAL_API_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 

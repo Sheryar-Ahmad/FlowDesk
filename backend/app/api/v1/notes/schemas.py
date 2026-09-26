@@ -23,7 +23,12 @@ class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[dict] = None
     content_text: Optional[str] = Field(default=None, max_length=1_000_000)
-    word_count: Optional[int] = None
+    word_count: Optional[int] = Field(default=None, ge=0)
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value):
+        return NoteCreate.validate_title(value) if value is not None else value
 
 
 class NoteResponse(BaseModel):

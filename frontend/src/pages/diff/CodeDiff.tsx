@@ -281,7 +281,7 @@ const getApiErrorMessage = (error: unknown) => {
 type MonacoEditorInstance = Parameters<OnMount>[0]
 
 export default function CodeDiff() {
-  const { isAuthenticated, accessToken, logout } = useAuthStore()
+  const { isAuthenticated, accessToken } = useAuthStore()
   const navigate = useNavigate()
   const leftEditorRef = useRef<MonacoEditorInstance | null>(null)
   const rightEditorRef = useRef<MonacoEditorInstance | null>(null)
@@ -440,7 +440,7 @@ ${rightCode.slice(0, 6000)}`
 
       const { data } = await api.post("/ai/chat", {
         messages: [{ role: "user", content: prompt }]
-      })
+      }, { timeout: 60000 })
       if (typeof data.response !== "string" || !data.response.trim()) {
         throw new Error("The AI service returned an empty response.")
       }
@@ -449,10 +449,6 @@ ${rightCode.slice(0, 6000)}`
       const message = getApiErrorMessage(err)
       toast.error(message)
       setAiExplanation("AI analysis failed. Please try again.")
-      if (axios.isAxiosError(err) && err.response?.status === 401) {
-        await logout()
-        navigate("/login", { replace: true })
-      }
     } finally {
       setAiExplaining(false)
     }
