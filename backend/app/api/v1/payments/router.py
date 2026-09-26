@@ -26,10 +26,46 @@ settings = get_settings()
 SUBSCRIPTION_DATA_TYPE = "subscriptions"
 INVOICE_DATA_TYPE = "subscription-invoices"
 INVOICE_SUBSCRIPTION_EVENTS = {
+    "subscription_payment_failed",
     "subscription_payment_success",
     "subscription_payment_recovered",
     "subscription_payment_refunded",
 }
+ACCESS_ELIGIBLE_SUBSCRIPTION_STATUSES = {
+    "on_trial",
+    "active",
+    "paused",
+    "past_due",
+    "unpaid",
+    "cancelled",
+}
+ACCESS_ELIGIBLE_EVENTS = {
+    "subscription_created",
+    "subscription_cancelled",
+    "subscription_paused",
+    "subscription_payment_failed",
+    "subscription_payment_success",
+    "subscription_payment_recovered",
+    "subscription_resumed",
+    "subscription_unpaused",
+    "subscription_updated",
+}
+UPDATE_USER_PLAN_STATEMENT = text("""
+    UPDATE users
+    SET plan = :plan,
+        ai_messages_used_month = CASE
+            WHEN :is_free THEN 0
+            WHEN :reset_quota THEN 0
+            ELSE ai_messages_used_month
+        END,
+        ai_messages_month_reset_at = CASE
+            WHEN :is_pro
+                THEN COALESCE(:quota_reset_at, ai_messages_month_reset_at, NOW() + INTERVAL '1 month')
+            ELSE NULL
+        END,
+        updated_at = NOW()
+    WHERE id = :user_id
+""")
 
 
 def parse_provider_datetime(value):
@@ -63,6 +99,24 @@ async def resolve_subscription_event(
         subscription = await retrieve_subscription(subscription_id)
         return subscription_id, subscription["attributes"]
     return subscription_id, attributes
+
+
+def plan_for_subscription_event(
+    event_name: str,
+    subscription_status: str,
+    event_attributes: dict,
+) -> str | None:
+    """Return the account plan transition for a verified subscription event."""
+    if event_name == "subscription_expired" or subscription_status == "expired":
+        return "free"
+    if event_name == "subscription_payment_refunded" and event_attributes.get("refunded") is True:
+        return "free"
+    if (
+        event_name in ACCESS_ELIGIBLE_EVENTS
+        and subscription_status in ACCESS_ELIGIBLE_SUBSCRIPTION_STATUSES
+    ):
+        return "pro"
+    return None
 
 
 @router.post("/checkout")
@@ -179,30 +233,6 @@ async def lemon_squeezy_webhook(
         return {"success": True, "ignored": True}
 
     subscription_status = subscription_attributes.get("status", "")
-    pro_statuses = {"on_trial", "active", "paused", "past_due", "cancelled"}
-    pro_events = {
-        "subscription_created",
-        "subscription_paused",
-        "subscription_resumed",
-        "subscription_unpaused",
-        "subscription_updated",
-        "subscription_payment_success",
-        "subscription_payment_recovered",
-    }
-    free_events = {
-        "subscription_expired",
-        "subscription_payment_refunded",
-        "order_refunded",
-    }
-    should_be_free = event_name in free_events or subscription_status in {
-        "expired",
-        "unpaid",
-    }
-    should_be_pro = (
-        event_name in pro_events
-        and not should_be_free
-        and (not subscription_status or subscription_status in pro_statuses)
-    )
     should_reset_quota = event_name in {
         "subscription_created",
         "subscription_payment_success",
@@ -232,29 +262,16 @@ async def lemon_squeezy_webhook(
         await db.rollback()
         return {"success": True, "duplicate": True}
 
-    plan = "free" if should_be_free else "pro" if should_be_pro else None
+    plan = plan_for_subscription_event(event_name, subscription_status, attributes)
     if plan:
         renews_at = parse_provider_datetime(subscription_attributes.get("renews_at"))
         quota_reset_at = renews_at or datetime.now(timezone.utc) + timedelta(days=30)
         user_result = await db.execute(
-            text("""
-                UPDATE users
-                SET plan = :plan,
-                    ai_messages_used_month = CASE
-                        WHEN :plan = 'free' THEN 0
-                        WHEN :reset_quota THEN 0
-                        ELSE ai_messages_used_month
-                    END,
-                    ai_messages_month_reset_at = CASE
-                        WHEN :plan = 'pro'
-                            THEN COALESCE(:quota_reset_at, ai_messages_month_reset_at, NOW() + INTERVAL '1 month')
-                        ELSE NULL
-                    END,
-                    updated_at = NOW()
-                WHERE id = :user_id
-            """),
+            UPDATE_USER_PLAN_STATEMENT,
             {
                 "plan": plan,
+                "is_free": plan == "free",
+                "is_pro": plan == "pro",
                 "reset_quota": should_reset_quota,
                 "quota_reset_at": quota_reset_at,
                 "user_id": user_id,

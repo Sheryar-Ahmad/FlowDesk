@@ -30,6 +30,39 @@ def test_order_id_is_not_mistaken_for_subscription_id():
     assert payments_router.subscription_id_from_event(data, {}) == ""
 
 
+@pytest.mark.parametrize(
+    ("event_name", "status", "event_attributes", "expected_plan"),
+    [
+        ("subscription_created", "active", {}, "pro"),
+        ("subscription_updated", "past_due", {}, "pro"),
+        ("subscription_updated", "unpaid", {}, "pro"),
+        ("subscription_cancelled", "cancelled", {}, "pro"),
+        ("subscription_expired", "expired", {}, "free"),
+        ("subscription_payment_refunded", "active", {"refunded": True}, "free"),
+        ("subscription_payment_refunded", "active", {"refunded": False}, None),
+        ("order_refunded", "", {"refunded": True}, None),
+    ],
+)
+def test_subscription_events_choose_expected_plan(
+    event_name,
+    status,
+    event_attributes,
+    expected_plan,
+):
+    assert (
+        payments_router.plan_for_subscription_event(event_name, status, event_attributes)
+        == expected_plan
+    )
+
+
+def test_plan_update_uses_unambiguous_boolean_parameters():
+    statement = str(payments_router.UPDATE_USER_PLAN_STATEMENT)
+
+    assert statement.count(":plan") == 1
+    assert ":is_free" in statement
+    assert ":is_pro" in statement
+
+
 @pytest.mark.asyncio
 async def test_payment_success_resolves_canonical_subscription(monkeypatch):
     async def fake_retrieve(subscription_id: str):
