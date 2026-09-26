@@ -1,6 +1,6 @@
 
 
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Code2, LogOut, FileCode, FileText, Kanban,
@@ -343,9 +343,9 @@ function QuickStat({
 export default function Dashboard() {
   const { user, isAuthenticated, logout, refreshUser } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [time, setTime] = useState(new Date())
   const [isUpgrading, setIsUpgrading] = useState(false)
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [acceptedProTerms, setAcceptedProTerms] = useState(false)
   const [dashboardStats, setDashboardStats] = useState(EMPTY_DASHBOARD_STATS)
   const [statsLoading, setStatsLoading] = useState(true)
@@ -414,15 +414,11 @@ export default function Dashboard() {
   }, [navigate])
 
   useEffect(() => {
-    if (!isCheckoutOpen) return
+    if (searchParams.get("checkout") !== "success") return
 
     let cancelled = false
-    let refreshing = false
     const refreshPlan = async () => {
-      if (refreshing) return
-      refreshing = true
-
-      for (const delay of [0, 1500, 3000]) {
+      for (const delay of [0, 1500, 3000, 5000, 8000, 12000, 15000]) {
         if (delay) {
           await new Promise(resolve => window.setTimeout(resolve, delay))
         }
@@ -431,8 +427,8 @@ export default function Dashboard() {
         try {
           await refreshUser()
           if (useAuthStore.getState().user?.plan === "pro") {
-            setIsCheckoutOpen(false)
             toast.success("Your FlowDesk Pro plan is active.")
+            navigate("/dashboard", { replace: true })
             return
           }
         } catch {
@@ -440,16 +436,17 @@ export default function Dashboard() {
         }
       }
 
-      if (!cancelled) setIsCheckoutOpen(false)
-      refreshing = false
+      if (!cancelled) {
+        toast("Your payment is still being confirmed. Your Pro plan will activate automatically.")
+        navigate("/dashboard", { replace: true })
+      }
     }
 
-    window.addEventListener("focus", refreshPlan)
+    void refreshPlan()
     return () => {
       cancelled = true
-      window.removeEventListener("focus", refreshPlan)
     }
-  }, [isCheckoutOpen, refreshUser])
+  }, [navigate, refreshUser, searchParams])
 
   const handleLogout = async () => {
     await logout()
@@ -463,21 +460,11 @@ export default function Dashboard() {
       return
     }
 
-    const checkoutWindow = window.open("", "_blank")
-    if (!checkoutWindow) {
-      toast.error("Please allow pop-ups for FlowDesk to open the secure checkout.")
-      return
-    }
-    checkoutWindow.opener = null
-
     setIsUpgrading(true)
     try {
       const { checkout_url } = await createProCheckout()
-      checkoutWindow.location.href = checkout_url
-      setIsCheckoutOpen(true)
-      setIsUpgrading(false)
+      window.location.assign(checkout_url)
     } catch (error: unknown) {
-      checkoutWindow.close()
       const message = axios.isAxiosError<{ detail?: string }>(error)
         ? error.response?.data?.detail || "Unable to start checkout."
         : "Unable to start checkout."
@@ -813,20 +800,18 @@ export default function Dashboard() {
               <>
                 <button
                   onClick={handleUpgrade}
-                  disabled={!acceptedProTerms || isUpgrading || isCheckoutOpen}
+                  disabled={!acceptedProTerms || isUpgrading}
                   style={{
                   width: "100%", background: "rgba(99,102,241,0.2)",
                   border: "1px solid rgba(99,102,241,0.35)", borderRadius: 8,
                   padding: "8px", color: "#818cf8",
-                  cursor: isUpgrading ? "wait" : isCheckoutOpen || !acceptedProTerms ? "default" : "pointer",
-                  opacity: isUpgrading || isCheckoutOpen || !acceptedProTerms ? 0.65 : 1,
+                  cursor: isUpgrading ? "wait" : !acceptedProTerms ? "default" : "pointer",
+                  opacity: isUpgrading || !acceptedProTerms ? 0.65 : 1,
                   fontSize: 12, fontWeight: 600,
                 }}>
                   {isUpgrading
                     ? "Opening checkout..."
-                    : isCheckoutOpen
-                      ? "Checkout opened"
-                      : "Upgrade to Pro"}
+                    : "Upgrade to Pro"}
                 </button>
                 <label style={{
                   display: "flex",

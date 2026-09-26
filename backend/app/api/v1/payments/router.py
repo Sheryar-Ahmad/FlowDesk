@@ -16,11 +16,20 @@ from app.services.payment_service import (
     PaymentConfigurationError,
     PaymentProviderError,
     create_pro_checkout,
+    retrieve_subscription,
 )
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
 settings = get_settings()
+
+SUBSCRIPTION_DATA_TYPE = "subscriptions"
+INVOICE_DATA_TYPE = "subscription-invoices"
+INVOICE_SUBSCRIPTION_EVENTS = {
+    "subscription_payment_success",
+    "subscription_payment_recovered",
+    "subscription_payment_refunded",
+}
 
 
 def parse_provider_datetime(value):
@@ -30,6 +39,30 @@ def parse_provider_datetime(value):
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def subscription_id_from_event(data: dict, attributes: dict) -> str:
+    data_type = data.get("type")
+    if data_type == SUBSCRIPTION_DATA_TYPE:
+        return str(data.get("id") or "")
+    if data_type == INVOICE_DATA_TYPE:
+        return str(attributes.get("subscription_id") or "")
+    return ""
+
+
+async def resolve_subscription_event(
+    event_name: str,
+    data: dict,
+    attributes: dict,
+) -> tuple[str, dict]:
+    """Normalize subscription and invoice events to subscription attributes."""
+    subscription_id = subscription_id_from_event(data, attributes)
+    if data.get("type") == INVOICE_DATA_TYPE and event_name in INVOICE_SUBSCRIPTION_EVENTS:
+        if not subscription_id:
+            raise PaymentProviderError("The invoice did not reference a subscription.")
+        subscription = await retrieve_subscription(subscription_id)
+        return subscription_id, subscription["attributes"]
+    return subscription_id, attributes
 
 
 @router.post("/checkout")
@@ -86,12 +119,33 @@ async def lemon_squeezy_webhook(
     event_name = payload.get("meta", {}).get("event_name", "")
     data = payload.get("data") or {}
     attributes = data.get("attributes") or {}
+    if not isinstance(attributes, dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
     custom_data = payload.get("meta", {}).get("custom_data") or attributes.get("custom_data") or {}
     user_id = custom_data.get("user_id")
-    variant_id = str(attributes.get("variant_id", ""))
-    store_id = str(attributes.get("store_id", ""))
-    provider_subscription_id = str(attributes.get("subscription_id") or data.get("id", ""))
-    is_test_mode = bool(attributes.get("test_mode", False))
+
+    try:
+        provider_subscription_id, subscription_attributes = await resolve_subscription_event(
+            event_name,
+            data,
+            attributes,
+        )
+    except PaymentConfigurationError as exc:
+        logger.error("Payment webhook configuration error", event=event_name, error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Payment verification is not configured.",
+        ) from exc
+    except PaymentProviderError as exc:
+        logger.error("Payment webhook subscription lookup failed", event=event_name, error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Payment verification is temporarily unavailable.",
+        ) from exc
+
+    variant_id = str(subscription_attributes.get("variant_id", ""))
+    store_id = str(subscription_attributes.get("store_id", ""))
+    is_test_mode = bool(subscription_attributes.get("test_mode", False))
 
     if not user_id and provider_subscription_id:
         existing_subscription = await db.execute(
@@ -124,7 +178,7 @@ async def lemon_squeezy_webhook(
         logger.warning("Ignoring payment webhook with invalid user ID", event=event_name)
         return {"success": True, "ignored": True}
 
-    subscription_status = attributes.get("status", "")
+    subscription_status = subscription_attributes.get("status", "")
     pro_statuses = {"on_trial", "active", "paused", "past_due", "cancelled"}
     pro_events = {
         "subscription_created",
@@ -180,7 +234,7 @@ async def lemon_squeezy_webhook(
 
     plan = "free" if should_be_free else "pro" if should_be_pro else None
     if plan:
-        renews_at = parse_provider_datetime(attributes.get("renews_at"))
+        renews_at = parse_provider_datetime(subscription_attributes.get("renews_at"))
         quota_reset_at = renews_at or datetime.now(timezone.utc) + timedelta(days=30)
         user_result = await db.execute(
             text("""
@@ -260,17 +314,17 @@ async def lemon_squeezy_webhook(
             {
                 "user_id": user_id,
                 "subscription_id": provider_subscription_id,
-                "customer_id": str(attributes.get("customer_id") or "") or None,
+                "customer_id": str(subscription_attributes.get("customer_id") or "") or None,
                 "store_id": int(store_id) if store_id else None,
-                "product_id": int(attributes["product_id"]) if attributes.get("product_id") else None,
+                "product_id": int(subscription_attributes["product_id"]) if subscription_attributes.get("product_id") else None,
                 "variant_id": int(variant_id) if variant_id else None,
                 "status": subscription_status,
-                "renews_at": parse_provider_datetime(attributes.get("renews_at")),
-                "ends_at": parse_provider_datetime(attributes.get("ends_at")),
-                "trial_ends_at": parse_provider_datetime(attributes.get("trial_ends_at")),
-                "cancelled_at": parse_provider_datetime(attributes.get("cancelled_at")),
+                "renews_at": parse_provider_datetime(subscription_attributes.get("renews_at")),
+                "ends_at": parse_provider_datetime(subscription_attributes.get("ends_at")),
+                "trial_ends_at": parse_provider_datetime(subscription_attributes.get("trial_ends_at")),
+                "cancelled_at": parse_provider_datetime(subscription_attributes.get("cancelled_at")),
                 "is_test_mode": is_test_mode,
-                "provider_data": json.dumps(attributes),
+                "provider_data": json.dumps(subscription_attributes),
             },
         )
 
