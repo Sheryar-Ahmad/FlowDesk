@@ -9,6 +9,7 @@ import {
   type AuthSession,
 } from "./authSession"
 import { API_BASE_URL } from "./config"
+import { isSessionRejected } from "./sessionErrors"
 
 interface RetryableRequest extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -41,6 +42,9 @@ async function refreshSession(): Promise<AuthSession> {
   const { data } = await refreshClient.post<RefreshResponse>("/auth/refresh", {
     refresh_token: current.refreshToken,
   })
+  if (readAuthSession()?.refreshToken !== current.refreshToken) {
+    throw new Error("The session changed during token refresh.")
+  }
   const session: AuthSession = {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -82,9 +86,11 @@ apiClient.interceptors.response.use(
       request.headers.Authorization = `Bearer ${session.accessToken}`
       return apiClient(request)
     } catch (refreshError) {
-      clearAuthSession()
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        window.location.assign("/login?reason=session-expired")
+      if (!readAuthSession() || isSessionRejected(refreshError)) {
+        clearAuthSession()
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          window.location.assign("/login?reason=session-expired")
+        }
       }
       return Promise.reject(refreshError)
     }

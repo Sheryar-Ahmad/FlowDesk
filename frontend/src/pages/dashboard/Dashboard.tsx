@@ -426,6 +426,7 @@ export default function Dashboard() {
 
         try {
           await refreshUser()
+          if (cancelled) return
           if (useAuthStore.getState().user?.plan === "pro") {
             toast.success("Your FlowDesk Pro plan is active.")
             navigate("/dashboard", { replace: true })

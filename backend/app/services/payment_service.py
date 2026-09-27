@@ -170,7 +170,18 @@ async def create_pro_checkout(user: dict) -> str:
     if not isinstance(response_payload, dict):
         raise PaymentProviderError("The payment provider returned an invalid response.")
 
-    checkout_url = response_payload.get("data", {}).get("attributes", {}).get("url")
+    data = response_payload.get("data")
+    attributes = data.get("attributes") if isinstance(data, dict) else None
+    if not isinstance(attributes, dict):
+        raise PaymentProviderError("The payment provider returned an invalid response.")
+
+    checkout_url = attributes.get("url")
     if not isinstance(checkout_url, str) or not checkout_url.startswith("https://"):
         raise PaymentProviderError("The payment provider returned an invalid checkout URL.")
+    try:
+        parsed_checkout_url = urlparse(checkout_url)
+        if not parsed_checkout_url.hostname or parsed_checkout_url.username or parsed_checkout_url.password:
+            raise ValueError("Invalid checkout host.")
+    except ValueError as exc:
+        raise PaymentProviderError("The payment provider returned an invalid checkout URL.") from exc
     return checkout_url

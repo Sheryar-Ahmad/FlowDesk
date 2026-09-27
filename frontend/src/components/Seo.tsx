@@ -2,13 +2,18 @@ import { useEffect } from "react"
 import { useLocation } from "react-router-dom"
 
 const DEFAULT_DESCRIPTION = "FlowDesk combines snippets, notes, tasks, AI assistance, focus sessions, code diff, and a safe compiler workspace in one focused developer app."
-const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || "https://flowdesk.vercel.app").replace(/\/+$/, "")
+const SITE_URL = (import.meta.env.VITE_SITE_URL?.trim() || "https://flow-desk-beryl.vercel.app").replace(/\/+$/, "")
 const SITE_IMAGE = `${SITE_URL}/og-image.svg`
 
 const ROUTE_TITLES: Record<string, string> = {
   "/": "FlowDesk | Unified Developer Workspace",
   "/login": "Sign In | FlowDesk",
   "/register": "Create Account | FlowDesk",
+  "/auth/callback": "Completing Sign In | FlowDesk",
+  "/legal": "Legal Information | FlowDesk",
+  "/legal/privacy": "Privacy Policy | FlowDesk",
+  "/legal/terms": "Terms of Service | FlowDesk",
+  "/legal/refunds": "Refund Policy | FlowDesk",
   "/dashboard": "Dashboard | FlowDesk",
   "/snippets": "Code Snippets | FlowDesk",
   "/notes": "Developer Notes | FlowDesk",

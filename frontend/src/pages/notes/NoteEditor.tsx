@@ -37,6 +37,7 @@ import { getNotes, createNote, updateNote, deleteNote, summarizeNote } from "../
 import type { Note } from "../../services/api/notes.api"
 import { useKeyboard } from "../../hooks/useKeyboard"
 import toast from "react-hot-toast"
+import { replaceNoteText } from "./replaceNoteText"
 
 
 const lowlight = createLowlight()
@@ -255,8 +256,12 @@ function FindReplacePanel({
 
   const doReplace = () => {
     if (!find.trim() || !editor) return
-    const content = editor.getHTML().split(find).join(replace)
-    editor.commands.setContent(content)
+    const transaction = replaceNoteText(editor.state, find, replace)
+    if (!transaction) {
+      toast("No matching text found")
+      return
+    }
+    editor.view.dispatch(transaction)
     toast.success("Replaced all occurrences")
   }
 

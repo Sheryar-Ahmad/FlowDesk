@@ -159,23 +159,32 @@ async def lemon_squeezy_webhook(
         hashlib.sha256,
     ).hexdigest()
     signature = request.headers.get("X-Signature", "")
-    if not hmac.compare_digest(expected, signature):
+    if not hmac.compare_digest(expected.encode(), signature.encode()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid webhook signature.")
 
     try:
         payload = json.loads(body)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.") from exc
 
     if not isinstance(payload, dict):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
 
-    event_name = payload.get("meta", {}).get("event_name", "")
-    data = payload.get("data") or {}
-    attributes = data.get("attributes") or {}
-    if not isinstance(attributes, dict):
+    meta = payload.get("meta")
+    data = payload.get("data")
+    if not isinstance(meta, dict) or not isinstance(data, dict):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
-    custom_data = payload.get("meta", {}).get("custom_data") or attributes.get("custom_data") or {}
+    event_name = meta.get("event_name")
+    attributes = data.get("attributes")
+    if not isinstance(event_name, str) or not event_name or not isinstance(attributes, dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
+    custom_data = meta.get("custom_data")
+    if custom_data is None:
+        custom_data = attributes.get("custom_data")
+    if custom_data is None:
+        custom_data = {}
+    if not isinstance(custom_data, dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.")
     user_id = custom_data.get("user_id")
 
     try:
@@ -185,13 +194,13 @@ async def lemon_squeezy_webhook(
             attributes,
         )
     except PaymentConfigurationError as exc:
-        logger.error("Payment webhook configuration error", event=event_name, error=str(exc))
+        logger.error("Payment webhook configuration error", provider_event=event_name, error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Payment verification is not configured.",
         ) from exc
     except PaymentProviderError as exc:
-        logger.error("Payment webhook subscription lookup failed", event=event_name, error=str(exc))
+        logger.error("Payment webhook subscription lookup failed", provider_event=event_name, error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Payment verification is temporarily unavailable.",
@@ -199,7 +208,19 @@ async def lemon_squeezy_webhook(
 
     variant_id = str(subscription_attributes.get("variant_id", ""))
     store_id = str(subscription_attributes.get("store_id", ""))
-    is_test_mode = bool(subscription_attributes.get("test_mode", False))
+    is_test_mode = subscription_attributes.get("test_mode")
+
+    if (
+        not provider_subscription_id
+        or not variant_id
+        or variant_id != settings.LEMON_SQUEEZY_VARIANT_ID
+        or not store_id
+        or store_id != settings.LEMON_SQUEEZY_STORE_ID
+        or not isinstance(is_test_mode, bool)
+        or is_test_mode != settings.LEMON_SQUEEZY_TEST_MODE
+    ):
+        logger.warning("Ignoring unrelated payment webhook", provider_event=event_name)
+        return {"success": True, "ignored": True}
 
     if not user_id and provider_subscription_id:
         existing_subscription = await db.execute(
@@ -216,23 +237,19 @@ async def lemon_squeezy_webhook(
         if subscription_row:
             user_id = str(subscription_row.user_id)
 
-    if (
-        not user_id
-        or not provider_subscription_id
-        or (variant_id and variant_id != settings.LEMON_SQUEEZY_VARIANT_ID)
-        or (store_id and store_id != settings.LEMON_SQUEEZY_STORE_ID)
-        or is_test_mode != settings.LEMON_SQUEEZY_TEST_MODE
-    ):
-        logger.warning("Ignoring unrelated payment webhook", event=event_name)
+    if not user_id:
+        logger.warning("Ignoring unrelated payment webhook", provider_event=event_name)
         return {"success": True, "ignored": True}
 
     try:
         user_id = str(UUID(str(user_id)))
     except ValueError:
-        logger.warning("Ignoring payment webhook with invalid user ID", event=event_name)
+        logger.warning("Ignoring payment webhook with invalid user ID", provider_event=event_name)
         return {"success": True, "ignored": True}
 
     subscription_status = subscription_attributes.get("status", "")
+    if not isinstance(subscription_status, str):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid subscription status.")
     should_reset_quota = event_name in {
         "subscription_created",
         "subscription_payment_success",

@@ -10,6 +10,7 @@ Disallow: /diff
 Disallow: /compiler
 Disallow: /login
 Disallow: /register
+Disallow: /auth/
 Disallow: /api/
 
-Sitemap: https://flowdesk.vercel.app/sitemap.xml
+Sitemap: https://flow-desk-beryl.vercel.app/sitemap.xml

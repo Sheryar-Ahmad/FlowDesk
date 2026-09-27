@@ -8,6 +8,7 @@ import {
   logoutUser,
 } from "../services/api/auth.api"
 import type { RegisterData, LoginData } from "../services/api/auth.api"
+import { isSessionRejected } from "../services/api/sessionErrors"
 import {
   clearAuthSession,
   readAuthSession,
@@ -140,6 +141,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await getCurrentUser()
+      if (readAuthSession()?.user.id !== session.user.id) return
       updateSessionUser(response.user)
       const currentSession = readAuthSession()
       set({
@@ -150,7 +152,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         error: null,
       })
-    } catch {
+    } catch (error) {
+      const currentSession = readAuthSession()
+      if (currentSession && currentSession.user.id !== session.user.id) return
+      if (currentSession && !isSessionRejected(error)) {
+        set({
+          user: currentSession.user,
+          accessToken: currentSession.accessToken,
+          isAuthenticated: true,
+          isInitialized: true,
+          isLoading: false,
+          error: getAuthErrorMessage(error, "Unable to refresh your session. Please try again."),
+        })
+        return
+      }
       clearAuthSession()
       set({
         user: null,
@@ -184,7 +199,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   refreshUser: async () => {
-    if (!readAuthSession()) {
+    const previousSession = readAuthSession()
+    if (!previousSession) {
       set({
         user: null,
         accessToken: null,
@@ -196,6 +212,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const response = await getCurrentUser()
+      if (readAuthSession()?.user.id !== previousSession.user.id) return
       updateSessionUser(response.user)
       const session = readAuthSession()
       set({
@@ -205,13 +222,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         isInitialized: true,
       })
     } catch (err) {
-      clearAuthSession()
-      set({
-        user: null,
-        accessToken: null,
-        isAuthenticated: false,
-        isInitialized: true,
-      })
+      const session = readAuthSession()
+      if (!session || (session.user.id === previousSession.user.id && isSessionRejected(err))) {
+        clearAuthSession()
+        set({
+          user: null,
+          accessToken: null,
+          isAuthenticated: false,
+          isInitialized: true,
+        })
+      }
       throw err
     }
   },
