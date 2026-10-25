@@ -59,7 +59,7 @@ npm run dev
 - Keep secrets in platform environment variables, never in frontend code.
 - Deploy the backend with the Dockerfile so Python, Node, Java, GCC, and G++ are available.
 - Set `DATABASE_URL`, OAuth, AI provider, Lemon Squeezy, and allowed-origin variables before launch.
-- Public compiler execution is intentionally limited by code size, stdin size, output size, timeout, and daily quota.
+- Public compiler execution is intentionally limited by code size, stdin size, output size, timeout, and daily quotas.
 
 ## Verification
 
