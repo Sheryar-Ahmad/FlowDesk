@@ -6,7 +6,7 @@ FlowDesk is split into a Vite React frontend and a FastAPI backend.
 
 - `frontend/src/pages` contains the major product surfaces: landing, auth, dashboard, snippets, notes, tasks, AI, timer, diff, compiler, and legal.
 - `frontend/src/services/api` contains typed API clients.
-- `frontend/src/store/authStore.ts` owns browser-side auth/session state.
+- `frontend/src/store/authStore.ts` owns browser-side auth/session state..
 - Build output is static and deploys cleanly to Vercel.
 
 ## Backend
